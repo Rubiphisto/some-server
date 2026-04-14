@@ -10,8 +10,23 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 #option(ENABLE_TESTS "Build tests" ON)
 
 include(GNUInstallDirs)
+include(FetchContent)
 
 set(SERVER_BINARY_FOLDER "${CMAKE_BINARY_DIR}")
+
+option(USE_SYSTEM_CLI11 "Use a preinstalled CLI11 package" OFF)
+
+if (USE_SYSTEM_CLI11)
+    find_package(CLI11 CONFIG REQUIRED)
+else ()
+    FetchContent_Declare(
+            cli11_proj
+            QUIET
+            GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
+            GIT_TAG v2.6.2
+    )
+    FetchContent_MakeAvailable(cli11_proj)
+endif ()
 
 set(CMAKE_MODULE_PATH
         "${server_SOURCE_DIR}/cmake"

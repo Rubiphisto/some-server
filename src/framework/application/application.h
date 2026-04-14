@@ -10,6 +10,8 @@ struct ApplicationContext
 {
     std::string executable_path;
     std::string config_path;
+    std::string log_level = "info";
+    bool daemon = false;
     bool verbose = false;
     std::vector<std::string> arguments;
     std::unordered_map<std::string, std::string> settings;

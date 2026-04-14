@@ -1,19 +1,31 @@
 #include "loader.h"
 
+#include <CLI/CLI.hpp>
+
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <string_view>
 #include <utility>
 
 namespace
 {
+    enum class ParseResult
+    {
+        ok,
+        exit_success,
+        exit_failure
+    };
+
     struct StartupOptions
     {
         std::string config_path;
+        std::string log_level;
         bool config_path_explicit = false;
-        bool show_help = false;
         bool show_version = false;
+        bool daemon = false;
         bool verbose = false;
         std::vector<std::string> positional_args;
     };
@@ -30,6 +42,26 @@ namespace
         return std::string(value.substr(begin, end - begin + 1));
     }
 
+    std::optional<bool> ParseBool(std::string value)
+    {
+        for (char& ch : value)
+        {
+            ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+        }
+
+        if (value == "1" || value == "true" || value == "yes" || value == "on")
+        {
+            return true;
+        }
+
+        if (value == "0" || value == "false" || value == "no" || value == "off")
+        {
+            return false;
+        }
+
+        return std::nullopt;
+    }
+
     std::string Narrow(const char8_t* value)
     {
         if (value == nullptr)
@@ -39,78 +71,39 @@ namespace
         return reinterpret_cast<const char*>(value);
     }
 
-    bool ParseArguments(int argc, char* argv[], StartupOptions& options)
+    ParseResult ParseArguments(int argc, char* argv[], const std::string& application_name, StartupOptions& options)
     {
-        for (int index = 1; index < argc; ++index)
+        CLI::App app{application_name + " startup loader"};
+        std::string config_path_option;
+        const std::vector<std::string> log_levels{"trace", "debug", "info", "warn", "error", "fatal"};
+
+        app.set_help_flag("-h,--help", "Show this help message");
+        app.add_flag("-V,--version", options.show_version, "Show application name and version banner");
+        app.add_flag("-d,--daemon", options.daemon, "Run in daemon mode");
+        app.add_flag("-v,--verbose", options.verbose, "Enable verbose startup logs");
+        app.add_option("-c,--config", config_path_option, "Load the specified configuration file");
+        app.add_option("--log-level", options.log_level, "Override log level")
+            ->check(CLI::IsMember(log_levels, CLI::ignore_case));
+        app.add_option("args", options.positional_args, "Positional arguments")->expected(0, -1);
+        app.positionals_at_end(true);
+
+        try
         {
-            const std::string arg = argv[index];
-            if (arg == "--")
-            {
-                for (++index; index < argc; ++index)
-                {
-                    options.positional_args.emplace_back(argv[index]);
-                }
-                return true;
-            }
-
-            if (arg == "-h" || arg == "--help")
-            {
-                options.show_help = true;
-                continue;
-            }
-
-            if (arg == "-V" || arg == "--version")
-            {
-                options.show_version = true;
-                continue;
-            }
-
-            if (arg == "-v" || arg == "--verbose")
-            {
-                options.verbose = true;
-                continue;
-            }
-
-            if (arg == "-c" || arg == "--config")
-            {
-                if (index + 1 >= argc)
-                {
-                    std::cerr << "missing value for " << arg << std::endl;
-                    return false;
-                }
-                options.config_path = argv[++index];
-                options.config_path_explicit = true;
-                continue;
-            }
-
-            if (arg.rfind("--config=", 0) == 0)
-            {
-                options.config_path = arg.substr(std::string("--config=").size());
-                options.config_path_explicit = true;
-                continue;
-            }
-
-            if (!arg.empty() && arg[0] == '-')
-            {
-                std::cerr << "unknown option: " << arg << std::endl;
-                return false;
-            }
-
-            options.positional_args.push_back(arg);
+            app.parse(argc, argv);
+        }
+        catch (const CLI::ParseError& error)
+        {
+            const auto exit_code = app.exit(error);
+            return exit_code == 0 ? ParseResult::exit_success : ParseResult::exit_failure;
         }
 
-        return true;
-    }
+        if (!config_path_option.empty())
+        {
+            options.config_path = std::move(config_path_option);
+            options.config_path_explicit = true;
+        }
 
-    void PrintHelp(const std::string& program_name, const std::string& application_name)
-    {
-        std::cout << "Usage: " << program_name << " [options] [args]" << std::endl;
-        std::cout << "Application: " << application_name << std::endl;
-        std::cout << "Options:" << std::endl;
-        std::cout << "  -h, --help            Show this help message" << std::endl;
-        std::cout << "  -V, --version         Show application name and version banner" << std::endl;
-        std::cout << "  -v, --verbose         Enable verbose startup logs" << std::endl;
-        std::cout << "  -c, --config <path>   Load the specified configuration file" << std::endl;
+        return ParseResult::ok;
     }
 
     bool LoadConfiguration(ApplicationContext& context, bool config_path_explicit)
@@ -165,6 +158,22 @@ namespace
             context.settings[key] = value;
         }
 
+        if (const auto it = context.settings.find("log.level"); it != context.settings.end() && !it->second.empty())
+        {
+            context.log_level = it->second;
+        }
+
+        if (const auto it = context.settings.find("runtime.daemon"); it != context.settings.end())
+        {
+            const auto daemon = ParseBool(it->second);
+            if (!daemon.has_value())
+            {
+                std::cerr << "invalid runtime.daemon value: " << it->second << std::endl;
+                return false;
+            }
+            context.daemon = daemon.value();
+        }
+
         return true;
     }
 
@@ -194,28 +203,27 @@ int Loader::Run(int argc, char* argv[])
     }
 
     StartupOptions options;
-    if (!ParseArguments(argc, argv, options))
+    const std::string application_name = Narrow(app->GetName());
+    const ParseResult parse_result = ParseArguments(argc, argv, application_name, options);
+    if (parse_result == ParseResult::exit_success)
     {
-        PrintHelp(argc > 0 ? argv[0] : "app", Narrow(app->GetName()));
-        return 1;
+        return 0;
     }
 
-    if (options.show_help)
+    if (parse_result == ParseResult::exit_failure)
     {
-        PrintHelp(argc > 0 ? argv[0] : "app", Narrow(app->GetName()));
-        return 0;
+        return 1;
     }
 
     if (options.show_version)
     {
-        std::cout << Narrow(app->GetName()) << " version 0.1.0" << std::endl;
+        std::cout << application_name << " version 0.1.0" << std::endl;
         return 0;
     }
 
     ApplicationContext context;
     context.executable_path = argc > 0 ? argv[0] : "";
     context.config_path = ResolveConfigPath(options, *app);
-    context.verbose = options.verbose;
     context.arguments = std::move(options.positional_args);
 
     if (!LoadConfiguration(context, options.config_path_explicit))
@@ -223,13 +231,29 @@ int Loader::Run(int argc, char* argv[])
         return 1;
     }
 
+    if (!options.log_level.empty())
+    {
+        context.log_level = options.log_level;
+        context.settings["log.level"] = options.log_level;
+    }
+
+    if (options.daemon)
+    {
+        context.daemon = true;
+        context.settings["runtime.daemon"] = "true";
+    }
+
+    context.verbose = options.verbose;
+
     if (context.verbose)
     {
-        std::cout << "starting " << Narrow(app->GetName()) << std::endl;
+        std::cout << "starting " << application_name << std::endl;
         if (!context.config_path.empty())
         {
             std::cout << "using config: " << context.config_path << std::endl;
         }
+        std::cout << "log level: " << context.log_level << std::endl;
+        std::cout << "daemon mode: " << (context.daemon ? "enabled" : "disabled") << std::endl;
     }
 
     if (!Initialize(*app, context))

@@ -11,6 +11,8 @@ bool Application::Configure(const ApplicationContext& context)
 void Application::Load()
 {
     std::cout << "Application::Configure(config=" << mContext.config_path
+              << ", log_level=" << mContext.log_level
+              << ", daemon=" << (mContext.daemon ? "true" : "false")
               << ", args=" << mContext.arguments.size()
               << ", settings=" << mContext.settings.size() << ")" << std::endl;
     std::cout << "Application::Load()" << std::endl;
