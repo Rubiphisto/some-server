@@ -1,0 +1,4 @@
+add_subdirectory(common)
+add_subdirectory(framework)
+add_subdirectory(loader)
+add_subdirectory(gate)
