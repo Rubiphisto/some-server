@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  dev:
+    build: .
+    container_name: cpp20-dev-env
+    ports:
+      - "2222:22"      # SSH (Windows 连接用)
+    volumes:
+      #- ./code:/root/code          # 代码目录，可在 Windows 中直接编辑
+      - mariadb_data:/var/lib/mysql
+      - redis_data:/var/lib/redis
+    restart: unless-stopped
+
+volumes:
+  mariadb_data:
+  redis_data:

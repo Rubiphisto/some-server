@@ -1,0 +1,31 @@
+FROM debian:bookworm-slim
+
+# 更新系统并安装开发工具、SSH、MariaDB、Redis
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        g++ gdb gcc make cmake \
+        openssh-server mariadb-server redis-server \
+        git procps vim-tiny sudo curl wget \
+        ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# 确保 GCC 支持 C++20（Debian bookworm 中 g++ 版本为 12，默认支持 C++20）
+# 配置 SSH（允许 root 登录，密码设为 root）
+RUN mkdir /var/run/sshd && \
+    echo 'root:root' | chpasswd && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+# 准备数据库目录和权限
+RUN mkdir -p /var/run/mysqld && chown -R mysql:mysql /var/run/mysqld && \
+    mkdir -p /var/lib/redis && chown redis:redis /var/lib/redis
+
+# 复制启动脚本
+COPY start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
+
+# 暴露端口
+EXPOSE 22
+
+CMD ["/usr/local/bin/start.sh"]
