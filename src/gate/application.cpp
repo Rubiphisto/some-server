@@ -17,6 +17,11 @@ void Application::Load()
                  mContext.daemon ? "true" : "false",
                  mContext.arguments.size(),
                  mContext.settings.size());
+    spdlog::debug("Application logging sinks: console={} syslog={} rotate_size={} rotate_files={}",
+                  mContext.log_to_console ? "true" : "false",
+                  mContext.log_to_syslog ? "true" : "false",
+                  mContext.log_max_size,
+                  mContext.log_max_files);
     spdlog::info("Application::Load()");
 }
 

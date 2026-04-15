@@ -3,9 +3,12 @@
 #include <CLI/CLI.hpp>
 #include <spdlog/logger.h>
 #include <spdlog/pattern_formatter.h>
-#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
+#ifndef _WIN32
+#include <spdlog/sinks/syslog_sink.h>
+#endif
 
 #include <cctype>
 #include <filesystem>
@@ -29,9 +32,12 @@ namespace
         std::string config_path;
         std::string log_file;
         std::string log_level;
+        std::size_t log_max_size = 0;
+        std::size_t log_max_files = 0;
         bool config_path_explicit = false;
         bool show_version = false;
         bool daemon = false;
+        bool syslog = false;
         bool verbose = false;
         std::vector<std::string> positional_args;
     };
@@ -77,6 +83,76 @@ namespace
         return value;
     }
 
+    std::optional<std::size_t> ParseUnsigned(std::string value)
+    {
+        value = Trim(value);
+        if (value.empty())
+        {
+            return std::nullopt;
+        }
+
+        try
+        {
+            std::size_t processed = 0;
+            const auto parsed = std::stoull(value, &processed, 10);
+            if (processed != value.size())
+            {
+                return std::nullopt;
+            }
+            return static_cast<std::size_t>(parsed);
+        }
+        catch (const std::exception&)
+        {
+            return std::nullopt;
+        }
+    }
+
+    std::optional<std::size_t> ParseSize(std::string value)
+    {
+        value = Trim(value);
+        if (value.empty())
+        {
+            return std::nullopt;
+        }
+
+        std::size_t split = value.size();
+        while (split > 0 && std::isalpha(static_cast<unsigned char>(value[split - 1])))
+        {
+            --split;
+        }
+
+        const auto base_value = ParseUnsigned(value.substr(0, split));
+        if (!base_value.has_value())
+        {
+            return std::nullopt;
+        }
+
+        const std::string suffix = ToLower(value.substr(split));
+        std::size_t multiplier = 1;
+        if (suffix.empty() || suffix == "b")
+        {
+            multiplier = 1;
+        }
+        else if (suffix == "k" || suffix == "kb")
+        {
+            multiplier = 1024;
+        }
+        else if (suffix == "m" || suffix == "mb")
+        {
+            multiplier = 1024 * 1024;
+        }
+        else if (suffix == "g" || suffix == "gb")
+        {
+            multiplier = 1024 * 1024 * 1024ULL;
+        }
+        else
+        {
+            return std::nullopt;
+        }
+
+        return base_value.value() * multiplier;
+    }
+
     std::string Narrow(const char8_t* value)
     {
         if (value == nullptr)
@@ -96,11 +172,14 @@ namespace
         app.set_help_flag("-h,--help", "Show this help message");
         app.add_flag("-V,--version", options.show_version, "Show application name and version banner");
         app.add_flag("-d,--daemon", options.daemon, "Run in daemon mode");
+        app.add_flag("--syslog", options.syslog, "Enable syslog sink");
         app.add_flag("-v,--verbose", options.verbose, "Enable verbose startup logs");
         app.add_option("-c,--config", config_path_option, "Load the specified configuration file");
         app.add_option("--log-file", log_file_option, "Override log file path");
         app.add_option("--log-level", options.log_level, "Override log level")
             ->check(CLI::IsMember(log_levels, CLI::ignore_case));
+        app.add_option("--log-max-size", options.log_max_size, "Override rotating log max size in bytes");
+        app.add_option("--log-max-files", options.log_max_files, "Override rotating log file count");
         app.add_option("args", options.positional_args, "Positional arguments")->expected(0, -1);
         app.positionals_at_end(true);
 
@@ -190,6 +269,50 @@ namespace
             context.log_file = it->second;
         }
 
+        if (const auto it = context.settings.find("log.console"); it != context.settings.end())
+        {
+            const auto value = ParseBool(it->second);
+            if (!value.has_value())
+            {
+                std::cerr << "invalid log.console value: " << it->second << std::endl;
+                return false;
+            }
+            context.log_to_console = value.value();
+        }
+
+        if (const auto it = context.settings.find("log.syslog"); it != context.settings.end())
+        {
+            const auto value = ParseBool(it->second);
+            if (!value.has_value())
+            {
+                std::cerr << "invalid log.syslog value: " << it->second << std::endl;
+                return false;
+            }
+            context.log_to_syslog = value.value();
+        }
+
+        if (const auto it = context.settings.find("log.rotate.max_size"); it != context.settings.end())
+        {
+            const auto value = ParseSize(it->second);
+            if (!value.has_value())
+            {
+                std::cerr << "invalid log.rotate.max_size value: " << it->second << std::endl;
+                return false;
+            }
+            context.log_max_size = value.value();
+        }
+
+        if (const auto it = context.settings.find("log.rotate.max_files"); it != context.settings.end())
+        {
+            const auto value = ParseUnsigned(it->second);
+            if (!value.has_value() || value.value() == 0)
+            {
+                std::cerr << "invalid log.rotate.max_files value: " << it->second << std::endl;
+                return false;
+            }
+            context.log_max_files = value.value();
+        }
+
         if (const auto it = context.settings.find("runtime.daemon"); it != context.settings.end())
         {
             const auto daemon = ParseBool(it->second);
@@ -268,9 +391,13 @@ namespace
         try
         {
             std::vector<spdlog::sink_ptr> sinks;
-            auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-            console_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%n] %v");
-            sinks.push_back(console_sink);
+
+            if (context.log_to_console)
+            {
+                auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+                console_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%n] %v");
+                sinks.push_back(console_sink);
+            }
 
             if (!context.log_file.empty())
             {
@@ -280,14 +407,37 @@ namespace
                     std::filesystem::create_directories(log_path.parent_path());
                 }
 
-                auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(context.log_file, true);
+                auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
+                    context.log_file,
+                    context.log_max_size,
+                    context.log_max_files,
+                    true);
                 file_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [%n] %v");
                 sinks.push_back(file_sink);
             }
 
+#ifndef _WIN32
+            if (context.log_to_syslog)
+            {
+                auto syslog_sink = std::make_shared<spdlog::sinks::syslog_sink_mt>(
+                    application_name,
+                    0,
+                    LOG_USER,
+                    true);
+                syslog_sink->set_pattern("[%l] [%n] %v");
+                sinks.push_back(syslog_sink);
+            }
+#endif
+
+            if (sinks.empty())
+            {
+                std::cerr << "no log sinks enabled" << std::endl;
+                return false;
+            }
+
             auto logger = std::make_shared<spdlog::logger>(application_name, sinks.begin(), sinks.end());
             logger->set_level(level.value());
-            logger->flush_on(level.value());
+            logger->flush_on(spdlog::level::err);
             spdlog::set_default_logger(logger);
             spdlog::set_level(level.value());
             return true;
@@ -362,6 +512,24 @@ int Loader::Run(int argc, char* argv[])
         context.settings["runtime.daemon"] = "true";
     }
 
+    if (options.syslog)
+    {
+        context.log_to_syslog = true;
+        context.settings["log.syslog"] = "true";
+    }
+
+    if (options.log_max_size != 0)
+    {
+        context.log_max_size = options.log_max_size;
+        context.settings["log.rotate.max_size"] = std::to_string(options.log_max_size);
+    }
+
+    if (options.log_max_files != 0)
+    {
+        context.log_max_files = options.log_max_files;
+        context.settings["log.rotate.max_files"] = std::to_string(options.log_max_files);
+    }
+
     context.verbose = options.verbose;
 
     if (!SetupLogging(application_name, context))
@@ -381,6 +549,9 @@ int Loader::Run(int argc, char* argv[])
             spdlog::info("writing logs to: {}", context.log_file);
         }
         spdlog::info("log level: {}", context.log_level);
+        spdlog::info("log rotation: max_size={} max_files={}", context.log_max_size, context.log_max_files);
+        spdlog::info("console logging: {}", context.log_to_console ? "enabled" : "disabled");
+        spdlog::info("syslog logging: {}", context.log_to_syslog ? "enabled" : "disabled");
         spdlog::info("daemon mode: {}", context.daemon ? "enabled" : "disabled");
     }
 

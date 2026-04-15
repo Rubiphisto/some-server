@@ -12,7 +12,11 @@ struct ApplicationContext
     std::string config_path;
     std::string log_file;
     std::string log_level = "info";
+    std::size_t log_max_size = 10 * 1024 * 1024;
+    std::size_t log_max_files = 5;
     bool daemon = false;
+    bool log_to_console = true;
+    bool log_to_syslog = false;
     bool verbose = false;
     std::vector<std::string> arguments;
     std::unordered_map<std::string, std::string> settings;
