@@ -15,6 +15,7 @@ include(FetchContent)
 set(SERVER_BINARY_FOLDER "${CMAKE_BINARY_DIR}")
 
 option(USE_SYSTEM_CLI11 "Use a preinstalled CLI11 package" OFF)
+option(USE_SYSTEM_SPDLOG "Use a preinstalled spdlog package" OFF)
 
 if (USE_SYSTEM_CLI11)
     find_package(CLI11 CONFIG REQUIRED)
@@ -26,6 +27,18 @@ else ()
             GIT_TAG v2.6.2
     )
     FetchContent_MakeAvailable(cli11_proj)
+endif ()
+
+if (USE_SYSTEM_SPDLOG)
+    find_package(spdlog CONFIG REQUIRED)
+else ()
+    FetchContent_Declare(
+            spdlog_proj
+            QUIET
+            GIT_REPOSITORY https://github.com/gabime/spdlog.git
+            GIT_TAG v1.16.0
+    )
+    FetchContent_MakeAvailable(spdlog_proj)
 endif ()
 
 set(CMAKE_MODULE_PATH

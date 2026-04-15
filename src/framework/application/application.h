@@ -10,6 +10,7 @@ struct ApplicationContext
 {
     std::string executable_path;
     std::string config_path;
+    std::string log_file;
     std::string log_level = "info";
     bool daemon = false;
     bool verbose = false;

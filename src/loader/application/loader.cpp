@@ -1,6 +1,11 @@
 #include "loader.h"
 
 #include <CLI/CLI.hpp>
+#include <spdlog/logger.h>
+#include <spdlog/pattern_formatter.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 
 #include <cctype>
 #include <filesystem>
@@ -22,6 +27,7 @@ namespace
     struct StartupOptions
     {
         std::string config_path;
+        std::string log_file;
         std::string log_level;
         bool config_path_explicit = false;
         bool show_version = false;
@@ -62,6 +68,15 @@ namespace
         return std::nullopt;
     }
 
+    std::string ToLower(std::string value)
+    {
+        for (char& ch : value)
+        {
+            ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+        }
+        return value;
+    }
+
     std::string Narrow(const char8_t* value)
     {
         if (value == nullptr)
@@ -75,6 +90,7 @@ namespace
     {
         CLI::App app{application_name + " startup loader"};
         std::string config_path_option;
+        std::string log_file_option;
         const std::vector<std::string> log_levels{"trace", "debug", "info", "warn", "error", "fatal"};
 
         app.set_help_flag("-h,--help", "Show this help message");
@@ -82,6 +98,7 @@ namespace
         app.add_flag("-d,--daemon", options.daemon, "Run in daemon mode");
         app.add_flag("-v,--verbose", options.verbose, "Enable verbose startup logs");
         app.add_option("-c,--config", config_path_option, "Load the specified configuration file");
+        app.add_option("--log-file", log_file_option, "Override log file path");
         app.add_option("--log-level", options.log_level, "Override log level")
             ->check(CLI::IsMember(log_levels, CLI::ignore_case));
         app.add_option("args", options.positional_args, "Positional arguments")->expected(0, -1);
@@ -101,6 +118,11 @@ namespace
         {
             options.config_path = std::move(config_path_option);
             options.config_path_explicit = true;
+        }
+
+        if (!log_file_option.empty())
+        {
+            options.log_file = std::move(log_file_option);
         }
 
         return ParseResult::ok;
@@ -163,6 +185,11 @@ namespace
             context.log_level = it->second;
         }
 
+        if (const auto it = context.settings.find("log.file"); it != context.settings.end() && !it->second.empty())
+        {
+            context.log_file = it->second;
+        }
+
         if (const auto it = context.settings.find("runtime.daemon"); it != context.settings.end())
         {
             const auto daemon = ParseBool(it->second);
@@ -185,6 +212,91 @@ namespace
         }
 
         return (std::filesystem::path("conf") / (Narrow(application.GetName()) + ".conf")).string();
+    }
+
+    std::string ResolveLogFilePath(const StartupOptions& options, const IApplication& application)
+    {
+        if (!options.log_file.empty())
+        {
+            return options.log_file;
+        }
+
+        return (std::filesystem::path("logs") / (Narrow(application.GetName()) + ".log")).string();
+    }
+
+    std::optional<spdlog::level::level_enum> ToSpdlogLevel(std::string level)
+    {
+        level = ToLower(std::move(level));
+
+        if (level == "trace")
+        {
+            return spdlog::level::trace;
+        }
+        if (level == "debug")
+        {
+            return spdlog::level::debug;
+        }
+        if (level == "info")
+        {
+            return spdlog::level::info;
+        }
+        if (level == "warn" || level == "warning")
+        {
+            return spdlog::level::warn;
+        }
+        if (level == "error")
+        {
+            return spdlog::level::err;
+        }
+        if (level == "fatal" || level == "critical")
+        {
+            return spdlog::level::critical;
+        }
+
+        return std::nullopt;
+    }
+
+    bool SetupLogging(const std::string& application_name, ApplicationContext& context)
+    {
+        const auto level = ToSpdlogLevel(context.log_level);
+        if (!level.has_value())
+        {
+            std::cerr << "invalid log level: " << context.log_level << std::endl;
+            return false;
+        }
+
+        try
+        {
+            std::vector<spdlog::sink_ptr> sinks;
+            auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+            console_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%n] %v");
+            sinks.push_back(console_sink);
+
+            if (!context.log_file.empty())
+            {
+                const auto log_path = std::filesystem::path(context.log_file);
+                if (log_path.has_parent_path())
+                {
+                    std::filesystem::create_directories(log_path.parent_path());
+                }
+
+                auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(context.log_file, true);
+                file_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [%n] %v");
+                sinks.push_back(file_sink);
+            }
+
+            auto logger = std::make_shared<spdlog::logger>(application_name, sinks.begin(), sinks.end());
+            logger->set_level(level.value());
+            logger->flush_on(level.value());
+            spdlog::set_default_logger(logger);
+            spdlog::set_level(level.value());
+            return true;
+        }
+        catch (const spdlog::spdlog_ex& ex)
+        {
+            std::cerr << "failed to initialize logging: " << ex.what() << std::endl;
+            return false;
+        }
     }
 }
 
@@ -224,6 +336,7 @@ int Loader::Run(int argc, char* argv[])
     ApplicationContext context;
     context.executable_path = argc > 0 ? argv[0] : "";
     context.config_path = ResolveConfigPath(options, *app);
+    context.log_file = ResolveLogFilePath(options, *app);
     context.arguments = std::move(options.positional_args);
 
     if (!LoadConfiguration(context, options.config_path_explicit))
@@ -237,6 +350,12 @@ int Loader::Run(int argc, char* argv[])
         context.settings["log.level"] = options.log_level;
     }
 
+    if (!options.log_file.empty())
+    {
+        context.log_file = options.log_file;
+        context.settings["log.file"] = options.log_file;
+    }
+
     if (options.daemon)
     {
         context.daemon = true;
@@ -245,22 +364,33 @@ int Loader::Run(int argc, char* argv[])
 
     context.verbose = options.verbose;
 
-    if (context.verbose)
-    {
-        std::cout << "starting " << application_name << std::endl;
-        if (!context.config_path.empty())
-        {
-            std::cout << "using config: " << context.config_path << std::endl;
-        }
-        std::cout << "log level: " << context.log_level << std::endl;
-        std::cout << "daemon mode: " << (context.daemon ? "enabled" : "disabled") << std::endl;
-    }
-
-    if (!Initialize(*app, context))
+    if (!SetupLogging(application_name, context))
     {
         return 1;
     }
 
+    if (context.verbose)
+    {
+        spdlog::info("starting {}", application_name);
+        if (!context.config_path.empty())
+        {
+            spdlog::info("using config: {}", context.config_path);
+        }
+        if (!context.log_file.empty())
+        {
+            spdlog::info("writing logs to: {}", context.log_file);
+        }
+        spdlog::info("log level: {}", context.log_level);
+        spdlog::info("daemon mode: {}", context.daemon ? "enabled" : "disabled");
+    }
+
+    if (!Initialize(*app, context))
+    {
+        spdlog::shutdown();
+        return 1;
+    }
+
+    spdlog::shutdown();
     return 0;
 }
 
@@ -268,7 +398,7 @@ bool Loader::Initialize(IApplication& app, const ApplicationContext& context) co
 {
     if (!app.Configure(context))
     {
-        std::cerr << "application configure failed" << std::endl;
+        spdlog::error("application configure failed");
         return false;
     }
 
