@@ -9,10 +9,15 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 #ifndef _WIN32
+#include <fcntl.h>
 #include <spdlog/sinks/syslog_sink.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #endif
 
 #include <cctype>
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -32,6 +37,7 @@ namespace
     struct StartupOptions
     {
         std::string config_path;
+        std::string pid_file;
         std::string log_file;
         std::string error_log_file;
         std::string log_level;
@@ -49,6 +55,20 @@ namespace
         bool disable_error_log = false;
         bool verbose = false;
         std::vector<std::string> positional_args;
+    };
+
+    struct PidFileGuard
+    {
+        std::string path;
+
+        ~PidFileGuard()
+        {
+            if (!path.empty())
+            {
+                std::error_code ignored;
+                std::filesystem::remove(path, ignored);
+            }
+        }
     };
 
     std::string Trim(std::string_view value)
@@ -175,6 +195,7 @@ namespace
     {
         CLI::App app{application_name + " startup loader"};
         std::string config_path_option;
+        std::string pid_file_option;
         std::string log_file_option;
         std::string error_log_file_option;
         const std::vector<std::string> log_levels{"trace", "debug", "info", "warn", "error", "fatal"};
@@ -189,6 +210,7 @@ namespace
         app.add_flag("--no-error-log", options.disable_error_log, "Disable the dedicated error log sink");
         app.add_flag("-v,--verbose", options.verbose, "Enable verbose startup logs");
         app.add_option("-c,--config", config_path_option, "Load the specified configuration file");
+        app.add_option("--pid-file", pid_file_option, "Write the running process id to this file");
         app.add_option("--log-file", log_file_option, "Override log file path");
         app.add_option("--error-log-file", error_log_file_option, "Write error logs to a separate file");
         app.add_option("--log-level", options.log_level, "Override log level")
@@ -223,6 +245,11 @@ namespace
         if (!log_file_option.empty())
         {
             options.log_file = std::move(log_file_option);
+        }
+
+        if (!pid_file_option.empty())
+        {
+            options.pid_file = std::move(pid_file_option);
         }
 
         if (!error_log_file_option.empty())
@@ -293,6 +320,11 @@ namespace
         if (const auto it = context.settings.find("log.file"); it != context.settings.end() && !it->second.empty())
         {
             context.log_file = it->second;
+        }
+
+        if (const auto it = context.settings.find("runtime.pid_file"); it != context.settings.end() && !it->second.empty())
+        {
+            context.pid_file = it->second;
         }
 
         if (const auto it = context.settings.find("log.error_file"); it != context.settings.end())
@@ -409,6 +441,16 @@ namespace
         }
 
         return (std::filesystem::path("logs") / (Narrow(application.GetName()) + ".log")).string();
+    }
+
+    std::string ResolvePidFilePath(const StartupOptions& options, const IApplication& application)
+    {
+        if (!options.pid_file.empty())
+        {
+            return options.pid_file;
+        }
+
+        return (std::filesystem::path("run") / (Narrow(application.GetName()) + ".pid")).string();
     }
 
     std::string ResolveErrorLogFilePath(const StartupOptions& options, const IApplication& application)
@@ -549,6 +591,90 @@ namespace
             return false;
         }
     }
+
+#ifndef _WIN32
+    bool CreatePidFile(const std::string& pid_file)
+    {
+        if (pid_file.empty())
+        {
+            return true;
+        }
+
+        const auto pid_path = std::filesystem::path(pid_file);
+        if (pid_path.has_parent_path())
+        {
+            std::filesystem::create_directories(pid_path.parent_path());
+        }
+
+        int fd = ::open(pid_file.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (fd == -1)
+        {
+            std::perror("open pid file");
+            return false;
+        }
+
+        const std::string pid_text = std::to_string(::getpid());
+        const auto written = ::write(fd, pid_text.c_str(), pid_text.size());
+        ::close(fd);
+        if (written < 0 || static_cast<std::size_t>(written) != pid_text.size())
+        {
+            std::perror("write pid file");
+            return false;
+        }
+
+        return true;
+    }
+
+    bool DaemonizeProcess()
+    {
+        const pid_t first_fork = ::fork();
+        if (first_fork < 0)
+        {
+            std::perror("fork");
+            return false;
+        }
+
+        if (first_fork > 0)
+        {
+            std::exit(0);
+        }
+
+        if (::setsid() < 0)
+        {
+            std::perror("setsid");
+            return false;
+        }
+
+        const pid_t second_fork = ::fork();
+        if (second_fork < 0)
+        {
+            std::perror("fork");
+            return false;
+        }
+
+        if (second_fork > 0)
+        {
+            std::exit(0);
+        }
+
+        const int null_fd = ::open("/dev/null", O_RDWR);
+        if (null_fd < 0)
+        {
+            std::perror("open /dev/null");
+            return false;
+        }
+
+        ::dup2(null_fd, STDIN_FILENO);
+        ::dup2(null_fd, STDOUT_FILENO);
+        ::dup2(null_fd, STDERR_FILENO);
+        if (null_fd > STDERR_FILENO)
+        {
+            ::close(null_fd);
+        }
+
+        return true;
+    }
+#endif
 }
 
 Loader::Loader(IApplicationFactory& factory)
@@ -587,6 +713,7 @@ int Loader::Run(int argc, char* argv[])
     ApplicationContext context;
     context.executable_path = argc > 0 ? argv[0] : "";
     context.config_path = ResolveConfigPath(options, *app);
+    context.pid_file = ResolvePidFilePath(options, *app);
     context.log_file = ResolveLogFilePath(options, *app);
     context.error_log_file = ResolveErrorLogFilePath(options, *app);
     context.arguments = std::move(options.positional_args);
@@ -600,6 +727,12 @@ int Loader::Run(int argc, char* argv[])
     {
         context.log_level = options.log_level;
         context.settings["log.level"] = options.log_level;
+    }
+
+    if (!options.pid_file.empty())
+    {
+        context.pid_file = options.pid_file;
+        context.settings["runtime.pid_file"] = options.pid_file;
     }
 
     if (!options.log_file.empty())
@@ -618,6 +751,8 @@ int Loader::Run(int argc, char* argv[])
     {
         context.daemon = true;
         context.settings["runtime.daemon"] = "true";
+        context.log_to_console = false;
+        context.settings["log.console"] = "false";
     }
 
     if (options.syslog)
@@ -676,6 +811,25 @@ int Loader::Run(int argc, char* argv[])
 
     context.verbose = options.verbose;
 
+#ifndef _WIN32
+    if (context.daemon && !DaemonizeProcess())
+    {
+        return 1;
+    }
+#endif
+
+    PidFileGuard pid_file_guard;
+    if (!context.pid_file.empty())
+    {
+#ifndef _WIN32
+        if (!CreatePidFile(context.pid_file))
+        {
+            return 1;
+        }
+#endif
+        pid_file_guard.path = context.pid_file;
+    }
+
     if (!SetupLogging(application_name, context))
     {
         return 1;
@@ -687,6 +841,10 @@ int Loader::Run(int argc, char* argv[])
         if (!context.config_path.empty())
         {
             spdlog::info("using config: {}", context.config_path);
+        }
+        if (!context.pid_file.empty())
+        {
+            spdlog::info("writing pid file to: {}", context.pid_file);
         }
         if (!context.log_file.empty())
         {
