@@ -3,9 +3,16 @@
 #include "application.h"
 #include "../loader/loader.h"
 
+namespace
+{
+    IApplication* CreateApplication()
+    {
+        return new Application();
+    }
+}
+
 int32_t main(int32_t argc, char* argv[])
 {
-    ApplicationFactory factory;
-    Loader loader(factory);
+    Loader loader([]() { return CreateApplication(); });
     return loader.Run(argc, argv);
 }

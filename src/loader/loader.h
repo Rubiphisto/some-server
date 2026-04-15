@@ -1,15 +1,17 @@
 #pragma once
 
+#include <functional>
+
 #include "framework/application/application.h"
 
 class Loader
 {
 public:
-    explicit Loader(IApplicationFactory& factory);
+    explicit Loader(ApplicationFactory factory);
 
     int Run(int argc, char* argv[]);
 
 private:
     bool Initialize(IApplication& app, const ApplicationContext& context) const;
-    IApplicationFactory& mFactory;
+    ApplicationFactory mFactory;
 };

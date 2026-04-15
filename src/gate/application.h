@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "framework/application/application.h"
 
 class Application : public IApplication
@@ -16,10 +14,4 @@ public:
 
 private:
     ApplicationContext mContext;
-};
-
-class ApplicationFactory : public IApplicationFactory
-{
-public:
-    std::unique_ptr<IApplication> Create() override;
 };

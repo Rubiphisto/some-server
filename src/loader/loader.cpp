@@ -1,4 +1,4 @@
-#include "application/loader.h"
+#include "loader.h"
 
 #include <CLI/CLI.hpp>
 #include <spdlog/logger.h>
@@ -677,14 +677,14 @@ namespace
 #endif
 }
 
-Loader::Loader(IApplicationFactory& factory)
-    : mFactory(factory)
+Loader::Loader(ApplicationFactory factory)
+    : mFactory(std::move(factory))
 {
 }
 
 int Loader::Run(int argc, char* argv[])
 {
-    auto app = mFactory.Create();
+    auto app = std::unique_ptr<IApplication>(mFactory ? mFactory() : nullptr);
     if (!app)
     {
         std::cerr << "failed to create application" << std::endl;

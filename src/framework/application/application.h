@@ -1,6 +1,6 @@
 #pragma once
 
-#include <memory>
+#include <functional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -45,9 +45,4 @@ public:
     virtual void Unload() = 0;
 };
 
-class IApplicationFactory
-{
-public:
-    virtual ~IApplicationFactory() = default;
-    virtual std::unique_ptr<IApplication> Create() = 0;
-};
+using ApplicationFactory = std::function<IApplication*()>;
