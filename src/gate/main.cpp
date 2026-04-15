@@ -1,7 +1,7 @@
 #include "pch.h"
 
 #include "application.h"
-#include "loader/application/loader.h"
+#include "../loader/loader.h"
 
 int32_t main(int32_t argc, char* argv[])
 {
