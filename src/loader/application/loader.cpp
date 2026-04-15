@@ -44,6 +44,9 @@ namespace
         bool show_version = false;
         bool daemon = false;
         bool syslog = false;
+        bool disable_console = false;
+        bool disable_file_log = false;
+        bool disable_error_log = false;
         bool verbose = false;
         std::vector<std::string> positional_args;
     };
@@ -181,6 +184,9 @@ namespace
         app.add_flag("-V,--version", options.show_version, "Show application name and version banner");
         app.add_flag("-d,--daemon", options.daemon, "Run in daemon mode");
         app.add_flag("--syslog", options.syslog, "Enable syslog sink");
+        app.add_flag("--no-console", options.disable_console, "Disable console logging");
+        app.add_flag("--no-file-log", options.disable_file_log, "Disable the main log file sink");
+        app.add_flag("--no-error-log", options.disable_error_log, "Disable the dedicated error log sink");
         app.add_flag("-v,--verbose", options.verbose, "Enable verbose startup logs");
         app.add_option("-c,--config", config_path_option, "Load the specified configuration file");
         app.add_option("--log-file", log_file_option, "Override log file path");
@@ -618,6 +624,24 @@ int Loader::Run(int argc, char* argv[])
     {
         context.log_to_syslog = true;
         context.settings["log.syslog"] = "true";
+    }
+
+    if (options.disable_console)
+    {
+        context.log_to_console = false;
+        context.settings["log.console"] = "false";
+    }
+
+    if (options.disable_file_log)
+    {
+        context.log_file.clear();
+        context.settings["log.file"] = "";
+    }
+
+    if (options.disable_error_log)
+    {
+        context.error_log_file.clear();
+        context.settings["log.error_file"] = "";
     }
 
     if (options.log_max_size != 0)
