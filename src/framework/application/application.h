@@ -11,9 +11,13 @@ struct ApplicationContext
     std::string executable_path;
     std::string config_path;
     std::string log_file;
+    std::string error_log_file;
     std::string log_level = "info";
+    std::string log_rotation_mode = "size";
     std::size_t log_max_size = 10 * 1024 * 1024;
     std::size_t log_max_files = 5;
+    std::size_t log_rotate_hour = 0;
+    std::size_t log_rotate_minute = 0;
     bool daemon = false;
     bool log_to_console = true;
     bool log_to_syslog = false;

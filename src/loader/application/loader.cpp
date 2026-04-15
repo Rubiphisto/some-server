@@ -3,6 +3,8 @@
 #include <CLI/CLI.hpp>
 #include <spdlog/logger.h>
 #include <spdlog/pattern_formatter.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/daily_file_sink.h>
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
@@ -31,9 +33,13 @@ namespace
     {
         std::string config_path;
         std::string log_file;
+        std::string error_log_file;
         std::string log_level;
+        std::string log_rotation_mode;
         std::size_t log_max_size = 0;
         std::size_t log_max_files = 0;
+        std::size_t log_rotate_hour = 0;
+        std::size_t log_rotate_minute = 0;
         bool config_path_explicit = false;
         bool show_version = false;
         bool daemon = false;
@@ -167,7 +173,9 @@ namespace
         CLI::App app{application_name + " startup loader"};
         std::string config_path_option;
         std::string log_file_option;
+        std::string error_log_file_option;
         const std::vector<std::string> log_levels{"trace", "debug", "info", "warn", "error", "fatal"};
+        const std::vector<std::string> rotation_modes{"size", "daily"};
 
         app.set_help_flag("-h,--help", "Show this help message");
         app.add_flag("-V,--version", options.show_version, "Show application name and version banner");
@@ -176,10 +184,17 @@ namespace
         app.add_flag("-v,--verbose", options.verbose, "Enable verbose startup logs");
         app.add_option("-c,--config", config_path_option, "Load the specified configuration file");
         app.add_option("--log-file", log_file_option, "Override log file path");
+        app.add_option("--error-log-file", error_log_file_option, "Write error logs to a separate file");
         app.add_option("--log-level", options.log_level, "Override log level")
             ->check(CLI::IsMember(log_levels, CLI::ignore_case));
+        app.add_option("--log-rotate-mode", options.log_rotation_mode, "Select log rotation mode")
+            ->check(CLI::IsMember(rotation_modes, CLI::ignore_case));
         app.add_option("--log-max-size", options.log_max_size, "Override rotating log max size in bytes");
         app.add_option("--log-max-files", options.log_max_files, "Override rotating log file count");
+        app.add_option("--log-rotate-hour", options.log_rotate_hour, "Daily rotation hour (0-23)")
+            ->check(CLI::Range(0, 23));
+        app.add_option("--log-rotate-minute", options.log_rotate_minute, "Daily rotation minute (0-59)")
+            ->check(CLI::Range(0, 59));
         app.add_option("args", options.positional_args, "Positional arguments")->expected(0, -1);
         app.positionals_at_end(true);
 
@@ -202,6 +217,11 @@ namespace
         if (!log_file_option.empty())
         {
             options.log_file = std::move(log_file_option);
+        }
+
+        if (!error_log_file_option.empty())
+        {
+            options.error_log_file = std::move(error_log_file_option);
         }
 
         return ParseResult::ok;
@@ -269,6 +289,22 @@ namespace
             context.log_file = it->second;
         }
 
+        if (const auto it = context.settings.find("log.error_file"); it != context.settings.end())
+        {
+            context.error_log_file = it->second;
+        }
+
+        if (const auto it = context.settings.find("log.rotate.mode"); it != context.settings.end() && !it->second.empty())
+        {
+            const auto mode = ToLower(it->second);
+            if (mode != "size" && mode != "daily")
+            {
+                std::cerr << "invalid log.rotate.mode value: " << it->second << std::endl;
+                return false;
+            }
+            context.log_rotation_mode = mode;
+        }
+
         if (const auto it = context.settings.find("log.console"); it != context.settings.end())
         {
             const auto value = ParseBool(it->second);
@@ -313,6 +349,28 @@ namespace
             context.log_max_files = value.value();
         }
 
+        if (const auto it = context.settings.find("log.rotate.daily_hour"); it != context.settings.end())
+        {
+            const auto value = ParseUnsigned(it->second);
+            if (!value.has_value() || value.value() > 23)
+            {
+                std::cerr << "invalid log.rotate.daily_hour value: " << it->second << std::endl;
+                return false;
+            }
+            context.log_rotate_hour = value.value();
+        }
+
+        if (const auto it = context.settings.find("log.rotate.daily_minute"); it != context.settings.end())
+        {
+            const auto value = ParseUnsigned(it->second);
+            if (!value.has_value() || value.value() > 59)
+            {
+                std::cerr << "invalid log.rotate.daily_minute value: " << it->second << std::endl;
+                return false;
+            }
+            context.log_rotate_minute = value.value();
+        }
+
         if (const auto it = context.settings.find("runtime.daemon"); it != context.settings.end())
         {
             const auto daemon = ParseBool(it->second);
@@ -345,6 +403,16 @@ namespace
         }
 
         return (std::filesystem::path("logs") / (Narrow(application.GetName()) + ".log")).string();
+    }
+
+    std::string ResolveErrorLogFilePath(const StartupOptions& options, const IApplication& application)
+    {
+        if (!options.error_log_file.empty())
+        {
+            return options.error_log_file;
+        }
+
+        return (std::filesystem::path("logs") / (Narrow(application.GetName()) + ".error.log")).string();
     }
 
     std::optional<spdlog::level::level_enum> ToSpdlogLevel(std::string level)
@@ -407,13 +475,40 @@ namespace
                     std::filesystem::create_directories(log_path.parent_path());
                 }
 
-                auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-                    context.log_file,
-                    context.log_max_size,
-                    context.log_max_files,
-                    true);
+                spdlog::sink_ptr file_sink;
+                if (context.log_rotation_mode == "daily")
+                {
+                    file_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(
+                        context.log_file,
+                        static_cast<int>(context.log_rotate_hour),
+                        static_cast<int>(context.log_rotate_minute),
+                        false,
+                        static_cast<uint16_t>(context.log_max_files));
+                }
+                else
+                {
+                    file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
+                        context.log_file,
+                        context.log_max_size,
+                        context.log_max_files,
+                        true);
+                }
                 file_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [%n] %v");
                 sinks.push_back(file_sink);
+            }
+
+            if (!context.error_log_file.empty())
+            {
+                const auto error_log_path = std::filesystem::path(context.error_log_file);
+                if (error_log_path.has_parent_path())
+                {
+                    std::filesystem::create_directories(error_log_path.parent_path());
+                }
+
+                auto error_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(context.error_log_file, true);
+                error_sink->set_level(spdlog::level::err);
+                error_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [%n] %v");
+                sinks.push_back(error_sink);
             }
 
 #ifndef _WIN32
@@ -487,6 +582,7 @@ int Loader::Run(int argc, char* argv[])
     context.executable_path = argc > 0 ? argv[0] : "";
     context.config_path = ResolveConfigPath(options, *app);
     context.log_file = ResolveLogFilePath(options, *app);
+    context.error_log_file = ResolveErrorLogFilePath(options, *app);
     context.arguments = std::move(options.positional_args);
 
     if (!LoadConfiguration(context, options.config_path_explicit))
@@ -504,6 +600,12 @@ int Loader::Run(int argc, char* argv[])
     {
         context.log_file = options.log_file;
         context.settings["log.file"] = options.log_file;
+    }
+
+    if (!options.error_log_file.empty())
+    {
+        context.error_log_file = options.error_log_file;
+        context.settings["log.error_file"] = options.error_log_file;
     }
 
     if (options.daemon)
@@ -530,6 +632,24 @@ int Loader::Run(int argc, char* argv[])
         context.settings["log.rotate.max_files"] = std::to_string(options.log_max_files);
     }
 
+    if (!options.log_rotation_mode.empty())
+    {
+        context.log_rotation_mode = ToLower(options.log_rotation_mode);
+        context.settings["log.rotate.mode"] = context.log_rotation_mode;
+    }
+
+    if (options.log_rotate_hour != 0 || context.settings.contains("log.rotate.daily_hour"))
+    {
+        context.log_rotate_hour = options.log_rotate_hour;
+        context.settings["log.rotate.daily_hour"] = std::to_string(options.log_rotate_hour);
+    }
+
+    if (options.log_rotate_minute != 0 || context.settings.contains("log.rotate.daily_minute"))
+    {
+        context.log_rotate_minute = options.log_rotate_minute;
+        context.settings["log.rotate.daily_minute"] = std::to_string(options.log_rotate_minute);
+    }
+
     context.verbose = options.verbose;
 
     if (!SetupLogging(application_name, context))
@@ -548,8 +668,23 @@ int Loader::Run(int argc, char* argv[])
         {
             spdlog::info("writing logs to: {}", context.log_file);
         }
+        if (!context.error_log_file.empty())
+        {
+            spdlog::info("writing error logs to: {}", context.error_log_file);
+        }
         spdlog::info("log level: {}", context.log_level);
-        spdlog::info("log rotation: max_size={} max_files={}", context.log_max_size, context.log_max_files);
+        spdlog::info("log rotation mode: {}", context.log_rotation_mode);
+        if (context.log_rotation_mode == "daily")
+        {
+            spdlog::info("daily rotation time: {:02d}:{:02d} max_files={}",
+                         static_cast<int>(context.log_rotate_hour),
+                         static_cast<int>(context.log_rotate_minute),
+                         context.log_max_files);
+        }
+        else
+        {
+            spdlog::info("log rotation: max_size={} max_files={}", context.log_max_size, context.log_max_files);
+        }
         spdlog::info("console logging: {}", context.log_to_console ? "enabled" : "disabled");
         spdlog::info("syslog logging: {}", context.log_to_syslog ? "enabled" : "disabled");
         spdlog::info("daemon mode: {}", context.daemon ? "enabled" : "disabled");
