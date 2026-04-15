@@ -46,3 +46,4 @@ public:
 };
 
 using ApplicationFactory = std::function<IApplication*()>;
+using ApplicationDestroyer = std::function<void(IApplication*)>;

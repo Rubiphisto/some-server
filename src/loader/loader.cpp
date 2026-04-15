@@ -677,14 +677,23 @@ namespace
 #endif
 }
 
-Loader::Loader(ApplicationFactory factory)
+Loader::Loader(ApplicationFactory factory, ApplicationDestroyer destroyer)
     : mFactory(std::move(factory))
+    , mDestroyer(std::move(destroyer))
 {
 }
 
 int Loader::Run(int argc, char* argv[])
 {
-    auto app = std::unique_ptr<IApplication>(mFactory ? mFactory() : nullptr);
+    ApplicationDestroyer destroyer = mDestroyer;
+    if (!destroyer)
+    {
+        destroyer = [](IApplication* app) { delete app; };
+    }
+
+    auto app = std::unique_ptr<IApplication, ApplicationDestroyer>(
+        mFactory ? mFactory() : nullptr,
+        std::move(destroyer));
     if (!app)
     {
         std::cerr << "failed to create application" << std::endl;

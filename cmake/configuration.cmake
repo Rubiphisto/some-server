@@ -39,6 +39,7 @@ function(some_library LIBRARYNAME)
 
     add_library(${LIBRARYNAME} STATIC "")
     some_configure_common(${LIBRARYNAME})
+    set_target_properties(${LIBRARYNAME} PROPERTIES LINKER_LANGUAGE CXX)
 
     # parameters
     set(SECTIONS_GROUP "^LIBS|DEFS$")
