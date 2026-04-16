@@ -2,30 +2,24 @@
 
 #include <spdlog/spdlog.h>
 
-bool Application::Configure(const ApplicationContext& context)
-{
-    mContext = context;
-    return true;
-}
-
 void Application::Load()
 {
     spdlog::info("Application::Configure(config={}, log_file={}, error_log_file={}, log_level={}, daemon={}, args={}, settings={})",
-                 mContext.config_path,
-                 mContext.log_file,
-                 mContext.error_log_file,
-                 mContext.log_level,
-                 mContext.daemon ? "true" : "false",
-                 mContext.arguments.size(),
-                 mContext.settings.size());
+                 Context().config_path,
+                 Context().log_file,
+                 Context().error_log_file,
+                 Context().log_level,
+                 Context().daemon ? "true" : "false",
+                 Context().arguments.size(),
+                 Context().settings.size());
     spdlog::debug("Application logging sinks: console={} syslog={} rotate_mode={} rotate_size={} rotate_files={} rotate_at={:02d}:{:02d}",
-                  mContext.log_to_console ? "true" : "false",
-                  mContext.log_to_syslog ? "true" : "false",
-                  mContext.log_rotation_mode,
-                  mContext.log_max_size,
-                  mContext.log_max_files,
-                  static_cast<int>(mContext.log_rotate_hour),
-                  static_cast<int>(mContext.log_rotate_minute));
+                  Context().log_to_console ? "true" : "false",
+                  Context().log_to_syslog ? "true" : "false",
+                  Context().log_rotation_mode,
+                  Context().log_max_size,
+                  Context().log_max_files,
+                  static_cast<int>(Context().log_rotate_hour),
+                  static_cast<int>(Context().log_rotate_minute));
     spdlog::info("Application::Load()");
 }
 

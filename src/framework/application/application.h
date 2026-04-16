@@ -43,3 +43,22 @@ public:
     virtual void Stop() = 0;
     virtual void Unload() = 0;
 };
+
+class ApplicationBase : public IApplication
+{
+public:
+    bool Configure(const ApplicationContext& context) override
+    {
+        mContext = context;
+        return OnConfigure();
+    }
+
+protected:
+    virtual bool OnConfigure() { return true; }
+
+    const ApplicationContext& Context() const { return mContext; }
+    ApplicationContext& Context() { return mContext; }
+
+private:
+    ApplicationContext mContext;
+};
