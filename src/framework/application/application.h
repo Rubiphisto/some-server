@@ -1,6 +1,5 @@
 #pragma once
 
-#include <functional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -44,6 +43,3 @@ public:
     virtual void Stop() = 0;
     virtual void Unload() = 0;
 };
-
-using ApplicationFactory = std::function<IApplication*()>;
-using ApplicationDestroyer = std::function<void(IApplication*)>;

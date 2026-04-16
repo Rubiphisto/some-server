@@ -7,20 +7,15 @@
 namespace
 {
     using ApplicationSingleton = Common::Singleton<Application>;
-
-    IApplication* CreateApplication()
-    {
-        return &ApplicationSingleton::Create();
-    }
-
-    void DestroyApplication(IApplication*)
-    {
-        ApplicationSingleton::Destroy();
-    }
 }
 
 int32_t main(int32_t argc, char* argv[])
 {
-    Loader loader([]() { return CreateApplication(); }, [](IApplication* app) { DestroyApplication(app); });
-    return loader.Run(argc, argv);
+    Application& app = ApplicationSingleton::Create();
+
+    Loader loader;
+    const int32_t exit_code = loader.Run(app, argc, argv);
+
+    ApplicationSingleton::Destroy();
+    return exit_code;
 }

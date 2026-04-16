@@ -14,8 +14,6 @@
 #include <cstdio>
 #include <filesystem>
 #include <iostream>
-#include <memory>
-#include <utility>
 
 namespace
 {
@@ -118,31 +116,10 @@ namespace
 #endif
 }
 
-Loader::Loader(ApplicationFactory factory, ApplicationDestroyer destroyer)
-    : mFactory(std::move(factory))
-    , mDestroyer(std::move(destroyer))
+int Loader::Run(IApplication& app, int argc, char* argv[])
 {
-}
-
-int Loader::Run(int argc, char* argv[])
-{
-    ApplicationDestroyer destroyer = mDestroyer;
-    if (!destroyer)
-    {
-        destroyer = [](IApplication* app) { delete app; };
-    }
-
-    auto app = std::unique_ptr<IApplication, ApplicationDestroyer>(
-        mFactory ? mFactory() : nullptr,
-        std::move(destroyer));
-    if (!app)
-    {
-        std::cerr << "failed to create application" << std::endl;
-        return 1;
-    }
-
     StartupOptions options;
-    const std::string application_name = Narrow(app->GetName());
+    const std::string application_name = Narrow(app.GetName());
     const ParseResult parse_result = ParseArguments(argc, argv, application_name, options);
     if (parse_result == ParseResult::exit_success)
     {
@@ -165,7 +142,7 @@ int Loader::Run(int argc, char* argv[])
     context.arguments = std::move(options.positional_args);
     context.verbose = options.verbose;
 
-    if (!ResolveConfiguration(context, options, *app))
+    if (!ResolveConfiguration(context, options, app))
     {
         return 1;
     }
@@ -231,7 +208,7 @@ int Loader::Run(int argc, char* argv[])
         spdlog::info("daemon mode: {}", context.daemon ? "enabled" : "disabled");
     }
 
-    if (!Initialize(*app, context))
+    if (!Initialize(app, context))
     {
         spdlog::shutdown();
         return 1;
