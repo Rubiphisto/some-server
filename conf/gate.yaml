@@ -1,0 +1,21 @@
+# gate default configuration
+listen:
+  host: 127.0.0.1
+  port: 9000
+
+log:
+  file: logs/gate.log
+  error_file: logs/gate.error.log
+  level: info
+  console: true
+  syslog: false
+  rotate:
+    mode: size
+    max_size: 10MB
+    max_files: 5
+    daily_hour: 0
+    daily_minute: 0
+
+runtime:
+  daemon: false
+  pid_file: run/gate.pid

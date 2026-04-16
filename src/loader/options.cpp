@@ -1,4 +1,4 @@
-#include "loader_options.h"
+#include "options.h"
 
 #include "framework/application/application.h"
 
@@ -38,7 +38,7 @@ ParseResult ParseArguments(int argc, char* argv[], const std::string& applicatio
     app.add_flag("--no-file-log", options.disable_file_log, "Disable the main log file sink");
     app.add_flag("--no-error-log", options.disable_error_log, "Disable the dedicated error log sink");
     app.add_flag("-v,--verbose", options.verbose, "Enable verbose startup logs");
-    app.add_option("-c,--config", config_path_option, "Load the specified configuration file");
+    app.add_option("-c,--config", config_path_option, "Load the specified YAML configuration file");
     app.add_option("--pid-file", pid_file_option, "Write the running process id to this file");
     app.add_option("--log-file", log_file_option, "Override log file path");
     app.add_option("--error-log-file", error_log_file_option, "Write error logs to a separate file");
@@ -46,12 +46,16 @@ ParseResult ParseArguments(int argc, char* argv[], const std::string& applicatio
         ->check(CLI::IsMember(kLogLevels, CLI::ignore_case));
     app.add_option("--log-rotate-mode", options.log_rotation_mode, "Select log rotation mode")
         ->check(CLI::IsMember(kRotationModes, CLI::ignore_case));
-    app.add_option("--log-max-size", options.log_max_size, "Override rotating log max size in bytes");
-    app.add_option("--log-max-files", options.log_max_files, "Override rotating log file count");
-    app.add_option("--log-rotate-hour", options.log_rotate_hour, "Daily rotation hour (0-23)")
-        ->check(CLI::Range(0, 23));
-    app.add_option("--log-rotate-minute", options.log_rotate_minute, "Daily rotation minute (0-59)")
-        ->check(CLI::Range(0, 59));
+    auto* log_max_size_option =
+        app.add_option("--log-max-size", options.log_max_size, "Override rotating log max size in bytes");
+    auto* log_max_files_option =
+        app.add_option("--log-max-files", options.log_max_files, "Override rotating log file count");
+    auto* log_rotate_hour_option =
+        app.add_option("--log-rotate-hour", options.log_rotate_hour, "Daily rotation hour (0-23)")
+            ->check(CLI::Range(0, 23));
+    auto* log_rotate_minute_option =
+        app.add_option("--log-rotate-minute", options.log_rotate_minute, "Daily rotation minute (0-59)")
+            ->check(CLI::Range(0, 59));
     app.add_option("args", options.positional_args, "Positional arguments")->expected(0, -1);
     app.positionals_at_end(true);
 
@@ -86,6 +90,11 @@ ParseResult ParseArguments(int argc, char* argv[], const std::string& applicatio
         options.error_log_file = std::move(error_log_file_option);
     }
 
+    options.log_max_size_explicit = log_max_size_option->count() > 0;
+    options.log_max_files_explicit = log_max_files_option->count() > 0;
+    options.log_rotate_hour_explicit = log_rotate_hour_option->count() > 0;
+    options.log_rotate_minute_explicit = log_rotate_minute_option->count() > 0;
+
     return ParseResult::ok;
 }
 
@@ -96,7 +105,7 @@ std::string ResolveConfigPath(const StartupOptions& options, const IApplication&
         return options.config_path;
     }
 
-    return (std::filesystem::path("conf") / (Narrow(application.GetName()) + ".conf")).string();
+    return (std::filesystem::path("conf") / (Narrow(application.GetName()) + ".yaml")).string();
 }
 
 std::string ResolvePidFilePath(const StartupOptions& options, const IApplication& application)

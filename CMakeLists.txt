@@ -16,6 +16,7 @@ set(SERVER_BINARY_FOLDER "${CMAKE_BINARY_DIR}")
 
 option(USE_SYSTEM_CLI11 "Use a preinstalled CLI11 package" OFF)
 option(USE_SYSTEM_SPDLOG "Use a preinstalled spdlog package" OFF)
+option(USE_SYSTEM_YAML_CPP "Use a preinstalled yaml-cpp package" OFF)
 
 if (USE_SYSTEM_CLI11)
     find_package(CLI11 CONFIG REQUIRED)
@@ -39,6 +40,18 @@ else ()
             GIT_TAG v1.16.0
     )
     FetchContent_MakeAvailable(spdlog_proj)
+endif ()
+
+if (USE_SYSTEM_YAML_CPP)
+    find_package(yaml-cpp CONFIG REQUIRED)
+else ()
+    FetchContent_Declare(
+            yaml_cpp_proj
+            QUIET
+            GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+            GIT_TAG 0.8.0
+    )
+    FetchContent_MakeAvailable(yaml_cpp_proj)
 endif ()
 
 set(CMAKE_MODULE_PATH

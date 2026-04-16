@@ -26,6 +26,10 @@ struct StartupOptions
     std::size_t log_rotate_hour = 0;
     std::size_t log_rotate_minute = 0;
     bool config_path_explicit = false;
+    bool log_max_size_explicit = false;
+    bool log_max_files_explicit = false;
+    bool log_rotate_hour_explicit = false;
+    bool log_rotate_minute_explicit = false;
     bool show_version = false;
     bool daemon = false;
     bool syslog = false;

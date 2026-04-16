@@ -1,4 +1,4 @@
-#include "loader_logging.h"
+#include "logging.h"
 
 #include <spdlog/logger.h>
 #include <spdlog/pattern_formatter.h>

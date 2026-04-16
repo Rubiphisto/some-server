@@ -1,7 +1,7 @@
 #include "loader.h"
-#include "loader_config.h"
-#include "loader_logging.h"
-#include "loader_options.h"
+#include "config.h"
+#include "logging.h"
+#include "options.h"
 
 #include <spdlog/spdlog.h>
 #ifndef _WIN32
@@ -162,104 +162,13 @@ int Loader::Run(int argc, char* argv[])
 
     ApplicationContext context;
     context.executable_path = argc > 0 ? argv[0] : "";
-    context.config_path = ResolveConfigPath(options, *app);
-    context.pid_file = ResolvePidFilePath(options, *app);
-    context.log_file = ResolveLogFilePath(options, *app);
-    context.error_log_file = ResolveErrorLogFilePath(options, *app);
     context.arguments = std::move(options.positional_args);
+    context.verbose = options.verbose;
 
-    if (!LoadConfiguration(context, options.config_path_explicit))
+    if (!ResolveConfiguration(context, options, *app))
     {
         return 1;
     }
-
-    if (!options.log_level.empty())
-    {
-        context.log_level = options.log_level;
-        context.settings["log.level"] = options.log_level;
-    }
-
-    if (!options.pid_file.empty())
-    {
-        context.pid_file = options.pid_file;
-        context.settings["runtime.pid_file"] = options.pid_file;
-    }
-
-    if (!options.log_file.empty())
-    {
-        context.log_file = options.log_file;
-        context.settings["log.file"] = options.log_file;
-    }
-
-    if (!options.error_log_file.empty())
-    {
-        context.error_log_file = options.error_log_file;
-        context.settings["log.error_file"] = options.error_log_file;
-    }
-
-    if (options.daemon)
-    {
-        context.daemon = true;
-        context.settings["runtime.daemon"] = "true";
-        context.log_to_console = false;
-        context.settings["log.console"] = "false";
-    }
-
-    if (options.syslog)
-    {
-        context.log_to_syslog = true;
-        context.settings["log.syslog"] = "true";
-    }
-
-    if (options.disable_console)
-    {
-        context.log_to_console = false;
-        context.settings["log.console"] = "false";
-    }
-
-    if (options.disable_file_log)
-    {
-        context.log_file.clear();
-        context.settings["log.file"] = "";
-    }
-
-    if (options.disable_error_log)
-    {
-        context.error_log_file.clear();
-        context.settings["log.error_file"] = "";
-    }
-
-    if (options.log_max_size != 0)
-    {
-        context.log_max_size = options.log_max_size;
-        context.settings["log.rotate.max_size"] = std::to_string(options.log_max_size);
-    }
-
-    if (options.log_max_files != 0)
-    {
-        context.log_max_files = options.log_max_files;
-        context.settings["log.rotate.max_files"] = std::to_string(options.log_max_files);
-    }
-
-    if (!options.log_rotation_mode.empty())
-    {
-        context.log_rotation_mode = options.log_rotation_mode;
-        context.settings["log.rotate.mode"] = options.log_rotation_mode;
-    }
-
-    if (options.log_rotate_hour != 0 || context.settings.contains("log.rotate.daily_hour"))
-    {
-        context.log_rotate_hour = options.log_rotate_hour;
-        context.settings["log.rotate.daily_hour"] = std::to_string(options.log_rotate_hour);
-    }
-
-    if (options.log_rotate_minute != 0 || context.settings.contains("log.rotate.daily_minute"))
-    {
-        context.log_rotate_minute = options.log_rotate_minute;
-        context.settings["log.rotate.daily_minute"] = std::to_string(options.log_rotate_minute);
-    }
-
-    context.verbose = options.verbose;
 
 #ifndef _WIN32
     if (context.daemon && !DaemonizeProcess())
