@@ -7,6 +7,8 @@
 
 struct ApplicationContext
 {
+    std::string listen_host = "127.0.0.1";
+    std::size_t listen_port = 9000;
     std::string executable_path;
     std::string config_path;
     std::string pid_file;

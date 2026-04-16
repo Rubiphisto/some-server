@@ -4,8 +4,10 @@
 
 void Application::Load()
 {
-    spdlog::info("Application::Configure(config={}, log_file={}, error_log_file={}, log_level={}, daemon={}, args={}, settings={})",
+    spdlog::info("Application::Configure(config={}, listen={}:{}, log_file={}, error_log_file={}, log_level={}, daemon={}, args={}, settings={})",
                  Context().config_path,
+                 Context().listen_host,
+                 Context().listen_port,
                  Context().log_file,
                  Context().error_log_file,
                  Context().log_level,
