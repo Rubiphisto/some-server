@@ -4,7 +4,6 @@
 
 #include <cstddef>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 struct LoaderRuntimeConfiguration
@@ -46,7 +45,6 @@ struct LoaderConfiguration
     LoaderLogConfiguration log;
     bool verbose = false;
     std::vector<std::string> arguments;
-    std::unordered_map<std::string, std::string> settings;
 
     bool OverlayFromConfig(const ConfigValue& root, std::string& error);
 };

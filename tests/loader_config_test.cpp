@@ -108,7 +108,6 @@ namespace
         Require(context.log.level == "warn", "cli log level");
         Require(!context.log.console, "cli console override");
         Require(context.log.rotate.max_files == 9, "cli max files override");
-        Require(context.settings["loader.log.level"] == "warn", "settings log level");
     }
 
     void TestValidation()

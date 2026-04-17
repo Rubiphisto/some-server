@@ -7,7 +7,6 @@
 
 #include <filesystem>
 #include <iostream>
-#include <string_view>
 
 namespace
 {
@@ -65,53 +64,6 @@ namespace
 
         return {};
     }
-
-    void FlattenSettings(const ConfigValue& node,
-                         std::string_view prefix,
-                         std::unordered_map<std::string, std::string>& settings)
-    {
-        if (const auto* object = node.AsObject(); object != nullptr)
-        {
-            for (const auto& [key, value] : *object)
-            {
-                const std::string child = prefix.empty() ? key : std::string(prefix) + "." + key;
-                FlattenSettings(value, child, settings);
-            }
-            return;
-        }
-
-        if (prefix.empty())
-        {
-            return;
-        }
-
-        if (const auto* text = node.AsString(); text != nullptr)
-        {
-            settings[std::string(prefix)] = *text;
-        }
-        else if (const auto* flag = node.AsBool(); flag != nullptr)
-        {
-            settings[std::string(prefix)] = *flag ? "true" : "false";
-        }
-        else if (const auto* integer = node.AsUInt(); integer != nullptr)
-        {
-            settings[std::string(prefix)] = std::to_string(*integer);
-        }
-    }
-
-    void SetSetting(std::unordered_map<std::string, std::string>& settings,
-                    std::string_view key,
-                    const std::string& value)
-    {
-        settings[std::string(key)] = value;
-    }
-
-    void SetSetting(std::unordered_map<std::string, std::string>& settings,
-                    std::string_view key,
-                    const char* value)
-    {
-        settings[std::string(key)] = value;
-    }
 }
 
 bool LoaderRuntimeConfiguration::OverlayFromConfig(const ConfigValue& root, std::string& error)
@@ -146,8 +98,6 @@ bool LoaderLogConfiguration::OverlayFromConfig(const ConfigValue& root, std::str
 
 bool LoaderConfiguration::OverlayFromConfig(const ConfigValue& root, std::string& error)
 {
-    FlattenSettings(root, "loader", settings);
-
     const ConfigValue* runtime_root = root.Find("runtime");
     if (runtime_root != nullptr && !runtime.OverlayFromConfig(*runtime_root, error))
     {
@@ -210,87 +160,72 @@ void ApplyCliOverrides(LoaderConfiguration& configuration, const StartupOptions&
     if (!options.log_level.empty())
     {
         configuration.log.level = options.log_level;
-        SetSetting(configuration.settings, "loader.log.level", options.log_level);
     }
 
     if (!options.pid_file.empty())
     {
         configuration.runtime.pid_file = options.pid_file;
-        SetSetting(configuration.settings, "loader.runtime.pid_file", options.pid_file);
     }
 
     if (!options.log_file.empty())
     {
         configuration.log.file = options.log_file;
-        SetSetting(configuration.settings, "loader.log.file", options.log_file);
     }
 
     if (!options.error_log_file.empty())
     {
         configuration.log.error_file = options.error_log_file;
-        SetSetting(configuration.settings, "loader.log.error_file", options.error_log_file);
     }
 
     if (options.daemon)
     {
         configuration.runtime.daemon = true;
         configuration.log.console = false;
-        SetSetting(configuration.settings, "loader.runtime.daemon", "true");
-        SetSetting(configuration.settings, "loader.log.console", "false");
     }
 
     if (options.syslog)
     {
         configuration.log.syslog = true;
-        SetSetting(configuration.settings, "loader.log.syslog", "true");
     }
 
     if (options.disable_console)
     {
         configuration.log.console = false;
-        SetSetting(configuration.settings, "loader.log.console", "false");
     }
 
     if (options.disable_file_log)
     {
         configuration.log.file.clear();
-        SetSetting(configuration.settings, "loader.log.file", "");
     }
 
     if (options.disable_error_log)
     {
         configuration.log.error_file.clear();
-        SetSetting(configuration.settings, "loader.log.error_file", "");
     }
 
     if (options.log_max_size_explicit)
     {
         configuration.log.rotate.max_size = options.log_max_size;
-        SetSetting(configuration.settings, "loader.log.rotate.max_size", std::to_string(options.log_max_size));
     }
 
     if (options.log_max_files_explicit)
     {
         configuration.log.rotate.max_files = options.log_max_files;
-        SetSetting(configuration.settings, "loader.log.rotate.max_files", std::to_string(options.log_max_files));
     }
 
     if (!options.log_rotation_mode.empty())
     {
         configuration.log.rotate.mode = options.log_rotation_mode;
-        SetSetting(configuration.settings, "loader.log.rotate.mode", options.log_rotation_mode);
     }
 
     if (options.log_rotate_hour_explicit)
     {
         configuration.log.rotate.daily_hour = options.log_rotate_hour;
-        SetSetting(configuration.settings, "loader.log.rotate.daily_hour", std::to_string(options.log_rotate_hour));
     }
 
     if (options.log_rotate_minute_explicit)
     {
         configuration.log.rotate.daily_minute = options.log_rotate_minute;
-        SetSetting(configuration.settings, "loader.log.rotate.daily_minute", std::to_string(options.log_rotate_minute));
     }
 }
 
