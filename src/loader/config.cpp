@@ -251,57 +251,57 @@ namespace
 
 }
 
-LoaderConfig BuildDefaultConfig(const StartupOptions& options, const IApplication& application)
+ApplicationContext BuildDefaultContext(const StartupOptions& options, const IApplication& application)
 {
-    LoaderConfig config;
-    config.config_path = ResolveConfigPath(options, application);
-    config.runtime.pid_file = ResolvePidFilePath(options, application);
-    config.log.file = ResolveLogFilePath(options, application);
-    config.log.error_file = ResolveErrorLogFilePath(options, application);
-    return config;
+    ApplicationContext context;
+    context.config_path = ResolveConfigPath(options, application);
+    context.runtime.pid_file = ResolvePidFilePath(options, application);
+    context.log.file = ResolveLogFilePath(options, application);
+    context.log.error_file = ResolveErrorLogFilePath(options, application);
+    return context;
 }
 
-bool LoadYamlConfig(LoaderConfig& config, bool config_path_explicit, bool verbose)
+bool LoadYamlIntoContext(ApplicationContext& context, bool config_path_explicit, bool verbose)
 {
-    if (config.config_path.empty())
+    if (context.config_path.empty())
     {
         return true;
     }
 
-    if (!std::filesystem::exists(config.config_path))
+    if (!std::filesystem::exists(context.config_path))
     {
         if (config_path_explicit)
         {
-            std::cerr << "failed to open config file: " << config.config_path << std::endl;
+            std::cerr << "failed to open config file: " << context.config_path << std::endl;
             return false;
         }
 
         if (verbose)
         {
-            std::cout << "config file not found, skip default path: " << config.config_path << std::endl;
+            std::cout << "config file not found, skip default path: " << context.config_path << std::endl;
         }
-        config.config_path.clear();
+        context.config_path.clear();
         return true;
     }
 
     YAML::Node root;
     try
     {
-        root = YAML::LoadFile(config.config_path);
+        root = YAML::LoadFile(context.config_path);
     }
     catch (const YAML::BadFile&)
     {
-        std::cerr << "failed to open config file: " << config.config_path << std::endl;
+        std::cerr << "failed to open config file: " << context.config_path << std::endl;
         return false;
     }
     catch (const YAML::ParserException& ex)
     {
-        std::cerr << "failed to parse config file " << config.config_path << ": " << ex.what() << std::endl;
+        std::cerr << "failed to parse config file " << context.config_path << ": " << ex.what() << std::endl;
         return false;
     }
     catch (const YAML::Exception& ex)
     {
-        std::cerr << "failed to read config file " << config.config_path << ": " << ex.what() << std::endl;
+        std::cerr << "failed to read config file " << context.config_path << ": " << ex.what() << std::endl;
         return false;
     }
 
@@ -316,22 +316,22 @@ bool LoadYamlConfig(LoaderConfig& config, bool config_path_explicit, bool verbos
         return false;
     }
 
-    FlattenSettings(root, {}, config.settings);
+    FlattenSettings(root, {}, context.settings);
 
-    if (!ApplyString(root["listen"]["host"], "listen.host", config.listen.host) ||
-        !ApplyUnsigned(root["listen"]["port"], "listen.port", config.listen.port) ||
-        !ApplyString(root["log"]["level"], "log.level", config.log.level) ||
-        !ApplyString(root["log"]["file"], "log.file", config.log.file) ||
-        !ApplyString(root["log"]["error_file"], "log.error_file", config.log.error_file) ||
-        !ApplyBool(root["log"]["console"], "log.console", config.log.console) ||
-        !ApplyBool(root["log"]["syslog"], "log.syslog", config.log.syslog) ||
-        !ApplyString(root["log"]["rotate"]["mode"], "log.rotate.mode", config.log.rotation_mode) ||
-        !ApplySizeValue(root["log"]["rotate"]["max_size"], "log.rotate.max_size", config.log.max_size) ||
-        !ApplyUnsigned(root["log"]["rotate"]["max_files"], "log.rotate.max_files", config.log.max_files) ||
-        !ApplyUnsigned(root["log"]["rotate"]["daily_hour"], "log.rotate.daily_hour", config.log.rotate_hour) ||
-        !ApplyUnsigned(root["log"]["rotate"]["daily_minute"], "log.rotate.daily_minute", config.log.rotate_minute) ||
-        !ApplyBool(root["runtime"]["daemon"], "runtime.daemon", config.runtime.daemon) ||
-        !ApplyString(root["runtime"]["pid_file"], "runtime.pid_file", config.runtime.pid_file))
+    if (!ApplyString(root["listen"]["host"], "listen.host", context.listen.host) ||
+        !ApplyUnsigned(root["listen"]["port"], "listen.port", context.listen.port) ||
+        !ApplyString(root["log"]["level"], "log.level", context.log.level) ||
+        !ApplyString(root["log"]["file"], "log.file", context.log.file) ||
+        !ApplyString(root["log"]["error_file"], "log.error_file", context.log.error_file) ||
+        !ApplyBool(root["log"]["console"], "log.console", context.log.console) ||
+        !ApplyBool(root["log"]["syslog"], "log.syslog", context.log.syslog) ||
+        !ApplyString(root["log"]["rotate"]["mode"], "log.rotate.mode", context.log.rotate.mode) ||
+        !ApplySizeValue(root["log"]["rotate"]["max_size"], "log.rotate.max_size", context.log.rotate.max_size) ||
+        !ApplyUnsigned(root["log"]["rotate"]["max_files"], "log.rotate.max_files", context.log.rotate.max_files) ||
+        !ApplyUnsigned(root["log"]["rotate"]["daily_hour"], "log.rotate.daily_hour", context.log.rotate.daily_hour) ||
+        !ApplyUnsigned(root["log"]["rotate"]["daily_minute"], "log.rotate.daily_minute", context.log.rotate.daily_minute) ||
+        !ApplyBool(root["runtime"]["daemon"], "runtime.daemon", context.runtime.daemon) ||
+        !ApplyString(root["runtime"]["pid_file"], "runtime.pid_file", context.runtime.pid_file))
     {
         return false;
     }
@@ -339,123 +339,123 @@ bool LoadYamlConfig(LoaderConfig& config, bool config_path_explicit, bool verbos
     return true;
 }
 
-void ApplyCliOverrides(LoaderConfig& config, const StartupOptions& options)
+void ApplyCliOverrides(ApplicationContext& context, const StartupOptions& options)
 {
     if (!options.log_level.empty())
     {
-        config.log.level = options.log_level;
-        SetSetting(config.settings, "log.level", options.log_level);
+        context.log.level = options.log_level;
+        SetSetting(context.settings, "log.level", options.log_level);
     }
 
     if (!options.pid_file.empty())
     {
-        config.runtime.pid_file = options.pid_file;
-        SetSetting(config.settings, "runtime.pid_file", options.pid_file);
+        context.runtime.pid_file = options.pid_file;
+        SetSetting(context.settings, "runtime.pid_file", options.pid_file);
     }
 
     if (!options.log_file.empty())
     {
-        config.log.file = options.log_file;
-        SetSetting(config.settings, "log.file", options.log_file);
+        context.log.file = options.log_file;
+        SetSetting(context.settings, "log.file", options.log_file);
     }
 
     if (!options.error_log_file.empty())
     {
-        config.log.error_file = options.error_log_file;
-        SetSetting(config.settings, "log.error_file", options.error_log_file);
+        context.log.error_file = options.error_log_file;
+        SetSetting(context.settings, "log.error_file", options.error_log_file);
     }
 
     if (options.daemon)
     {
-        config.runtime.daemon = true;
-        config.log.console = false;
-        SetSetting(config.settings, "runtime.daemon", "true");
-        SetSetting(config.settings, "log.console", "false");
+        context.runtime.daemon = true;
+        context.log.console = false;
+        SetSetting(context.settings, "runtime.daemon", "true");
+        SetSetting(context.settings, "log.console", "false");
     }
 
     if (options.syslog)
     {
-        config.log.syslog = true;
-        SetSetting(config.settings, "log.syslog", "true");
+        context.log.syslog = true;
+        SetSetting(context.settings, "log.syslog", "true");
     }
 
     if (options.disable_console)
     {
-        config.log.console = false;
-        SetSetting(config.settings, "log.console", "false");
+        context.log.console = false;
+        SetSetting(context.settings, "log.console", "false");
     }
 
     if (options.disable_file_log)
     {
-        config.log.file.clear();
-        SetSetting(config.settings, "log.file", "");
+        context.log.file.clear();
+        SetSetting(context.settings, "log.file", "");
     }
 
     if (options.disable_error_log)
     {
-        config.log.error_file.clear();
-        SetSetting(config.settings, "log.error_file", "");
+        context.log.error_file.clear();
+        SetSetting(context.settings, "log.error_file", "");
     }
 
     if (options.log_max_size_explicit)
     {
-        config.log.max_size = options.log_max_size;
-        SetSetting(config.settings, "log.rotate.max_size", std::to_string(options.log_max_size));
+        context.log.rotate.max_size = options.log_max_size;
+        SetSetting(context.settings, "log.rotate.max_size", std::to_string(options.log_max_size));
     }
 
     if (options.log_max_files_explicit)
     {
-        config.log.max_files = options.log_max_files;
-        SetSetting(config.settings, "log.rotate.max_files", std::to_string(options.log_max_files));
+        context.log.rotate.max_files = options.log_max_files;
+        SetSetting(context.settings, "log.rotate.max_files", std::to_string(options.log_max_files));
     }
 
     if (!options.log_rotation_mode.empty())
     {
-        config.log.rotation_mode = options.log_rotation_mode;
-        SetSetting(config.settings, "log.rotate.mode", options.log_rotation_mode);
+        context.log.rotate.mode = options.log_rotation_mode;
+        SetSetting(context.settings, "log.rotate.mode", options.log_rotation_mode);
     }
 
     if (options.log_rotate_hour_explicit)
     {
-        config.log.rotate_hour = options.log_rotate_hour;
-        SetSetting(config.settings, "log.rotate.daily_hour", std::to_string(options.log_rotate_hour));
+        context.log.rotate.daily_hour = options.log_rotate_hour;
+        SetSetting(context.settings, "log.rotate.daily_hour", std::to_string(options.log_rotate_hour));
     }
 
     if (options.log_rotate_minute_explicit)
     {
-        config.log.rotate_minute = options.log_rotate_minute;
-        SetSetting(config.settings, "log.rotate.daily_minute", std::to_string(options.log_rotate_minute));
+        context.log.rotate.daily_minute = options.log_rotate_minute;
+        SetSetting(context.settings, "log.rotate.daily_minute", std::to_string(options.log_rotate_minute));
     }
 }
 
-bool ValidateConfig(const LoaderConfig& config)
+bool ValidateContext(const ApplicationContext& context)
 {
-    const std::string mode = ToLower(config.log.rotation_mode);
+    const std::string mode = ToLower(context.log.rotate.mode);
     if (mode != "size" && mode != "daily")
     {
         std::cerr << "config error at log.rotate.mode: expected one of [size, daily]" << std::endl;
         return false;
     }
 
-    if (config.listen.port == 0 || config.listen.port > 65535)
+    if (context.listen.port == 0 || context.listen.port > 65535)
     {
         std::cerr << "config error at listen.port: must be in range 1-65535" << std::endl;
         return false;
     }
 
-    if (config.log.max_files == 0)
+    if (context.log.rotate.max_files == 0)
     {
         std::cerr << "config error at log.rotate.max_files: must be greater than 0" << std::endl;
         return false;
     }
 
-    if (config.log.rotate_hour > 23)
+    if (context.log.rotate.daily_hour > 23)
     {
         std::cerr << "config error at log.rotate.daily_hour: must be in range 0-23" << std::endl;
         return false;
     }
 
-    if (config.log.rotate_minute > 59)
+    if (context.log.rotate.daily_minute > 59)
     {
         std::cerr << "config error at log.rotate.daily_minute: must be in range 0-59" << std::endl;
         return false;
@@ -464,41 +464,19 @@ bool ValidateConfig(const LoaderConfig& config)
     return true;
 }
 
-void CopyToContext(const LoaderConfig& config, ApplicationContext& context)
-{
-    context.listen_host = config.listen.host;
-    context.listen_port = config.listen.port;
-    context.config_path = config.config_path;
-    context.pid_file = config.runtime.pid_file;
-    context.log_file = config.log.file;
-    context.error_log_file = config.log.error_file;
-    context.log_level = config.log.level;
-    context.log_rotation_mode = ToLower(config.log.rotation_mode);
-    context.log_max_size = config.log.max_size;
-    context.log_max_files = config.log.max_files;
-    context.log_rotate_hour = config.log.rotate_hour;
-    context.log_rotate_minute = config.log.rotate_minute;
-    context.daemon = config.runtime.daemon;
-    context.log_to_console = config.log.console;
-    context.log_to_syslog = config.log.syslog;
-    context.settings = config.settings;
-}
-
 bool ResolveConfiguration(ApplicationContext& context, const StartupOptions& options, const IApplication& application)
 {
-    LoaderConfig config = BuildDefaultConfig(options, application);
+    context = BuildDefaultContext(options, application);
 
-    if (!LoadYamlConfig(config, options.config_path_explicit, context.verbose))
+    if (!LoadYamlIntoContext(context, options.config_path_explicit, context.verbose))
     {
         return false;
     }
 
-    ApplyCliOverrides(config, options);
-    if (!ValidateConfig(config))
+    ApplyCliOverrides(context, options);
+    if (!ValidateContext(context))
     {
         return false;
     }
-
-    CopyToContext(config, context);
     return true;
 }

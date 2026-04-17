@@ -62,10 +62,10 @@ namespace
 
 bool SetupLogging(const std::string& application_name, ApplicationContext& context)
 {
-    const auto level = ToSpdlogLevel(context.log_level);
+    const auto level = ToSpdlogLevel(context.log.level);
     if (!level.has_value())
     {
-        std::cerr << "invalid log level: " << context.log_level << std::endl;
+        std::cerr << "invalid log level: " << context.log.level << std::endl;
         return false;
     }
 
@@ -73,59 +73,59 @@ bool SetupLogging(const std::string& application_name, ApplicationContext& conte
     {
         std::vector<spdlog::sink_ptr> sinks;
 
-        if (context.log_to_console)
+        if (context.log.console)
         {
             auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
             console_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%n] %v");
             sinks.push_back(console_sink);
         }
 
-        if (!context.log_file.empty())
+        if (!context.log.file.empty())
         {
-            const auto log_path = std::filesystem::path(context.log_file);
+            const auto log_path = std::filesystem::path(context.log.file);
             if (log_path.has_parent_path())
             {
                 std::filesystem::create_directories(log_path.parent_path());
             }
 
             spdlog::sink_ptr file_sink;
-            if (context.log_rotation_mode == "daily")
+            if (context.log.rotate.mode == "daily")
             {
                 file_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(
-                    context.log_file,
-                    static_cast<int>(context.log_rotate_hour),
-                    static_cast<int>(context.log_rotate_minute),
+                    context.log.file,
+                    static_cast<int>(context.log.rotate.daily_hour),
+                    static_cast<int>(context.log.rotate.daily_minute),
                     false,
-                    static_cast<uint16_t>(context.log_max_files));
+                    static_cast<uint16_t>(context.log.rotate.max_files));
             }
             else
             {
                 file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-                    context.log_file,
-                    context.log_max_size,
-                    context.log_max_files,
+                    context.log.file,
+                    context.log.rotate.max_size,
+                    context.log.rotate.max_files,
                     true);
             }
             file_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [%n] %v");
             sinks.push_back(file_sink);
         }
 
-        if (!context.error_log_file.empty())
+        if (!context.log.error_file.empty())
         {
-            const auto error_log_path = std::filesystem::path(context.error_log_file);
+            const auto error_log_path = std::filesystem::path(context.log.error_file);
             if (error_log_path.has_parent_path())
             {
                 std::filesystem::create_directories(error_log_path.parent_path());
             }
 
-            auto error_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(context.error_log_file, true);
+            auto error_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(context.log.error_file, true);
             error_sink->set_level(spdlog::level::err);
             error_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [%n] %v");
             sinks.push_back(error_sink);
         }
 
 #ifndef _WIN32
-        if (context.log_to_syslog)
+        if (context.log.syslog)
         {
             auto syslog_sink = std::make_shared<spdlog::sinks::syslog_sink_mt>(
                 application_name,

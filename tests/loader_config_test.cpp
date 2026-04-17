@@ -56,12 +56,12 @@ namespace
     {
         TestApplication app;
         StartupOptions options;
-        LoaderConfig config = BuildDefaultConfig(options, app);
+        ApplicationContext context = BuildDefaultContext(options, app);
 
-        Require(config.config_path == (std::filesystem::path("conf") / "gate.yaml").string(), "default config path");
-        Require(config.listen.host == "127.0.0.1", "default listen host");
-        Require(config.listen.port == 9000, "default listen port");
-        Require(config.log.max_size == 10 * 1024 * 1024, "default log max size");
+        Require(context.config_path == (std::filesystem::path("conf") / "gate.yaml").string(), "default config path");
+        Require(context.listen.host == "127.0.0.1", "default listen host");
+        Require(context.listen.port == 9000, "default listen port");
+        Require(context.log.rotate.max_size == 10 * 1024 * 1024, "default log max size");
     }
 
     void TestYamlLoad()
@@ -83,24 +83,24 @@ namespace
             "runtime:\n"
             "  daemon: true\n");
 
-        LoaderConfig config;
-        config.config_path = temp.path.string();
-        Require(LoadYamlConfig(config, true, false), "yaml load should succeed");
-        Require(config.listen.host == "0.0.0.0", "yaml listen host");
-        Require(config.listen.port == 7001, "yaml listen port");
-        Require(config.log.level == "debug", "yaml log level");
-        Require(!config.log.console, "yaml console flag");
-        Require(config.log.rotation_mode == "daily", "yaml rotation mode");
-        Require(config.log.max_size == 20 * 1024 * 1024, "yaml size parsing");
-        Require(config.runtime.daemon, "yaml daemon");
+        ApplicationContext context;
+        context.config_path = temp.path.string();
+        Require(LoadYamlIntoContext(context, true, false), "yaml load should succeed");
+        Require(context.listen.host == "0.0.0.0", "yaml listen host");
+        Require(context.listen.port == 7001, "yaml listen port");
+        Require(context.log.level == "debug", "yaml log level");
+        Require(!context.log.console, "yaml console flag");
+        Require(context.log.rotate.mode == "daily", "yaml rotation mode");
+        Require(context.log.rotate.max_size == 20 * 1024 * 1024, "yaml size parsing");
+        Require(context.runtime.daemon, "yaml daemon");
     }
 
     void TestCliOverrides()
     {
-        LoaderConfig config;
-        config.log.level = "info";
-        config.log.console = true;
-        config.log.max_files = 5;
+        ApplicationContext context;
+        context.log.level = "info";
+        context.log.console = true;
+        context.log.rotate.max_files = 5;
 
         StartupOptions options;
         options.log_level = "warn";
@@ -108,40 +108,23 @@ namespace
         options.log_max_files = 9;
         options.log_max_files_explicit = true;
 
-        ApplyCliOverrides(config, options);
+        ApplyCliOverrides(context, options);
 
-        Require(config.log.level == "warn", "cli log level");
-        Require(!config.log.console, "cli console override");
-        Require(config.log.max_files == 9, "cli max files override");
-        Require(config.settings["log.level"] == "warn", "settings log level");
+        Require(context.log.level == "warn", "cli log level");
+        Require(!context.log.console, "cli console override");
+        Require(context.log.rotate.max_files == 9, "cli max files override");
+        Require(context.settings["log.level"] == "warn", "settings log level");
     }
 
     void TestValidation()
     {
-        LoaderConfig config;
-        config.listen.port = 0;
-        Require(!ValidateConfig(config), "port zero should fail validation");
-
-        config.listen.port = 8080;
-        config.log.max_files = 0;
-        Require(!ValidateConfig(config), "max files zero should fail validation");
-    }
-
-    void TestCopyToContext()
-    {
-        LoaderConfig config;
-        config.listen.host = "192.168.0.10";
-        config.listen.port = 9100;
-        config.log.level = "trace";
-        config.runtime.daemon = true;
-
         ApplicationContext context;
-        CopyToContext(config, context);
+        context.listen.port = 0;
+        Require(!ValidateContext(context), "port zero should fail validation");
 
-        Require(context.listen_host == "192.168.0.10", "context listen host");
-        Require(context.listen_port == 9100, "context listen port");
-        Require(context.log_level == "trace", "context log level");
-        Require(context.daemon, "context daemon");
+        context.listen.port = 8080;
+        context.log.rotate.max_files = 0;
+        Require(!ValidateContext(context), "max files zero should fail validation");
     }
 }
 
@@ -153,7 +136,6 @@ int main()
         TestYamlLoad();
         TestCliOverrides();
         TestValidation();
-        TestCopyToContext();
         std::cout << "loader_config_test: ok" << std::endl;
         return 0;
     }

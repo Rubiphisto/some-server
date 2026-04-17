@@ -5,24 +5,44 @@
 #include <utility>
 #include <vector>
 
+struct ListenSettings
+{
+    std::string host = "127.0.0.1";
+    std::size_t port = 9000;
+};
+
+struct LogRotateSettings
+{
+    std::string mode = "size";
+    std::size_t max_size = 10 * 1024 * 1024;
+    std::size_t max_files = 5;
+    std::size_t daily_hour = 0;
+    std::size_t daily_minute = 0;
+};
+
+struct LogSettings
+{
+    std::string file;
+    std::string error_file;
+    std::string level = "info";
+    bool console = true;
+    bool syslog = false;
+    LogRotateSettings rotate;
+};
+
+struct RuntimeSettings
+{
+    std::string pid_file;
+    bool daemon = false;
+};
+
 struct ApplicationContext
 {
-    std::string listen_host = "127.0.0.1";
-    std::size_t listen_port = 9000;
     std::string executable_path;
     std::string config_path;
-    std::string pid_file;
-    std::string log_file;
-    std::string error_log_file;
-    std::string log_level = "info";
-    std::string log_rotation_mode = "size";
-    std::size_t log_max_size = 10 * 1024 * 1024;
-    std::size_t log_max_files = 5;
-    std::size_t log_rotate_hour = 0;
-    std::size_t log_rotate_minute = 0;
-    bool daemon = false;
-    bool log_to_console = true;
-    bool log_to_syslog = false;
+    ListenSettings listen;
+    RuntimeSettings runtime;
+    LogSettings log;
     bool verbose = false;
     std::vector<std::string> arguments;
     std::unordered_map<std::string, std::string> settings;

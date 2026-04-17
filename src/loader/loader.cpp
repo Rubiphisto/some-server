@@ -148,22 +148,22 @@ int Loader::Run(IApplication& app, int argc, char* argv[])
     }
 
 #ifndef _WIN32
-    if (context.daemon && !DaemonizeProcess())
+    if (context.runtime.daemon && !DaemonizeProcess())
     {
         return 1;
     }
 #endif
 
     PidFileGuard pid_file_guard;
-    if (!context.pid_file.empty())
+    if (!context.runtime.pid_file.empty())
     {
 #ifndef _WIN32
-        if (!CreatePidFile(context.pid_file))
+        if (!CreatePidFile(context.runtime.pid_file))
         {
             return 1;
         }
 #endif
-        pid_file_guard.path = context.pid_file;
+        pid_file_guard.path = context.runtime.pid_file;
     }
 
     if (!SetupLogging(application_name, context))
@@ -178,34 +178,37 @@ int Loader::Run(IApplication& app, int argc, char* argv[])
         {
             spdlog::info("using config: {}", context.config_path);
         }
-        if (!context.pid_file.empty())
+        if (!context.runtime.pid_file.empty())
         {
-            spdlog::info("writing pid file to: {}", context.pid_file);
+            spdlog::info("writing pid file to: {}", context.runtime.pid_file);
         }
-        if (!context.log_file.empty())
+        if (!context.log.file.empty())
         {
-            spdlog::info("writing logs to: {}", context.log_file);
+            spdlog::info("writing logs to: {}", context.log.file);
         }
-        if (!context.error_log_file.empty())
+        if (!context.log.error_file.empty())
         {
-            spdlog::info("writing error logs to: {}", context.error_log_file);
+            spdlog::info("writing error logs to: {}", context.log.error_file);
         }
-        spdlog::info("log level: {}", context.log_level);
-        spdlog::info("log rotation mode: {}", context.log_rotation_mode);
-        if (context.log_rotation_mode == "daily")
+        spdlog::info("listen: {}:{}", context.listen.host, context.listen.port);
+        spdlog::info("log level: {}", context.log.level);
+        spdlog::info("log rotation mode: {}", context.log.rotate.mode);
+        if (context.log.rotate.mode == "daily")
         {
             spdlog::info("daily rotation time: {:02d}:{:02d} max_files={}",
-                         static_cast<int>(context.log_rotate_hour),
-                         static_cast<int>(context.log_rotate_minute),
-                         context.log_max_files);
+                         static_cast<int>(context.log.rotate.daily_hour),
+                         static_cast<int>(context.log.rotate.daily_minute),
+                         context.log.rotate.max_files);
         }
         else
         {
-            spdlog::info("log rotation: max_size={} max_files={}", context.log_max_size, context.log_max_files);
+            spdlog::info("log rotation: max_size={} max_files={}",
+                         context.log.rotate.max_size,
+                         context.log.rotate.max_files);
         }
-        spdlog::info("console logging: {}", context.log_to_console ? "enabled" : "disabled");
-        spdlog::info("syslog logging: {}", context.log_to_syslog ? "enabled" : "disabled");
-        spdlog::info("daemon mode: {}", context.daemon ? "enabled" : "disabled");
+        spdlog::info("console logging: {}", context.log.console ? "enabled" : "disabled");
+        spdlog::info("syslog logging: {}", context.log.syslog ? "enabled" : "disabled");
+        spdlog::info("daemon mode: {}", context.runtime.daemon ? "enabled" : "disabled");
     }
 
     if (!Initialize(app, context))
