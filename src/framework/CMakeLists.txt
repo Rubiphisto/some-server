@@ -1,1 +1,1 @@
-some_library(framework LIBS common)
+some_library(framework LIBS common glaze::glaze)

@@ -32,7 +32,7 @@ namespace
         }
     }
 
-    TempFile WriteTempYaml(const std::string& name, const std::string& content)
+    TempFile WriteTempJson(const std::string& name, const std::string& content)
     {
         const auto path = std::filesystem::temp_directory_path() / name;
         std::ofstream out(path);
@@ -47,47 +47,55 @@ namespace
         StartupOptions options;
         LoaderConfiguration configuration = BuildDefaultLoaderConfiguration(options, app);
 
-        Require(configuration.config_path == (std::filesystem::path("conf") / "gate.yaml").string(), "default config path");
+        Require(configuration.config_path == (std::filesystem::path("conf") / "gate.json").string(), "default config path");
         Require(configuration.log.rotate.max_size == 10 * 1024 * 1024, "default log max size");
     }
 
-    void TestYamlLoad()
+    void TestJsonLoad()
     {
-        auto temp = WriteTempYaml(
-            "loader_config_test.yaml",
-            "loader:\n"
-            "  log:\n"
-            "    level: debug\n"
-            "    console: false\n"
-            "    rotate:\n"
-            "      mode: daily\n"
-            "      max_size: 20MB\n"
-            "      max_files: 7\n"
-            "      daily_hour: 2\n"
-            "      daily_minute: 30\n"
-            "  runtime:\n"
-            "    daemon: true\n"
-            "application:\n"
-            "  listen:\n"
-            "    host: 0.0.0.0\n"
-            "    port: 7001\n");
+        auto temp = WriteTempJson(
+            "loader_config_test.json",
+            "{\n"
+            "  \"loader\": {\n"
+            "    \"log\": {\n"
+            "      \"level\": \"debug\",\n"
+            "      \"console\": false,\n"
+            "      \"rotate\": {\n"
+            "        \"mode\": \"daily\",\n"
+            "        \"max_size\": 20971520,\n"
+            "        \"max_files\": 7,\n"
+            "        \"daily_hour\": 2,\n"
+            "        \"daily_minute\": 30\n"
+            "      }\n"
+            "    },\n"
+            "    \"runtime\": {\n"
+            "      \"daemon\": true\n"
+            "    }\n"
+            "  },\n"
+            "  \"application\": {\n"
+            "    \"listen\": {\n"
+            "      \"host\": \"0.0.0.0\",\n"
+            "      \"port\": 7001\n"
+            "    }\n"
+            "  }\n"
+            "}\n");
 
-        ConfigValue document;
+        std::string document;
         std::string error;
         Require(LoadConfigurationDocument(temp.path.string(), document, error), "document load should succeed");
 
         LoaderConfiguration loader;
         Require(ApplyLoaderConfiguration(loader, document, error), "loader config should apply");
-        Require(loader.log.level == "debug", "yaml log level");
-        Require(!loader.log.console, "yaml console flag");
-        Require(loader.log.rotate.mode == "daily", "yaml rotation mode");
-        Require(loader.log.rotate.max_size == 20 * 1024 * 1024, "yaml size parsing");
-        Require(loader.runtime.daemon, "yaml daemon");
+        Require(loader.log.level == "debug", "json log level");
+        Require(!loader.log.console, "json console flag");
+        Require(loader.log.rotate.mode == "daily", "json rotation mode");
+        Require(loader.log.rotate.max_size == 20 * 1024 * 1024, "json size parsing");
+        Require(loader.runtime.daemon, "json daemon");
 
         GateConfiguration application;
-        Require(application.OverlayFromConfig(document, error), "application config should apply");
-        Require(application.listen_host == "0.0.0.0", "yaml listen host");
-        Require(application.listen_port == 7001, "yaml listen port");
+        Require(application.LoadFromJson(document, error), "application config should apply");
+        Require(application.listen.host == "0.0.0.0", "json listen host");
+        Require(application.listen.port == 7001, "json listen port");
     }
 
     void TestCliOverrides()
@@ -124,7 +132,7 @@ int main()
     try
     {
         TestDefaults();
-        TestYamlLoad();
+        TestJsonLoad();
         TestCliOverrides();
         TestValidation();
         std::cout << "loader_config_test: ok" << std::endl;

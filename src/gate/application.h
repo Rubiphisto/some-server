@@ -2,12 +2,8 @@
 
 #include "framework/application/application.h"
 
-struct GateConfiguration : public IApplicationConfiguration
+struct GateConfiguration : public BaseApplicationConfiguration, public JsonApplicationConfiguration<GateConfiguration>
 {
-    std::string listen_host = "127.0.0.1";
-    std::size_t listen_port = 9000;
-
-    bool OverlayFromConfig(const ConfigValue& root, std::string& error) override;
 };
 
 class Application : public ApplicationBase<GateConfiguration>
@@ -19,3 +15,5 @@ public:
     void Stop() override;
     void Load() override;
 };
+
+SOME_SERVER_APPLICATION_CONFIG(GateConfiguration);

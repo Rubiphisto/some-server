@@ -16,7 +16,7 @@ set(SERVER_BINARY_FOLDER "${CMAKE_BINARY_DIR}")
 
 option(USE_SYSTEM_CLI11 "Use a preinstalled CLI11 package" OFF)
 option(USE_SYSTEM_SPDLOG "Use a preinstalled spdlog package" OFF)
-option(USE_SYSTEM_YAML_CPP "Use a preinstalled yaml-cpp package" OFF)
+option(USE_SYSTEM_GLAZE "Use a preinstalled glaze package" OFF)
 
 if (USE_SYSTEM_CLI11)
     find_package(CLI11 CONFIG REQUIRED)
@@ -42,16 +42,17 @@ else ()
     FetchContent_MakeAvailable(spdlog_proj)
 endif ()
 
-if (USE_SYSTEM_YAML_CPP)
-    find_package(yaml-cpp CONFIG REQUIRED)
+if (USE_SYSTEM_GLAZE)
+    find_package(glaze CONFIG REQUIRED)
 else ()
     FetchContent_Declare(
-            yaml_cpp_proj
+            glaze_proj
             QUIET
-            GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-            GIT_TAG 0.8.0
+            GIT_REPOSITORY https://github.com/stephenberry/glaze.git
+            GIT_TAG v6.0.3
+            GIT_SHALLOW TRUE
     )
-    FetchContent_MakeAvailable(yaml_cpp_proj)
+    FetchContent_MakeAvailable(glaze_proj)
 endif ()
 
 set(CMAKE_MODULE_PATH

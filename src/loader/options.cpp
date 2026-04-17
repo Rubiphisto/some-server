@@ -38,7 +38,7 @@ ParseResult ParseArguments(int argc, char* argv[], const std::string& applicatio
     app.add_flag("--no-file-log", options.disable_file_log, "Disable the main log file sink");
     app.add_flag("--no-error-log", options.disable_error_log, "Disable the dedicated error log sink");
     app.add_flag("-v,--verbose", options.verbose, "Enable verbose startup logs");
-    app.add_option("-c,--config", config_path_option, "Load the specified YAML configuration file");
+    app.add_option("-c,--config", config_path_option, "Load the specified JSON configuration file");
     app.add_option("--pid-file", pid_file_option, "Write the running process id to this file");
     app.add_option("--log-file", log_file_option, "Override log file path");
     app.add_option("--error-log-file", error_log_file_option, "Write error logs to a separate file");
@@ -104,7 +104,7 @@ std::string ResolveConfigPath(const StartupOptions& options, const IApplication&
         return options.config_path;
     }
 
-    return (std::filesystem::path("conf") / (Narrow(application.GetName()) + ".yaml")).string();
+    return (std::filesystem::path("conf") / (Narrow(application.GetName()) + ".json")).string();
 }
 
 std::string ResolvePidFilePath(const StartupOptions& options, const IApplication& application)

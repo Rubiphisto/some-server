@@ -1,111 +1,25 @@
 #include "config.h"
 
-#include "framework/config/access.h"
 #include "options.h"
 
-#include <yaml-cpp/yaml.h>
+#include <glaze/glaze.hpp>
 
+#include <cctype>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 
 namespace
 {
-    ConfigValue ConvertYamlNode(const YAML::Node& node)
+    std::string ToLower(std::string value)
     {
-        if (!node || node.IsNull())
+        for (char& ch : value)
         {
-            return {};
+            ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
         }
-
-        if (node.IsMap())
-        {
-            ConfigValue::Object object;
-            for (const auto& item : node)
-            {
-                if (item.first.IsScalar())
-                {
-                    object.emplace(item.first.Scalar(), ConvertYamlNode(item.second));
-                }
-            }
-            return ConfigValue(std::move(object));
-        }
-
-        if (node.IsSequence())
-        {
-            ConfigValue::Array array;
-            array.reserve(node.size());
-            for (const auto& child : node)
-            {
-                array.push_back(ConvertYamlNode(child));
-            }
-            return ConfigValue(std::move(array));
-        }
-
-        if (node.IsScalar())
-        {
-            try
-            {
-                return ConfigValue(node.as<bool>());
-            }
-            catch (const YAML::Exception&)
-            {
-            }
-
-            try
-            {
-                return ConfigValue(static_cast<std::uint64_t>(node.as<std::uint64_t>()));
-            }
-            catch (const YAML::Exception&)
-            {
-            }
-
-            return ConfigValue(node.Scalar());
-        }
-
-        return {};
+        return value;
     }
-}
-
-bool LoaderRuntimeConfiguration::OverlayFromConfig(const ConfigValue& root, std::string& error)
-{
-    return config_access::ReadBool(root, "daemon", daemon, error, "loader.runtime.daemon") &&
-           config_access::ReadString(root, "pid_file", pid_file, error, "loader.runtime.pid_file");
-}
-
-bool LoaderLogRotationConfiguration::OverlayFromConfig(const ConfigValue& root, std::string& error)
-{
-    return config_access::ReadString(root, "mode", mode, error, "loader.log.rotate.mode") &&
-           config_access::ReadSize(root, "max_size", max_size, error, "loader.log.rotate.max_size") &&
-           config_access::ReadUInt(root, "max_files", max_files, error, "loader.log.rotate.max_files") &&
-           config_access::ReadUInt(root, "daily_hour", daily_hour, error, "loader.log.rotate.daily_hour") &&
-           config_access::ReadUInt(root, "daily_minute", daily_minute, error, "loader.log.rotate.daily_minute");
-}
-
-bool LoaderLogConfiguration::OverlayFromConfig(const ConfigValue& root, std::string& error)
-{
-    if (!config_access::ReadString(root, "file", file, error, "loader.log.file") ||
-        !config_access::ReadString(root, "error_file", error_file, error, "loader.log.error_file") ||
-        !config_access::ReadString(root, "level", level, error, "loader.log.level") ||
-        !config_access::ReadBool(root, "console", console, error, "loader.log.console") ||
-        !config_access::ReadBool(root, "syslog", syslog, error, "loader.log.syslog"))
-    {
-        return false;
-    }
-
-    const ConfigValue* rotate_root = root.Find("rotate");
-    return rotate_root == nullptr || rotate.OverlayFromConfig(*rotate_root, error);
-}
-
-bool LoaderConfiguration::OverlayFromConfig(const ConfigValue& root, std::string& error)
-{
-    const ConfigValue* runtime_root = root.Find("runtime");
-    if (runtime_root != nullptr && !runtime.OverlayFromConfig(*runtime_root, error))
-    {
-        return false;
-    }
-
-    const ConfigValue* log_root = root.Find("log");
-    return log_root == nullptr || log.OverlayFromConfig(*log_root, error);
 }
 
 LoaderConfiguration BuildDefaultLoaderConfiguration(const StartupOptions& options, const IApplication& application)
@@ -118,41 +32,39 @@ LoaderConfiguration BuildDefaultLoaderConfiguration(const StartupOptions& option
     return configuration;
 }
 
-bool LoadConfigurationDocument(const std::string& path, ConfigValue& document, std::string& error)
+bool LoadConfigurationDocument(const std::string& path, std::string& document, std::string& error)
 {
-    const std::string extension = config_access::ToLower(std::filesystem::path(path).extension().string());
-    if (!extension.empty() && extension != ".yaml" && extension != ".yml" && extension != ".json")
+    const std::string extension = ToLower(std::filesystem::path(path).extension().string());
+    if (!extension.empty() && extension != ".json")
     {
         error = "unsupported config format: " + path;
         return false;
     }
 
-    try
-    {
-        document = ConvertYamlNode(YAML::LoadFile(path));
-        return true;
-    }
-    catch (const YAML::BadFile&)
+    std::ifstream input(path);
+    if (!input)
     {
         error = "failed to open config file: " + path;
         return false;
     }
-    catch (const YAML::ParserException& ex)
-    {
-        error = "failed to parse config file " + path + ": " + ex.what();
-        return false;
-    }
-    catch (const YAML::Exception& ex)
-    {
-        error = "failed to read config file " + path + ": " + ex.what();
-        return false;
-    }
+
+    document.assign(std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>());
+    return true;
 }
 
-bool ApplyLoaderConfiguration(LoaderConfiguration& configuration, const ConfigValue& document, std::string& error)
+bool ApplyLoaderConfiguration(LoaderConfiguration& configuration, std::string_view document, std::string& error)
 {
-    const ConfigValue* loader = document.Find("loader");
-    return loader == nullptr || configuration.OverlayFromConfig(*loader, error);
+    LoaderConfigurationDocument root{};
+    root.loader = configuration;
+
+    if (auto result = glz::read<glz::opts{.error_on_unknown_keys = false}>(root, document))
+    {
+        error = glz::format_error(result, document);
+        return false;
+    }
+
+    configuration = std::move(root.loader);
+    return true;
 }
 
 void ApplyCliOverrides(LoaderConfiguration& configuration, const StartupOptions& options)
@@ -231,7 +143,7 @@ void ApplyCliOverrides(LoaderConfiguration& configuration, const StartupOptions&
 
 bool ValidateLoaderConfiguration(const LoaderConfiguration& configuration, std::string& error)
 {
-    const std::string mode = config_access::ToLower(configuration.log.rotate.mode);
+    const std::string mode = ToLower(configuration.log.rotate.mode);
     if (mode != "size" && mode != "daily")
     {
         error = "loader.log.rotate.mode must be one of [size, daily]";
@@ -288,7 +200,7 @@ bool ResolveConfiguration(LoaderConfiguration& loader,
     }
     else
     {
-        ConfigValue document;
+        std::string document;
         std::string error;
         if (!LoadConfigurationDocument(loader.config_path, document, error))
         {
@@ -302,7 +214,7 @@ bool ResolveConfiguration(LoaderConfiguration& loader,
             return false;
         }
 
-        if (!application->OverlayFromConfig(document, error))
+        if (!application->LoadFromJson(document, error))
         {
             std::cerr << error << std::endl;
             return false;
