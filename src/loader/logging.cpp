@@ -60,7 +60,7 @@ namespace
     }
 }
 
-bool SetupLogging(const std::string& application_name, ApplicationContext& context)
+bool SetupLogging(const std::string& application_name, LoaderConfiguration& context)
 {
     const auto level = ToSpdlogLevel(context.log.level);
     if (!level.has_value())

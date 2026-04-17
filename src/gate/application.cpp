@@ -1,27 +1,41 @@
 #include "application.h"
 
+#include "framework/config/access.h"
+
 #include <spdlog/spdlog.h>
+
+bool GateConfiguration::OverlayFromConfig(const ConfigValue& root, std::string& error)
+{
+    const ConfigValue* application = root.Find("application");
+    if (application == nullptr)
+    {
+        return true;
+    }
+
+    const ConfigValue* listen = application->Find("listen");
+    if (listen == nullptr)
+    {
+        return true;
+    }
+
+    if (!config_access::ReadString(*listen, "host", listen_host, error, "application.listen.host"))
+    {
+        return false;
+    }
+
+    if (!config_access::ReadUInt(*listen, "port", listen_port, error, "application.listen.port"))
+    {
+        return false;
+    }
+
+    return true;
+}
 
 void Application::Load()
 {
-    spdlog::info("Application::Configure(config={}, listen={}:{}, log_file={}, error_log_file={}, log_level={}, daemon={}, args={}, settings={})",
-                 Context().config_path,
-                 Context().listen.host,
-                 Context().listen.port,
-                 Context().log.file,
-                 Context().log.error_file,
-                 Context().log.level,
-                 Context().runtime.daemon ? "true" : "false",
-                 Context().arguments.size(),
-                 Context().settings.size());
-    spdlog::debug("Application logging sinks: console={} syslog={} rotate_mode={} rotate_size={} rotate_files={} rotate_at={:02d}:{:02d}",
-                  Context().log.console ? "true" : "false",
-                  Context().log.syslog ? "true" : "false",
-                  Context().log.rotate.mode,
-                  Context().log.rotate.max_size,
-                  Context().log.rotate.max_files,
-                  static_cast<int>(Context().log.rotate.daily_hour),
-                  static_cast<int>(Context().log.rotate.daily_minute));
+    spdlog::info("Application::Configure(listen={}:{})",
+                 AppConfig().listen_host,
+                 AppConfig().listen_port);
     spdlog::info("Application::Load()");
 }
 

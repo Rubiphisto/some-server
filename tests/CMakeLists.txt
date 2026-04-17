@@ -1,5 +1,6 @@
 add_executable(loader_config_test
         loader_config_test.cpp
+        ${CMAKE_SOURCE_DIR}/src/gate/application.cpp
 )
 
 target_include_directories(loader_config_test PRIVATE

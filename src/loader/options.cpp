@@ -72,7 +72,6 @@ ParseResult ParseArguments(int argc, char* argv[], const std::string& applicatio
     if (!config_path_option.empty())
     {
         options.config_path = std::move(config_path_option);
-        options.config_path_explicit = true;
     }
 
     if (!pid_file_option.empty())
@@ -100,7 +99,7 @@ ParseResult ParseArguments(int argc, char* argv[], const std::string& applicatio
 
 std::string ResolveConfigPath(const StartupOptions& options, const IApplication& application)
 {
-    if (options.config_path_explicit)
+    if (!options.config_path.empty())
     {
         return options.config_path;
     }

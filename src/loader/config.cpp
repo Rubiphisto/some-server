@@ -1,141 +1,81 @@
 #include "config.h"
 
+#include "framework/config/access.h"
 #include "options.h"
 
 #include <yaml-cpp/yaml.h>
 
-#include <cctype>
 #include <filesystem>
 #include <iostream>
-#include <optional>
 #include <string_view>
-#include <unordered_map>
 
 namespace
 {
-    std::string ToLower(std::string value)
-    {
-        for (char& ch : value)
-        {
-            ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
-        }
-        return value;
-    }
-
-    std::optional<std::size_t> ParseUnsigned(std::string value)
-    {
-        if (value.empty())
-        {
-            return std::nullopt;
-        }
-
-        try
-        {
-            std::size_t processed = 0;
-            const auto parsed = std::stoull(value, &processed, 10);
-            if (processed != value.size())
-            {
-                return std::nullopt;
-            }
-            return static_cast<std::size_t>(parsed);
-        }
-        catch (const std::exception&)
-        {
-            return std::nullopt;
-        }
-    }
-
-    std::optional<std::size_t> ParseSize(std::string value)
-    {
-        if (value.empty())
-        {
-            return std::nullopt;
-        }
-
-        std::size_t split = value.size();
-        while (split > 0 && std::isalpha(static_cast<unsigned char>(value[split - 1])))
-        {
-            --split;
-        }
-
-        const auto base_value = ParseUnsigned(value.substr(0, split));
-        if (!base_value.has_value())
-        {
-            return std::nullopt;
-        }
-
-        const std::string suffix = ToLower(value.substr(split));
-        std::size_t multiplier = 1;
-        if (suffix.empty() || suffix == "b")
-        {
-            multiplier = 1;
-        }
-        else if (suffix == "k" || suffix == "kb")
-        {
-            multiplier = 1024;
-        }
-        else if (suffix == "m" || suffix == "mb")
-        {
-            multiplier = 1024 * 1024;
-        }
-        else if (suffix == "g" || suffix == "gb")
-        {
-            multiplier = 1024 * 1024 * 1024ULL;
-        }
-        else
-        {
-            return std::nullopt;
-        }
-
-        return base_value.value() * multiplier;
-    }
-
-    std::string JoinPath(std::string_view prefix, std::string_view child)
-    {
-        if (prefix.empty())
-        {
-            return std::string(child);
-        }
-        return std::string(prefix) + "." + std::string(child);
-    }
-
-    std::string NodeAsSettingValue(const YAML::Node& node)
+    ConfigValue ConvertYamlNode(const YAML::Node& node)
     {
         if (!node || node.IsNull())
         {
             return {};
         }
 
-        if (node.IsScalar())
+        if (node.IsMap())
         {
-            return node.Scalar();
+            ConfigValue::Object object;
+            for (const auto& item : node)
+            {
+                if (item.first.IsScalar())
+                {
+                    object.emplace(item.first.Scalar(), ConvertYamlNode(item.second));
+                }
+            }
+            return ConfigValue(std::move(object));
         }
 
-        YAML::Emitter emitter;
-        emitter << node;
-        return emitter.c_str();
+        if (node.IsSequence())
+        {
+            ConfigValue::Array array;
+            array.reserve(node.size());
+            for (const auto& child : node)
+            {
+                array.push_back(ConvertYamlNode(child));
+            }
+            return ConfigValue(std::move(array));
+        }
+
+        if (node.IsScalar())
+        {
+            try
+            {
+                return ConfigValue(node.as<bool>());
+            }
+            catch (const YAML::Exception&)
+            {
+            }
+
+            try
+            {
+                return ConfigValue(static_cast<std::uint64_t>(node.as<std::uint64_t>()));
+            }
+            catch (const YAML::Exception&)
+            {
+            }
+
+            return ConfigValue(node.Scalar());
+        }
+
+        return {};
     }
 
-    void FlattenSettings(const YAML::Node& node,
+    void FlattenSettings(const ConfigValue& node,
                          std::string_view prefix,
                          std::unordered_map<std::string, std::string>& settings)
     {
-        if (!node)
+        if (const auto* object = node.AsObject(); object != nullptr)
         {
-            return;
-        }
-
-        if (node.IsMap())
-        {
-            for (const auto& item : node)
+            for (const auto& [key, value] : *object)
             {
-                if (!item.first.IsScalar())
-                {
-                    continue;
-                }
-
-                const std::string child_path = JoinPath(prefix, item.first.Scalar());
-                FlattenSettings(item.second, child_path, settings);
+                const std::string child = prefix.empty() ? key : std::string(prefix) + "." + key;
+                FlattenSettings(value, child, settings);
             }
             return;
         }
@@ -145,101 +85,25 @@ namespace
             return;
         }
 
-        settings[std::string(prefix)] = NodeAsSettingValue(node);
-    }
-
-    bool ReportTypeError(std::string_view path, std::string_view expected)
-    {
-        std::cerr << "config error at " << path << ": expected " << expected << std::endl;
-        return false;
-    }
-
-    bool ApplyString(const YAML::Node& node, std::string_view path, std::string& target)
-    {
-        if (!node)
+        if (const auto* text = node.AsString(); text != nullptr)
         {
-            return true;
+            settings[std::string(prefix)] = *text;
         }
-        if (!node.IsScalar())
+        else if (const auto* flag = node.AsBool(); flag != nullptr)
         {
-            return ReportTypeError(path, "scalar");
+            settings[std::string(prefix)] = *flag ? "true" : "false";
         }
-
-        target = node.Scalar();
-        return true;
-    }
-
-    bool ApplyBool(const YAML::Node& node, std::string_view path, bool& target)
-    {
-        if (!node)
+        else if (const auto* integer = node.AsUInt(); integer != nullptr)
         {
-            return true;
+            settings[std::string(prefix)] = std::to_string(*integer);
         }
-        if (!node.IsScalar())
-        {
-            return ReportTypeError(path, "bool");
-        }
-
-        try
-        {
-            target = node.as<bool>();
-            return true;
-        }
-        catch (const YAML::Exception&)
-        {
-            return ReportTypeError(path, "bool");
-        }
-    }
-
-    bool ApplyUnsigned(const YAML::Node& node, std::string_view path, std::size_t& target)
-    {
-        if (!node)
-        {
-            return true;
-        }
-        if (!node.IsScalar())
-        {
-            return ReportTypeError(path, "unsigned integer");
-        }
-
-        try
-        {
-            target = node.as<std::size_t>();
-            return true;
-        }
-        catch (const YAML::Exception&)
-        {
-            return ReportTypeError(path, "unsigned integer");
-        }
-    }
-
-    bool ApplySizeValue(const YAML::Node& node, std::string_view path, std::size_t& target)
-    {
-        if (!node)
-        {
-            return true;
-        }
-        if (!node.IsScalar())
-        {
-            return ReportTypeError(path, "size scalar");
-        }
-
-        const auto parsed = ParseSize(node.Scalar());
-        if (!parsed.has_value())
-        {
-            std::cerr << "config error at " << path << ": invalid size value '" << node.Scalar() << "'" << std::endl;
-            return false;
-        }
-
-        target = parsed.value();
-        return true;
     }
 
     void SetSetting(std::unordered_map<std::string, std::string>& settings,
                     std::string_view key,
-                    std::string value)
+                    const std::string& value)
     {
-        settings[std::string(key)] = std::move(value);
+        settings[std::string(key)] = value;
     }
 
     void SetSetting(std::unordered_map<std::string, std::string>& settings,
@@ -248,235 +112,276 @@ namespace
     {
         settings[std::string(key)] = value;
     }
-
 }
 
-ApplicationContext BuildDefaultContext(const StartupOptions& options, const IApplication& application)
+bool LoaderRuntimeConfiguration::OverlayFromConfig(const ConfigValue& root, std::string& error)
 {
-    ApplicationContext context;
-    context.config_path = ResolveConfigPath(options, application);
-    context.runtime.pid_file = ResolvePidFilePath(options, application);
-    context.log.file = ResolveLogFilePath(options, application);
-    context.log.error_file = ResolveErrorLogFilePath(options, application);
-    return context;
+    return config_access::ReadBool(root, "daemon", daemon, error, "loader.runtime.daemon") &&
+           config_access::ReadString(root, "pid_file", pid_file, error, "loader.runtime.pid_file");
 }
 
-bool LoadYamlIntoContext(ApplicationContext& context, bool config_path_explicit, bool verbose)
+bool LoaderLogRotationConfiguration::OverlayFromConfig(const ConfigValue& root, std::string& error)
 {
-    if (context.config_path.empty())
+    return config_access::ReadString(root, "mode", mode, error, "loader.log.rotate.mode") &&
+           config_access::ReadSize(root, "max_size", max_size, error, "loader.log.rotate.max_size") &&
+           config_access::ReadUInt(root, "max_files", max_files, error, "loader.log.rotate.max_files") &&
+           config_access::ReadUInt(root, "daily_hour", daily_hour, error, "loader.log.rotate.daily_hour") &&
+           config_access::ReadUInt(root, "daily_minute", daily_minute, error, "loader.log.rotate.daily_minute");
+}
+
+bool LoaderLogConfiguration::OverlayFromConfig(const ConfigValue& root, std::string& error)
+{
+    if (!config_access::ReadString(root, "file", file, error, "loader.log.file") ||
+        !config_access::ReadString(root, "error_file", error_file, error, "loader.log.error_file") ||
+        !config_access::ReadString(root, "level", level, error, "loader.log.level") ||
+        !config_access::ReadBool(root, "console", console, error, "loader.log.console") ||
+        !config_access::ReadBool(root, "syslog", syslog, error, "loader.log.syslog"))
     {
-        return true;
+        return false;
     }
 
-    if (!std::filesystem::exists(context.config_path))
-    {
-        if (config_path_explicit)
-        {
-            std::cerr << "failed to open config file: " << context.config_path << std::endl;
-            return false;
-        }
+    const ConfigValue* rotate_root = root.Find("rotate");
+    return rotate_root == nullptr || rotate.OverlayFromConfig(*rotate_root, error);
+}
 
-        if (verbose)
-        {
-            std::cout << "config file not found, skip default path: " << context.config_path << std::endl;
-        }
-        context.config_path.clear();
-        return true;
+bool LoaderConfiguration::OverlayFromConfig(const ConfigValue& root, std::string& error)
+{
+    FlattenSettings(root, "loader", settings);
+
+    const ConfigValue* runtime_root = root.Find("runtime");
+    if (runtime_root != nullptr && !runtime.OverlayFromConfig(*runtime_root, error))
+    {
+        return false;
     }
 
-    YAML::Node root;
+    const ConfigValue* log_root = root.Find("log");
+    return log_root == nullptr || log.OverlayFromConfig(*log_root, error);
+}
+
+LoaderConfiguration BuildDefaultLoaderConfiguration(const StartupOptions& options, const IApplication& application)
+{
+    LoaderConfiguration configuration;
+    configuration.config_path = ResolveConfigPath(options, application);
+    configuration.runtime.pid_file = ResolvePidFilePath(options, application);
+    configuration.log.file = ResolveLogFilePath(options, application);
+    configuration.log.error_file = ResolveErrorLogFilePath(options, application);
+    return configuration;
+}
+
+bool LoadConfigurationDocument(const std::string& path, ConfigValue& document, std::string& error)
+{
+    const std::string extension = config_access::ToLower(std::filesystem::path(path).extension().string());
+    if (!extension.empty() && extension != ".yaml" && extension != ".yml" && extension != ".json")
+    {
+        error = "unsupported config format: " + path;
+        return false;
+    }
+
     try
     {
-        root = YAML::LoadFile(context.config_path);
+        document = ConvertYamlNode(YAML::LoadFile(path));
+        return true;
     }
     catch (const YAML::BadFile&)
     {
-        std::cerr << "failed to open config file: " << context.config_path << std::endl;
+        error = "failed to open config file: " + path;
         return false;
     }
     catch (const YAML::ParserException& ex)
     {
-        std::cerr << "failed to parse config file " << context.config_path << ": " << ex.what() << std::endl;
+        error = "failed to parse config file " + path + ": " + ex.what();
         return false;
     }
     catch (const YAML::Exception& ex)
     {
-        std::cerr << "failed to read config file " << context.config_path << ": " << ex.what() << std::endl;
+        error = "failed to read config file " + path + ": " + ex.what();
         return false;
     }
-
-    if (!root || root.IsNull())
-    {
-        return true;
-    }
-
-    if (!root.IsMap())
-    {
-        std::cerr << "config error: root node must be a map" << std::endl;
-        return false;
-    }
-
-    FlattenSettings(root, {}, context.settings);
-
-    if (!ApplyString(root["listen"]["host"], "listen.host", context.listen.host) ||
-        !ApplyUnsigned(root["listen"]["port"], "listen.port", context.listen.port) ||
-        !ApplyString(root["log"]["level"], "log.level", context.log.level) ||
-        !ApplyString(root["log"]["file"], "log.file", context.log.file) ||
-        !ApplyString(root["log"]["error_file"], "log.error_file", context.log.error_file) ||
-        !ApplyBool(root["log"]["console"], "log.console", context.log.console) ||
-        !ApplyBool(root["log"]["syslog"], "log.syslog", context.log.syslog) ||
-        !ApplyString(root["log"]["rotate"]["mode"], "log.rotate.mode", context.log.rotate.mode) ||
-        !ApplySizeValue(root["log"]["rotate"]["max_size"], "log.rotate.max_size", context.log.rotate.max_size) ||
-        !ApplyUnsigned(root["log"]["rotate"]["max_files"], "log.rotate.max_files", context.log.rotate.max_files) ||
-        !ApplyUnsigned(root["log"]["rotate"]["daily_hour"], "log.rotate.daily_hour", context.log.rotate.daily_hour) ||
-        !ApplyUnsigned(root["log"]["rotate"]["daily_minute"], "log.rotate.daily_minute", context.log.rotate.daily_minute) ||
-        !ApplyBool(root["runtime"]["daemon"], "runtime.daemon", context.runtime.daemon) ||
-        !ApplyString(root["runtime"]["pid_file"], "runtime.pid_file", context.runtime.pid_file))
-    {
-        return false;
-    }
-
-    return true;
 }
 
-void ApplyCliOverrides(ApplicationContext& context, const StartupOptions& options)
+bool ApplyLoaderConfiguration(LoaderConfiguration& configuration, const ConfigValue& document, std::string& error)
+{
+    const ConfigValue* loader = document.Find("loader");
+    return loader == nullptr || configuration.OverlayFromConfig(*loader, error);
+}
+
+void ApplyCliOverrides(LoaderConfiguration& configuration, const StartupOptions& options)
 {
     if (!options.log_level.empty())
     {
-        context.log.level = options.log_level;
-        SetSetting(context.settings, "log.level", options.log_level);
+        configuration.log.level = options.log_level;
+        SetSetting(configuration.settings, "loader.log.level", options.log_level);
     }
 
     if (!options.pid_file.empty())
     {
-        context.runtime.pid_file = options.pid_file;
-        SetSetting(context.settings, "runtime.pid_file", options.pid_file);
+        configuration.runtime.pid_file = options.pid_file;
+        SetSetting(configuration.settings, "loader.runtime.pid_file", options.pid_file);
     }
 
     if (!options.log_file.empty())
     {
-        context.log.file = options.log_file;
-        SetSetting(context.settings, "log.file", options.log_file);
+        configuration.log.file = options.log_file;
+        SetSetting(configuration.settings, "loader.log.file", options.log_file);
     }
 
     if (!options.error_log_file.empty())
     {
-        context.log.error_file = options.error_log_file;
-        SetSetting(context.settings, "log.error_file", options.error_log_file);
+        configuration.log.error_file = options.error_log_file;
+        SetSetting(configuration.settings, "loader.log.error_file", options.error_log_file);
     }
 
     if (options.daemon)
     {
-        context.runtime.daemon = true;
-        context.log.console = false;
-        SetSetting(context.settings, "runtime.daemon", "true");
-        SetSetting(context.settings, "log.console", "false");
+        configuration.runtime.daemon = true;
+        configuration.log.console = false;
+        SetSetting(configuration.settings, "loader.runtime.daemon", "true");
+        SetSetting(configuration.settings, "loader.log.console", "false");
     }
 
     if (options.syslog)
     {
-        context.log.syslog = true;
-        SetSetting(context.settings, "log.syslog", "true");
+        configuration.log.syslog = true;
+        SetSetting(configuration.settings, "loader.log.syslog", "true");
     }
 
     if (options.disable_console)
     {
-        context.log.console = false;
-        SetSetting(context.settings, "log.console", "false");
+        configuration.log.console = false;
+        SetSetting(configuration.settings, "loader.log.console", "false");
     }
 
     if (options.disable_file_log)
     {
-        context.log.file.clear();
-        SetSetting(context.settings, "log.file", "");
+        configuration.log.file.clear();
+        SetSetting(configuration.settings, "loader.log.file", "");
     }
 
     if (options.disable_error_log)
     {
-        context.log.error_file.clear();
-        SetSetting(context.settings, "log.error_file", "");
+        configuration.log.error_file.clear();
+        SetSetting(configuration.settings, "loader.log.error_file", "");
     }
 
     if (options.log_max_size_explicit)
     {
-        context.log.rotate.max_size = options.log_max_size;
-        SetSetting(context.settings, "log.rotate.max_size", std::to_string(options.log_max_size));
+        configuration.log.rotate.max_size = options.log_max_size;
+        SetSetting(configuration.settings, "loader.log.rotate.max_size", std::to_string(options.log_max_size));
     }
 
     if (options.log_max_files_explicit)
     {
-        context.log.rotate.max_files = options.log_max_files;
-        SetSetting(context.settings, "log.rotate.max_files", std::to_string(options.log_max_files));
+        configuration.log.rotate.max_files = options.log_max_files;
+        SetSetting(configuration.settings, "loader.log.rotate.max_files", std::to_string(options.log_max_files));
     }
 
     if (!options.log_rotation_mode.empty())
     {
-        context.log.rotate.mode = options.log_rotation_mode;
-        SetSetting(context.settings, "log.rotate.mode", options.log_rotation_mode);
+        configuration.log.rotate.mode = options.log_rotation_mode;
+        SetSetting(configuration.settings, "loader.log.rotate.mode", options.log_rotation_mode);
     }
 
     if (options.log_rotate_hour_explicit)
     {
-        context.log.rotate.daily_hour = options.log_rotate_hour;
-        SetSetting(context.settings, "log.rotate.daily_hour", std::to_string(options.log_rotate_hour));
+        configuration.log.rotate.daily_hour = options.log_rotate_hour;
+        SetSetting(configuration.settings, "loader.log.rotate.daily_hour", std::to_string(options.log_rotate_hour));
     }
 
     if (options.log_rotate_minute_explicit)
     {
-        context.log.rotate.daily_minute = options.log_rotate_minute;
-        SetSetting(context.settings, "log.rotate.daily_minute", std::to_string(options.log_rotate_minute));
+        configuration.log.rotate.daily_minute = options.log_rotate_minute;
+        SetSetting(configuration.settings, "loader.log.rotate.daily_minute", std::to_string(options.log_rotate_minute));
     }
 }
 
-bool ValidateContext(const ApplicationContext& context)
+bool ValidateLoaderConfiguration(const LoaderConfiguration& configuration, std::string& error)
 {
-    const std::string mode = ToLower(context.log.rotate.mode);
+    const std::string mode = config_access::ToLower(configuration.log.rotate.mode);
     if (mode != "size" && mode != "daily")
     {
-        std::cerr << "config error at log.rotate.mode: expected one of [size, daily]" << std::endl;
+        error = "loader.log.rotate.mode must be one of [size, daily]";
         return false;
     }
 
-    if (context.listen.port == 0 || context.listen.port > 65535)
+    if (configuration.log.rotate.max_files == 0)
     {
-        std::cerr << "config error at listen.port: must be in range 1-65535" << std::endl;
+        error = "loader.log.rotate.max_files must be greater than 0";
         return false;
     }
 
-    if (context.log.rotate.max_files == 0)
+    if (configuration.log.rotate.daily_hour > 23)
     {
-        std::cerr << "config error at log.rotate.max_files: must be greater than 0" << std::endl;
+        error = "loader.log.rotate.daily_hour must be in range 0-23";
         return false;
     }
 
-    if (context.log.rotate.daily_hour > 23)
+    if (configuration.log.rotate.daily_minute > 59)
     {
-        std::cerr << "config error at log.rotate.daily_hour: must be in range 0-23" << std::endl;
-        return false;
-    }
-
-    if (context.log.rotate.daily_minute > 59)
-    {
-        std::cerr << "config error at log.rotate.daily_minute: must be in range 0-59" << std::endl;
+        error = "loader.log.rotate.daily_minute must be in range 0-59";
         return false;
     }
 
     return true;
 }
 
-bool ResolveConfiguration(ApplicationContext& context, const StartupOptions& options, const IApplication& application)
+bool ResolveConfiguration(LoaderConfiguration& loader,
+                          std::unique_ptr<IApplicationConfiguration>& application,
+                          const StartupOptions& options,
+                          IApplication& app)
 {
-    context = BuildDefaultContext(options, application);
-
-    if (!LoadYamlIntoContext(context, options.config_path_explicit, context.verbose))
+    loader = BuildDefaultLoaderConfiguration(options, app);
+    application = app.CreateConfiguration();
+    if (!application)
     {
+        std::cerr << "failed to create application configuration" << std::endl;
         return false;
     }
 
-    ApplyCliOverrides(context, options);
-    if (!ValidateContext(context))
+    if (!std::filesystem::exists(loader.config_path))
     {
+        if (!options.config_path.empty())
+        {
+            std::cerr << "failed to open config file: " << loader.config_path << std::endl;
+            return false;
+        }
+
+        if (loader.verbose)
+        {
+            std::cout << "config file not found, skip default path: " << loader.config_path << std::endl;
+        }
+        loader.config_path.clear();
+    }
+    else
+    {
+        ConfigValue document;
+        std::string error;
+        if (!LoadConfigurationDocument(loader.config_path, document, error))
+        {
+            std::cerr << error << std::endl;
+            return false;
+        }
+
+        if (!ApplyLoaderConfiguration(loader, document, error))
+        {
+            std::cerr << error << std::endl;
+            return false;
+        }
+
+        if (!application->OverlayFromConfig(document, error))
+        {
+            std::cerr << error << std::endl;
+            return false;
+        }
+    }
+
+    ApplyCliOverrides(loader, options);
+
+    std::string error;
+    if (!ValidateLoaderConfiguration(loader, error))
+    {
+        std::cerr << error << std::endl;
         return false;
     }
+
     return true;
 }

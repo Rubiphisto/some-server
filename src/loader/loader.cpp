@@ -137,81 +137,81 @@ int Loader::Run(IApplication& app, int argc, char* argv[])
         return 0;
     }
 
-    ApplicationContext context;
-    context.executable_path = argc > 0 ? argv[0] : "";
-    context.arguments = std::move(options.positional_args);
-    context.verbose = options.verbose;
+    LoaderConfiguration loader;
+    loader.executable_path = argc > 0 ? argv[0] : "";
+    loader.arguments = std::move(options.positional_args);
+    loader.verbose = options.verbose;
+    std::unique_ptr<IApplicationConfiguration> configuration;
 
-    if (!ResolveConfiguration(context, options, app))
+    if (!ResolveConfiguration(loader, configuration, options, app))
     {
         return 1;
     }
 
 #ifndef _WIN32
-    if (context.runtime.daemon && !DaemonizeProcess())
+    if (loader.runtime.daemon && !DaemonizeProcess())
     {
         return 1;
     }
 #endif
 
     PidFileGuard pid_file_guard;
-    if (!context.runtime.pid_file.empty())
+    if (!loader.runtime.pid_file.empty())
     {
 #ifndef _WIN32
-        if (!CreatePidFile(context.runtime.pid_file))
+        if (!CreatePidFile(loader.runtime.pid_file))
         {
             return 1;
         }
 #endif
-        pid_file_guard.path = context.runtime.pid_file;
+        pid_file_guard.path = loader.runtime.pid_file;
     }
 
-    if (!SetupLogging(application_name, context))
+    if (!SetupLogging(application_name, loader))
     {
         return 1;
     }
 
-    if (context.verbose)
+    if (loader.verbose)
     {
         spdlog::info("starting {}", application_name);
-        if (!context.config_path.empty())
+        if (!loader.config_path.empty())
         {
-            spdlog::info("using config: {}", context.config_path);
+            spdlog::info("using config: {}", loader.config_path);
         }
-        if (!context.runtime.pid_file.empty())
+        if (!loader.runtime.pid_file.empty())
         {
-            spdlog::info("writing pid file to: {}", context.runtime.pid_file);
+            spdlog::info("writing pid file to: {}", loader.runtime.pid_file);
         }
-        if (!context.log.file.empty())
+        if (!loader.log.file.empty())
         {
-            spdlog::info("writing logs to: {}", context.log.file);
+            spdlog::info("writing logs to: {}", loader.log.file);
         }
-        if (!context.log.error_file.empty())
+        if (!loader.log.error_file.empty())
         {
-            spdlog::info("writing error logs to: {}", context.log.error_file);
+            spdlog::info("writing error logs to: {}", loader.log.error_file);
         }
-        spdlog::info("listen: {}:{}", context.listen.host, context.listen.port);
-        spdlog::info("log level: {}", context.log.level);
-        spdlog::info("log rotation mode: {}", context.log.rotate.mode);
-        if (context.log.rotate.mode == "daily")
+        spdlog::info("log level: {}", loader.log.level);
+        spdlog::info("log rotation mode: {}", loader.log.rotate.mode);
+        if (loader.log.rotate.mode == "daily")
         {
             spdlog::info("daily rotation time: {:02d}:{:02d} max_files={}",
-                         static_cast<int>(context.log.rotate.daily_hour),
-                         static_cast<int>(context.log.rotate.daily_minute),
-                         context.log.rotate.max_files);
+                         static_cast<int>(loader.log.rotate.daily_hour),
+                         static_cast<int>(loader.log.rotate.daily_minute),
+                         loader.log.rotate.max_files);
         }
         else
         {
             spdlog::info("log rotation: max_size={} max_files={}",
-                         context.log.rotate.max_size,
-                         context.log.rotate.max_files);
+                         loader.log.rotate.max_size,
+                         loader.log.rotate.max_files);
         }
-        spdlog::info("console logging: {}", context.log.console ? "enabled" : "disabled");
-        spdlog::info("syslog logging: {}", context.log.syslog ? "enabled" : "disabled");
-        spdlog::info("daemon mode: {}", context.runtime.daemon ? "enabled" : "disabled");
+        spdlog::info("console logging: {}", loader.log.console ? "enabled" : "disabled");
+        spdlog::info("syslog logging: {}", loader.log.syslog ? "enabled" : "disabled");
+        spdlog::info("daemon mode: {}", loader.runtime.daemon ? "enabled" : "disabled");
     }
 
-    if (!Initialize(app, context))
+    if (!Initialize(app, *configuration))
     {
         spdlog::shutdown();
         return 1;
@@ -221,9 +221,9 @@ int Loader::Run(IApplication& app, int argc, char* argv[])
     return 0;
 }
 
-bool Loader::Initialize(IApplication& app, const ApplicationContext& context) const
+bool Loader::Initialize(IApplication& app, const IApplicationConfiguration& configuration) const
 {
-    if (!app.Configure(context))
+    if (!app.Configure(configuration))
     {
         spdlog::error("application configure failed");
         return false;
