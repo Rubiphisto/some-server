@@ -3,13 +3,31 @@ version: '3.8'
 services:
   dev:
     build: .
-    container_name: cpp20-dev-env
+    container_name: cpp23-dev-env
+
     ports:
-      - "2222:22"      # SSH (Windows 连接用)
+      - "2222:22"   # SSH
+
     volumes:
-      #- ./code:/root/code          # 代码目录，可在 Windows 中直接编辑
+      # 代码目录（建议打开）
+      #- ./code:/root/code
+
+      # 数据持久化
       - mariadb_data:/var/lib/mysql
       - redis_data:/var/lib/redis
+
+    environment:
+      - TZ=Asia/Singapore
+
+    # 网络 & 调试能力增强（关键）
+    tty: true
+    stdin_open: true
+
+    # 有些网络工具（如 tcpdump）或调试需要
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
     restart: unless-stopped
 
 volumes:

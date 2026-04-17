@@ -1,20 +1,36 @@
 #!/bin/bash
+set -e
 
-# 启动 MariaDB
+echo "===> Starting services..."
+
+# ========= SSH =========
+echo "[+] Starting SSH..."
+/usr/sbin/sshd
+
+# ========= MariaDB =========
+echo "[+] Initializing MariaDB..."
+
+# 如果数据库未初始化，则初始化
 if [ ! -d "/var/lib/mysql/mysql" ]; then
-    mysql_install_db --user=mysql --datadir=/var/lib/mysql
+    echo "    -> First time setup"
+    mysqld --initialize-insecure --user=mysql
 fi
+
+echo "[+] Starting MariaDB..."
 mysqld_safe --user=mysql &
-sleep 5
 
-# 设置 root 密码并允许远程连接
-mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'; \
-          CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY 'root'; \
-          GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION; \
-          FLUSH PRIVILEGES;"
+# 等待数据库启动
+sleep 3
 
-# 启动 Redis（允许外部连接，修改配置文件）
-redis-server /etc/redis/redis.conf --daemonize yes
+# ========= Redis =========
+echo "[+] Starting Redis..."
+redis-server --daemonize yes
 
-# 前台运行 SSH（保持容器活跃）
-/usr/sbin/sshd -D
+# ========= 网络信息（调试用）=========
+echo "[+] Network info:"
+ip addr || true
+cat /etc/resolv.conf || true
+
+# ========= 保持容器运行 =========
+echo "===> All services started"
+tail -f /dev/null
