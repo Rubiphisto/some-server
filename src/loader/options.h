@@ -31,8 +31,8 @@ struct StartupOptions
     std::optional<bool> daemon;
     std::optional<bool> syslog;
     std::optional<bool> console;
-    std::optional<bool> file_log;
-    std::optional<bool> error_log;
+    std::optional<bool> file_log_enabled_override;
+    std::optional<bool> error_log_enabled_override;
     std::vector<std::string> positional_args;
 };
 

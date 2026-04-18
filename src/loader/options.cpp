@@ -23,7 +23,7 @@ std::string Narrow(const char8_t* value)
 
 ParseResult ParseArguments(int argc, char* argv[], const std::string& application_name, StartupOptions& options)
 {
-    CLI::App app{application_name + " startup loader"};
+    CLI::App cli{application_name + " startup loader"};
     bool daemon = false;
     bool syslog = false;
     bool disable_console = false;
@@ -40,42 +40,43 @@ ParseResult ParseArguments(int argc, char* argv[], const std::string& applicatio
     std::size_t log_rotate_hour_value = 0;
     std::size_t log_rotate_minute_value = 0;
 
-    app.set_help_flag("-h,--help", "Show this help message");
-    app.add_flag("-V,--version", options.show_version, "Show application name and version banner");
-    app.add_flag("-d,--daemon", daemon, "Run in daemon mode");
-    app.add_flag("--syslog", syslog, "Enable syslog sink");
-    app.add_flag("--no-console", disable_console, "Disable console logging");
-    app.add_flag("--no-file-log", disable_file_log, "Disable the main log file sink");
-    app.add_flag("--no-error-log", disable_error_log, "Disable the dedicated error log sink");
-    app.add_flag("-v,--verbose", options.verbose, "Enable verbose startup logs");
-    app.add_option("-c,--config", config_path_option, "Load the specified JSON configuration file");
-    app.add_option("--pid-file", pid_file_option, "Write the running process id to this file");
-    app.add_option("--log-file", log_file_option, "Override log file path");
-    app.add_option("--error-log-file", error_log_file_option, "Write error logs to a separate file");
-    auto* log_level = app.add_option("--log-level", log_level_option, "Override log level")
+    cli.set_help_flag("-h,--help", "Show this help message");
+    cli.add_flag("-V,--version", options.show_version, "Show application name and version banner");
+    cli.add_flag("-d,--daemon", daemon, "Run in daemon mode");
+    cli.add_flag("--syslog", syslog, "Enable syslog sink");
+    cli.add_flag("--no-console", disable_console, "Disable console logging");
+    cli.add_flag("--no-file-log", disable_file_log, "Disable the main log file sink");
+    cli.add_flag("--no-error-log", disable_error_log, "Disable the dedicated error log sink");
+    cli.add_flag("-v,--verbose", options.verbose, "Enable verbose startup logs");
+    cli.add_option("-c,--config", config_path_option, "Load the specified JSON configuration file");
+    cli.add_option("--pid-file", pid_file_option, "Write the running process id to this file");
+    cli.add_option("--log-file", log_file_option, "Override log file path");
+    cli.add_option("--error-log-file", error_log_file_option, "Write error logs to a separate file");
+    auto* log_level = cli.add_option("--log-level", log_level_option, "Override log level")
         ->check(CLI::IsMember(kLogLevels, CLI::ignore_case));
-    auto* log_rotation_mode = app.add_option("--log-rotate-mode", log_rotation_mode_option, "Select log rotation mode")
+    auto* log_rotation_mode =
+        cli.add_option("--log-rotate-mode", log_rotation_mode_option, "Select log rotation mode")
         ->check(CLI::IsMember(kRotationModes, CLI::ignore_case));
     auto* log_max_size =
-        app.add_option("--log-max-size", log_max_size_value, "Override rotating log max size in bytes");
+        cli.add_option("--log-max-size", log_max_size_value, "Override rotating log max size in bytes");
     auto* log_max_files =
-        app.add_option("--log-max-files", log_max_files_value, "Override rotating log file count");
+        cli.add_option("--log-max-files", log_max_files_value, "Override rotating log file count");
     auto* log_rotate_hour =
-        app.add_option("--log-rotate-hour", log_rotate_hour_value, "Daily rotation hour (0-23)")
+        cli.add_option("--log-rotate-hour", log_rotate_hour_value, "Daily rotation hour (0-23)")
             ->check(CLI::Range(0, 23));
     auto* log_rotate_minute =
-        app.add_option("--log-rotate-minute", log_rotate_minute_value, "Daily rotation minute (0-59)")
+        cli.add_option("--log-rotate-minute", log_rotate_minute_value, "Daily rotation minute (0-59)")
             ->check(CLI::Range(0, 59));
-    app.add_option("args", options.positional_args, "Positional arguments")->expected(0, -1);
-    app.positionals_at_end(true);
+    cli.add_option("args", options.positional_args, "Positional arguments")->expected(0, -1);
+    cli.positionals_at_end(true);
 
     try
     {
-        app.parse(argc, argv);
+        cli.parse(argc, argv);
     }
     catch (const CLI::ParseError& error)
     {
-        const auto exit_code = app.exit(error);
+        const auto exit_code = cli.exit(error);
         return exit_code == 0 ? ParseResult::exit_success : ParseResult::exit_failure;
     }
 
@@ -146,12 +147,12 @@ ParseResult ParseArguments(int argc, char* argv[], const std::string& applicatio
 
     if (disable_file_log)
     {
-        options.file_log = false;
+        options.file_log_enabled_override = false;
     }
 
     if (disable_error_log)
     {
-        options.error_log = false;
+        options.error_log_enabled_override = false;
     }
 
     return ParseResult::ok;
