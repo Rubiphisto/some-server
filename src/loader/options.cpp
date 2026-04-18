@@ -6,15 +6,6 @@
 
 #include <utility>
 
-std::string Narrow(const char8_t* value)
-{
-    if (value == nullptr)
-    {
-        return {};
-    }
-    return reinterpret_cast<const char*>(value);
-}
-
 ParseResult ParseArguments(int argc, char* argv[], const std::string& application_name, StartupOptions& options)
 {
     CLI::App cli{application_name + " startup loader"};

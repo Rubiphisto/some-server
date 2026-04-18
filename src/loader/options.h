@@ -22,5 +22,4 @@ struct StartupOptions
     std::vector<std::string> positional_args;
 };
 
-std::string Narrow(const char8_t* value);
 ParseResult ParseArguments(int argc, char* argv[], const std::string& application_name, StartupOptions& options);

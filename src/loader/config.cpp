@@ -25,7 +25,7 @@ namespace
 LoaderConfiguration BuildDefaultLoaderConfiguration(const IApplication& application)
 {
     LoaderConfiguration configuration;
-    const std::string application_name = Narrow(application.GetName());
+    const std::string application_name = application.GetName();
     configuration.config_path =
         (std::filesystem::current_path() / "conf" / (application_name + ".json")).lexically_normal().string();
     configuration.runtime.pid_file = (std::filesystem::path("run") / (application_name + ".pid")).string();

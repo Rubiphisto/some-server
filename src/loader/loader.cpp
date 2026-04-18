@@ -119,7 +119,7 @@ namespace
 int Loader::Run(IApplication& app, int argc, char* argv[])
 {
     StartupOptions options;
-    const std::string application_name = Narrow(app.GetName());
+    const std::string application_name = app.GetName();
     const ParseResult parse_result = ParseArguments(argc, argv, application_name, options);
     if (parse_result == ParseResult::exit_success)
     {

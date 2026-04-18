@@ -9,7 +9,7 @@ struct GateConfiguration : public BaseApplicationConfiguration, public JsonAppli
 class Application : public ApplicationBase<GateConfiguration>
 {
 public:
-    const char8_t* GetName() const override { return u8"gate"; }
+    std::string GetName() const override { return "gate"; }
     void Unload() override;
     void Start() override;
     void Stop() override;
