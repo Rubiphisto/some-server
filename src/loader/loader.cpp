@@ -1,17 +1,62 @@
 #include "loader.h"
 #include "config.h"
 #include "logging.h"
-#include "options.h"
 
+#include <CLI/CLI.hpp>
 #include <spdlog/spdlog.h>
 
 #include <iostream>
+#include <optional>
+
+namespace
+{
+    enum class ParseResult
+    {
+        ok,
+        exit_success,
+        exit_failure
+    };
+
+    ParseResult ParseArguments(int argc,
+                               char* argv[],
+                               const std::string& application_name,
+                               std::optional<std::string>& override_config_path,
+                               std::vector<std::string>& positional_args)
+    {
+        CLI::App cli{application_name + " startup loader"};
+        std::string config_path_option;
+
+        cli.set_help_flag("-h,--help", "Show this help message");
+        cli.add_option("-c,--config", config_path_option, "Load a JSON configuration overlay file");
+        cli.add_option("args", positional_args, "Positional arguments")->expected(0, -1);
+        cli.positionals_at_end(true);
+
+        try
+        {
+            cli.parse(argc, argv);
+        }
+        catch (const CLI::ParseError& error)
+        {
+            const auto exit_code = cli.exit(error);
+            return exit_code == 0 ? ParseResult::exit_success : ParseResult::exit_failure;
+        }
+
+        if (!config_path_option.empty())
+        {
+            override_config_path = std::move(config_path_option);
+        }
+
+        return ParseResult::ok;
+    }
+}
 
 int Loader::Run(IApplication& app, int argc, char* argv[])
 {
-    StartupOptions options;
     const std::string application_name = app.GetName();
-    const ParseResult parse_result = ParseArguments(argc, argv, application_name, options);
+    std::optional<std::string> override_config_path;
+    std::vector<std::string> positional_args;
+    const ParseResult parse_result =
+        ParseArguments(argc, argv, application_name, override_config_path, positional_args);
     if (parse_result == ParseResult::exit_success)
     {
         return 0;
@@ -24,10 +69,10 @@ int Loader::Run(IApplication& app, int argc, char* argv[])
 
     LoaderConfiguration loader_config;
     loader_config.executable_path = argc > 0 ? argv[0] : "";
-    loader_config.arguments = std::move(options.positional_args);
+    loader_config.arguments = std::move(positional_args);
     std::unique_ptr<IApplicationConfiguration> app_config;
 
-    if (!ResolveConfiguration(loader_config, app_config, options, app))
+    if (!ResolveConfiguration(loader_config, app_config, override_config_path, app))
     {
         return 1;
     }

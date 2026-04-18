@@ -1,7 +1,5 @@
 some_add_source(pch.h)
 some_add_source(loader.h)
-some_add_source(options.h)
-some_add_source(options.cpp)
 some_add_source(config.h)
 some_add_source(config.cpp)
 some_add_source(logging.h)

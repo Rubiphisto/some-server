@@ -1,6 +1,5 @@
 #include "gate/application.h"
 #include "loader/config.h"
-#include "loader/options.h"
 
 #include <filesystem>
 #include <fstream>

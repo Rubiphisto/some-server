@@ -1,7 +1,5 @@
 #include "config.h"
 
-#include "options.h"
-
 #include <glaze/glaze.hpp>
 
 #include <cctype>
@@ -92,8 +90,6 @@ bool ApplyConfigurationDocument(LoaderConfiguration& loader_config,
     return true;
 }
 
-void ApplyCliOverrides(LoaderConfiguration& loader_config, const StartupOptions& options) {}
-
 bool ValidateLoaderConfiguration(const LoaderConfiguration& loader_config, std::string& error)
 {
     const std::string mode = ToLower(loader_config.log.rotate.mode);
@@ -126,7 +122,7 @@ bool ValidateLoaderConfiguration(const LoaderConfiguration& loader_config, std::
 
 bool ResolveConfiguration(LoaderConfiguration& loader_config,
                           std::unique_ptr<IApplicationConfiguration>& app_config,
-                          const StartupOptions& options,
+                          const std::optional<std::string>& override_config_path,
                           IApplication& app)
 {
     LoaderConfiguration resolved_loader_config = BuildDefaultLoaderConfiguration(app);
@@ -153,9 +149,9 @@ bool ResolveConfiguration(LoaderConfiguration& loader_config,
         return false;
     }
 
-    if (options.config_path)
+    if (override_config_path)
     {
-        resolved_loader_config.override_config_path = *options.config_path;
+        resolved_loader_config.override_config_path = *override_config_path;
         if (!ApplyConfigurationDocument(
                 resolved_loader_config, *app_config, resolved_loader_config.override_config_path, error))
         {
@@ -163,8 +159,6 @@ bool ResolveConfiguration(LoaderConfiguration& loader_config,
             return false;
         }
     }
-
-    ApplyCliOverrides(resolved_loader_config, options);
 
     if (!ValidateLoaderConfiguration(resolved_loader_config, error))
     {
