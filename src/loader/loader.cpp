@@ -4,113 +4,8 @@
 #include "options.h"
 
 #include <spdlog/spdlog.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
-#include <cstdio>
-#include <filesystem>
 #include <iostream>
-
-namespace
-{
-    struct PidFileGuard
-    {
-        std::string path;
-
-        ~PidFileGuard()
-        {
-            if (!path.empty())
-            {
-                std::error_code ignored;
-                std::filesystem::remove(path, ignored);
-            }
-        }
-    };
-
-    bool CreatePidFile(const std::string& pid_file)
-    {
-        if (pid_file.empty())
-        {
-            return true;
-        }
-
-        const auto pid_path = std::filesystem::path(pid_file);
-        if (pid_path.has_parent_path())
-        {
-            std::filesystem::create_directories(pid_path.parent_path());
-        }
-
-        int fd = ::open(pid_file.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
-        if (fd == -1)
-        {
-            std::perror("open pid file");
-            return false;
-        }
-
-        const std::string pid_text = std::to_string(::getpid());
-        const auto written = ::write(fd, pid_text.c_str(), pid_text.size());
-        ::close(fd);
-        if (written < 0 || static_cast<std::size_t>(written) != pid_text.size())
-        {
-            std::perror("write pid file");
-            return false;
-        }
-
-        return true;
-    }
-
-    bool DaemonizeProcess()
-    {
-        const pid_t first_fork = ::fork();
-        if (first_fork < 0)
-        {
-            std::perror("fork");
-            return false;
-        }
-
-        if (first_fork > 0)
-        {
-            std::exit(0);
-        }
-
-        if (::setsid() < 0)
-        {
-            std::perror("setsid");
-            return false;
-        }
-
-        const pid_t second_fork = ::fork();
-        if (second_fork < 0)
-        {
-            std::perror("fork");
-            return false;
-        }
-
-        if (second_fork > 0)
-        {
-            std::exit(0);
-        }
-
-        const int null_fd = ::open("/dev/null", O_RDWR);
-        if (null_fd < 0)
-        {
-            std::perror("open /dev/null");
-            return false;
-        }
-
-        ::dup2(null_fd, STDIN_FILENO);
-        ::dup2(null_fd, STDOUT_FILENO);
-        ::dup2(null_fd, STDERR_FILENO);
-        if (null_fd > STDERR_FILENO)
-        {
-            ::close(null_fd);
-        }
-
-        return true;
-    }
-}
 
 int Loader::Run(IApplication& app, int argc, char* argv[])
 {
@@ -137,21 +32,6 @@ int Loader::Run(IApplication& app, int argc, char* argv[])
         return 1;
     }
 
-    if (loader_config.runtime.daemon && !DaemonizeProcess())
-    {
-        return 1;
-    }
-
-    PidFileGuard pid_file_guard;
-    if (!loader_config.runtime.pid_file.empty())
-    {
-        if (!CreatePidFile(loader_config.runtime.pid_file))
-        {
-            return 1;
-        }
-        pid_file_guard.path = loader_config.runtime.pid_file;
-    }
-
     if (!SetupLogging(application_name, loader_config))
     {
         return 1;
@@ -167,10 +47,6 @@ int Loader::Run(IApplication& app, int argc, char* argv[])
         if (!loader_config.override_config_path.empty())
         {
             spdlog::info("using override config: {}", loader_config.override_config_path);
-        }
-        if (!loader_config.runtime.pid_file.empty())
-        {
-            spdlog::info("writing pid file to: {}", loader_config.runtime.pid_file);
         }
         if (!loader_config.log.file.empty())
         {
@@ -197,7 +73,6 @@ int Loader::Run(IApplication& app, int argc, char* argv[])
         }
         spdlog::info("console logging: {}", loader_config.log.console ? "enabled" : "disabled");
         spdlog::info("syslog logging: {}", loader_config.log.syslog ? "enabled" : "disabled");
-        spdlog::info("daemon mode: {}", loader_config.runtime.daemon ? "enabled" : "disabled");
     }
 
     if (!Initialize(app, *app_config))

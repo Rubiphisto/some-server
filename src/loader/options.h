@@ -17,8 +17,6 @@ enum class ParseResult
 struct StartupOptions
 {
     std::optional<std::string> config_path;
-    std::optional<std::string> pid_file;
-    std::optional<bool> daemon;
     std::vector<std::string> positional_args;
 };
 

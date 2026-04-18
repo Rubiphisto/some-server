@@ -6,12 +6,6 @@
 #include <string>
 #include <vector>
 
-struct LoaderRuntimeConfiguration
-{
-    std::string pid_file;
-    bool daemon = false;
-};
-
 struct LoaderLogRotationConfiguration
 {
     std::string mode = "size";
@@ -36,7 +30,6 @@ struct LoaderConfiguration
     std::string executable_path;
     std::string config_path;
     std::string override_config_path;
-    LoaderRuntimeConfiguration runtime;
     LoaderLogConfiguration log;
     bool verbose = false;
     std::vector<std::string> arguments;
@@ -45,13 +38,6 @@ struct LoaderConfiguration
 struct LoaderConfigurationDocument
 {
     LoaderConfiguration loader;
-};
-
-template <>
-struct glz::meta<LoaderRuntimeConfiguration>
-{
-    using T = LoaderRuntimeConfiguration;
-    static constexpr auto value = glz::object("pid_file", &T::pid_file, "daemon", &T::daemon);
 };
 
 template <>
@@ -94,5 +80,5 @@ template <>
 struct glz::meta<LoaderConfiguration>
 {
     using T = LoaderConfiguration;
-    static constexpr auto value = glz::object("runtime", &T::runtime, "log", &T::log, "verbose", &T::verbose);
+    static constexpr auto value = glz::object("log", &T::log, "verbose", &T::verbose);
 };

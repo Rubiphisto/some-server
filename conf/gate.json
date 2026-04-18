@@ -13,10 +13,6 @@
         "daily_hour": 0,
         "daily_minute": 0
       }
-    },
-    "runtime": {
-      "daemon": false,
-      "pid_file": "run/gate.pid"
     }
   },
   "application": {

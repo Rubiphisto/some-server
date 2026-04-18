@@ -28,7 +28,6 @@ LoaderConfiguration BuildDefaultLoaderConfiguration(const IApplication& applicat
     const std::string application_name = application.GetName();
     configuration.config_path =
         (std::filesystem::current_path() / "conf" / (application_name + ".json")).lexically_normal().string();
-    configuration.runtime.pid_file = (std::filesystem::path("run") / (application_name + ".pid")).string();
     configuration.log.file = (std::filesystem::path("logs") / (application_name + ".log")).string();
     configuration.log.error_file = (std::filesystem::path("logs") / (application_name + ".error.log")).string();
     return configuration;
@@ -93,19 +92,7 @@ bool ApplyConfigurationDocument(LoaderConfiguration& loader_config,
     return true;
 }
 
-void ApplyCliOverrides(LoaderConfiguration& loader_config, const StartupOptions& options)
-{
-    if (options.pid_file)
-    {
-        loader_config.runtime.pid_file = *options.pid_file;
-    }
-
-    if (options.daemon.value_or(false))
-    {
-        loader_config.runtime.daemon = true;
-        loader_config.log.console = false;
-    }
-}
+void ApplyCliOverrides(LoaderConfiguration& loader_config, const StartupOptions& options) {}
 
 bool ValidateLoaderConfiguration(const LoaderConfiguration& loader_config, std::string& error)
 {

@@ -68,10 +68,6 @@ namespace
             "        \"daily_hour\": 2,\n"
             "        \"daily_minute\": 30\n"
             "      }\n"
-            "    },\n"
-            "    \"runtime\": {\n"
-            "      \"daemon\": false,\n"
-            "      \"pid_file\": \"run/base.pid\"\n"
             "    }\n"
             "  },\n"
             "  \"application\": {\n"
@@ -91,9 +87,6 @@ namespace
             "        \"mode\": \"daily\",\n"
             "        \"max_files\": 9\n"
             "      }\n"
-            "    },\n"
-            "    \"runtime\": {\n"
-            "      \"daemon\": true\n"
             "    }\n"
             "  },\n"
             "  \"application\": {\n"
@@ -116,28 +109,8 @@ namespace
         Require(loader.log.rotate.mode == "daily", "json rotation mode");
         Require(loader.log.rotate.max_size == 20 * 1024 * 1024, "json size parsing");
         Require(loader.log.rotate.max_files == 9, "override max files");
-        Require(loader.runtime.daemon, "override daemon");
-        Require(loader.runtime.pid_file == "run/base.pid", "base pid file should remain");
         Require(application.listen.host == "0.0.0.0", "main listen host should remain");
         Require(application.listen.port == 7001, "override listen port");
-    }
-
-    void TestCliOverrides()
-    {
-        LoaderConfiguration context;
-        context.runtime.pid_file = "run/default.pid";
-        context.runtime.daemon = false;
-        context.log.console = true;
-
-        StartupOptions options;
-        options.pid_file = "run/cli.pid";
-        options.daemon = true;
-
-        ApplyCliOverrides(context, options);
-
-        Require(context.runtime.pid_file == "run/cli.pid", "cli pid file override");
-        Require(context.runtime.daemon, "cli daemon override");
-        Require(!context.log.console, "daemon should disable console logging");
     }
 
     void TestValidation()
@@ -155,7 +128,6 @@ int main()
     {
         TestDefaults();
         TestJsonLoad();
-        TestCliOverrides();
         TestValidation();
         std::cout << "loader_config_test: ok" << std::endl;
         return 0;
