@@ -26,7 +26,8 @@ LoaderConfiguration BuildDefaultLoaderConfiguration(const IApplication& applicat
 {
     LoaderConfiguration configuration;
     const std::string application_name = Narrow(application.GetName());
-    configuration.config_path = (std::filesystem::path("conf") / (application_name + ".json")).string();
+    configuration.config_path =
+        (std::filesystem::current_path() / "conf" / (application_name + ".json")).lexically_normal().string();
     configuration.runtime.pid_file = (std::filesystem::path("run") / (application_name + ".pid")).string();
     configuration.log.file = (std::filesystem::path("logs") / (application_name + ".log")).string();
     configuration.log.error_file = (std::filesystem::path("logs") / (application_name + ".error.log")).string();
@@ -68,77 +69,41 @@ bool ApplyLoaderConfiguration(LoaderConfiguration& loader_config, std::string_vi
     return true;
 }
 
-void ApplyCliOverrides(LoaderConfiguration& loader_config, const StartupOptions& options)
+bool ApplyConfigurationDocument(LoaderConfiguration& loader_config,
+                                IApplicationConfiguration& app_config,
+                                const std::string& path,
+                                std::string& error)
 {
-    if (options.log_level)
+    std::string document;
+    if (!LoadConfigurationDocument(path, document, error))
     {
-        loader_config.log.level = *options.log_level;
+        return false;
     }
 
+    if (!ApplyLoaderConfiguration(loader_config, document, error))
+    {
+        return false;
+    }
+
+    if (!app_config.LoadFromJson(document, error))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+void ApplyCliOverrides(LoaderConfiguration& loader_config, const StartupOptions& options)
+{
     if (options.pid_file)
     {
         loader_config.runtime.pid_file = *options.pid_file;
-    }
-
-    if (options.log_file)
-    {
-        loader_config.log.file = *options.log_file;
-    }
-
-    if (options.error_log_file)
-    {
-        loader_config.log.error_file = *options.error_log_file;
     }
 
     if (options.daemon.value_or(false))
     {
         loader_config.runtime.daemon = true;
         loader_config.log.console = false;
-    }
-
-    if (options.syslog.value_or(false))
-    {
-        loader_config.log.syslog = true;
-    }
-
-    if (options.console)
-    {
-        loader_config.log.console = *options.console;
-    }
-
-    if (options.file_log_enabled_override && !*options.file_log_enabled_override)
-    {
-        loader_config.log.file.clear();
-    }
-
-    if (options.error_log_enabled_override && !*options.error_log_enabled_override)
-    {
-        loader_config.log.error_file.clear();
-    }
-
-    if (options.log_max_size)
-    {
-        loader_config.log.rotate.max_size = *options.log_max_size;
-    }
-
-    if (options.log_max_files)
-    {
-        loader_config.log.rotate.max_files = *options.log_max_files;
-    }
-
-    if (options.log_rotation_mode)
-    {
-        loader_config.log.rotate.mode = *options.log_rotation_mode;
-    }
-
-    if (options.log_rotate_hour)
-    {
-        loader_config.log.rotate.daily_hour = *options.log_rotate_hour;
-    }
-
-    if (options.log_rotate_minute)
-    {
-        loader_config.log.rotate.daily_minute = *options.log_rotate_minute;
     }
 }
 
@@ -188,43 +153,24 @@ bool ResolveConfiguration(LoaderConfiguration& loader_config,
         return false;
     }
 
-    const bool explicit_config_path = options.config_path.has_value();
-    if (explicit_config_path)
-    {
-        resolved_loader_config.config_path = *options.config_path;
-    }
-
+    std::string error;
     if (!std::filesystem::exists(resolved_loader_config.config_path))
     {
-        if (explicit_config_path)
-        {
-            std::cerr << "failed to open config file: " << resolved_loader_config.config_path << std::endl;
-            return false;
-        }
-
-        if (resolved_loader_config.verbose)
-        {
-            std::cout << "config file not found, skip default path: " << resolved_loader_config.config_path << std::endl;
-        }
-        resolved_loader_config.config_path.clear();
+        std::cerr << "failed to open main config file: " << resolved_loader_config.config_path << std::endl;
+        return false;
     }
-    else
+
+    if (!ApplyConfigurationDocument(resolved_loader_config, *app_config, resolved_loader_config.config_path, error))
     {
-        std::string document;
-        std::string error;
-        if (!LoadConfigurationDocument(resolved_loader_config.config_path, document, error))
-        {
-            std::cerr << error << std::endl;
-            return false;
-        }
+        std::cerr << error << std::endl;
+        return false;
+    }
 
-        if (!ApplyLoaderConfiguration(resolved_loader_config, document, error))
-        {
-            std::cerr << error << std::endl;
-            return false;
-        }
-
-        if (!app_config->LoadFromJson(document, error))
+    if (options.config_path)
+    {
+        resolved_loader_config.override_config_path = *options.config_path;
+        if (!ApplyConfigurationDocument(
+                resolved_loader_config, *app_config, resolved_loader_config.override_config_path, error))
         {
             std::cerr << error << std::endl;
             return false;
@@ -233,7 +179,6 @@ bool ResolveConfiguration(LoaderConfiguration& loader_config,
 
     ApplyCliOverrides(resolved_loader_config, options);
 
-    std::string error;
     if (!ValidateLoaderConfiguration(resolved_loader_config, error))
     {
         std::cerr << error << std::endl;

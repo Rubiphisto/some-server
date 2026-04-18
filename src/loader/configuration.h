@@ -35,6 +35,7 @@ struct LoaderConfiguration
 {
     std::string executable_path;
     std::string config_path;
+    std::string override_config_path;
     LoaderRuntimeConfiguration runtime;
     LoaderLogConfiguration log;
     bool verbose = false;

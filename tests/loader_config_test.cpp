@@ -44,28 +44,52 @@ namespace
     void TestDefaults()
     {
         Application app;
-        StartupOptions options;
-        LoaderConfiguration configuration = BuildDefaultLoaderConfiguration(options, app);
+        LoaderConfiguration configuration = BuildDefaultLoaderConfiguration(app);
 
-        Require(configuration.config_path == (std::filesystem::path("conf") / "gate.json").string(), "default config path");
+        Require(configuration.config_path ==
+                    (std::filesystem::current_path() / "conf" / "gate.json").lexically_normal().string(),
+                "default config path");
         Require(configuration.log.rotate.max_size == 10 * 1024 * 1024, "default log max size");
     }
 
     void TestJsonLoad()
     {
-        auto temp = WriteTempJson(
-            "loader_config_test.json",
+        auto main_config = WriteTempJson(
+            "loader_config_main_test.json",
             "{\n"
             "  \"loader\": {\n"
             "    \"log\": {\n"
             "      \"level\": \"debug\",\n"
-            "      \"console\": false,\n"
+            "      \"console\": true,\n"
             "      \"rotate\": {\n"
-            "        \"mode\": \"daily\",\n"
+            "        \"mode\": \"size\",\n"
             "        \"max_size\": 20971520,\n"
             "        \"max_files\": 7,\n"
             "        \"daily_hour\": 2,\n"
             "        \"daily_minute\": 30\n"
+            "      }\n"
+            "    },\n"
+            "    \"runtime\": {\n"
+            "      \"daemon\": false,\n"
+            "      \"pid_file\": \"run/base.pid\"\n"
+            "    }\n"
+            "  },\n"
+            "  \"application\": {\n"
+            "    \"listen\": {\n"
+            "      \"host\": \"0.0.0.0\",\n"
+            "      \"port\": 7000\n"
+            "    }\n"
+            "  }\n"
+            "}\n");
+        auto override_config = WriteTempJson(
+            "loader_config_override_test.json",
+            "{\n"
+            "  \"loader\": {\n"
+            "    \"log\": {\n"
+            "      \"console\": false,\n"
+            "      \"rotate\": {\n"
+            "        \"mode\": \"daily\",\n"
+            "        \"max_files\": 9\n"
             "      }\n"
             "    },\n"
             "    \"runtime\": {\n"
@@ -74,48 +98,46 @@ namespace
             "  },\n"
             "  \"application\": {\n"
             "    \"listen\": {\n"
-            "      \"host\": \"0.0.0.0\",\n"
             "      \"port\": 7001\n"
             "    }\n"
             "  }\n"
             "}\n");
 
-        std::string document;
         std::string error;
-        Require(LoadConfigurationDocument(temp.path.string(), document, error), "document load should succeed");
-
-        LoaderConfiguration loader;
-        Require(ApplyLoaderConfiguration(loader, document, error), "loader config should apply");
+        Application app;
+        LoaderConfiguration loader = BuildDefaultLoaderConfiguration(app);
+        GateConfiguration application;
+        Require(ApplyConfigurationDocument(loader, application, main_config.path.string(), error),
+                "main config should apply");
+        Require(ApplyConfigurationDocument(loader, application, override_config.path.string(), error),
+                "override config should apply");
         Require(loader.log.level == "debug", "json log level");
-        Require(!loader.log.console, "json console flag");
+        Require(!loader.log.console, "override console flag");
         Require(loader.log.rotate.mode == "daily", "json rotation mode");
         Require(loader.log.rotate.max_size == 20 * 1024 * 1024, "json size parsing");
-        Require(loader.runtime.daemon, "json daemon");
-
-        GateConfiguration application;
-        Require(application.LoadFromJson(document, error), "application config should apply");
-        Require(application.listen.host == "0.0.0.0", "json listen host");
-        Require(application.listen.port == 7001, "json listen port");
+        Require(loader.log.rotate.max_files == 9, "override max files");
+        Require(loader.runtime.daemon, "override daemon");
+        Require(loader.runtime.pid_file == "run/base.pid", "base pid file should remain");
+        Require(application.listen.host == "0.0.0.0", "main listen host should remain");
+        Require(application.listen.port == 7001, "override listen port");
     }
 
     void TestCliOverrides()
     {
         LoaderConfiguration context;
-        context.log.level = "info";
+        context.runtime.pid_file = "run/default.pid";
+        context.runtime.daemon = false;
         context.log.console = true;
-        context.log.rotate.max_files = 5;
 
         StartupOptions options;
-        options.log_level = "warn";
-        options.disable_console = true;
-        options.log_max_files = 9;
-        options.log_max_files_explicit = true;
+        options.pid_file = "run/cli.pid";
+        options.daemon = true;
 
         ApplyCliOverrides(context, options);
 
-        Require(context.log.level == "warn", "cli log level");
-        Require(!context.log.console, "cli console override");
-        Require(context.log.rotate.max_files == 9, "cli max files override");
+        Require(context.runtime.pid_file == "run/cli.pid", "cli pid file override");
+        Require(context.runtime.daemon, "cli daemon override");
+        Require(!context.log.console, "daemon should disable console logging");
     }
 
     void TestValidation()

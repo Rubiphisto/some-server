@@ -131,16 +131,9 @@ int Loader::Run(IApplication& app, int argc, char* argv[])
         return 1;
     }
 
-    if (options.show_version)
-    {
-        std::cout << application_name << " version 0.1.0" << std::endl;
-        return 0;
-    }
-
     LoaderConfiguration loader_config;
     loader_config.executable_path = argc > 0 ? argv[0] : "";
     loader_config.arguments = std::move(options.positional_args);
-    loader_config.verbose = options.verbose;
     std::unique_ptr<IApplicationConfiguration> app_config;
 
     if (!ResolveConfiguration(loader_config, app_config, options, app))
@@ -177,7 +170,11 @@ int Loader::Run(IApplication& app, int argc, char* argv[])
         spdlog::info("starting {}", application_name);
         if (!loader_config.config_path.empty())
         {
-            spdlog::info("using config: {}", loader_config.config_path);
+            spdlog::info("using main config: {}", loader_config.config_path);
+        }
+        if (!loader_config.override_config_path.empty())
+        {
+            spdlog::info("using override config: {}", loader_config.override_config_path);
         }
         if (!loader_config.runtime.pid_file.empty())
         {
