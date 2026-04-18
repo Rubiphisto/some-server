@@ -4,12 +4,10 @@
 #include "options.h"
 
 #include <spdlog/spdlog.h>
-#ifndef _WIN32
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#endif
 
 #include <cstdio>
 #include <filesystem>
@@ -31,7 +29,6 @@ namespace
         }
     };
 
-#ifndef _WIN32
     bool CreatePidFile(const std::string& pid_file)
     {
         if (pid_file.empty())
@@ -113,7 +110,6 @@ namespace
 
         return true;
     }
-#endif
 }
 
 int Loader::Run(IApplication& app, int argc, char* argv[])
@@ -141,22 +137,18 @@ int Loader::Run(IApplication& app, int argc, char* argv[])
         return 1;
     }
 
-#ifndef _WIN32
     if (loader_config.runtime.daemon && !DaemonizeProcess())
     {
         return 1;
     }
-#endif
 
     PidFileGuard pid_file_guard;
     if (!loader_config.runtime.pid_file.empty())
     {
-#ifndef _WIN32
         if (!CreatePidFile(loader_config.runtime.pid_file))
         {
             return 1;
         }
-#endif
         pid_file_guard.path = loader_config.runtime.pid_file;
     }
 

@@ -6,10 +6,8 @@
 #include <spdlog/sinks/daily_file_sink.h>
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/spdlog.h>
-#ifndef _WIN32
 #include <spdlog/sinks/syslog_sink.h>
-#endif
+#include <spdlog/spdlog.h>
 
 #include <cctype>
 #include <filesystem>
@@ -124,7 +122,6 @@ bool SetupLogging(const std::string& application_name, LoaderConfiguration& cont
             sinks.push_back(error_sink);
         }
 
-#ifndef _WIN32
         if (context.log.syslog)
         {
             auto syslog_sink = std::make_shared<spdlog::sinks::syslog_sink_mt>(
@@ -135,7 +132,6 @@ bool SetupLogging(const std::string& application_name, LoaderConfiguration& cont
             syslog_sink->set_pattern("[%l] [%n] %v");
             sinks.push_back(syslog_sink);
         }
-#endif
 
         if (sinks.empty())
         {
