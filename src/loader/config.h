@@ -5,7 +5,7 @@
 
 struct StartupOptions;
 
-LoaderConfiguration BuildDefaultLoaderConfiguration(const StartupOptions& options, const IApplication& application);
+LoaderConfiguration BuildDefaultLoaderConfiguration(const IApplication& application);
 bool LoadConfigurationDocument(const std::string& path, std::string& document, std::string& error);
 bool ApplyLoaderConfiguration(LoaderConfiguration& configuration, std::string_view document, std::string& error);
 void ApplyCliOverrides(LoaderConfiguration& configuration, const StartupOptions& options);
