@@ -14,21 +14,8 @@ include(FetchContent)
 
 set(SERVER_BINARY_FOLDER "${CMAKE_BINARY_DIR}")
 
-option(USE_SYSTEM_CLI11 "Use a preinstalled CLI11 package" OFF)
 option(USE_SYSTEM_SPDLOG "Use a preinstalled spdlog package" OFF)
 option(USE_SYSTEM_GLAZE "Use a preinstalled glaze package" OFF)
-
-if (USE_SYSTEM_CLI11)
-    find_package(CLI11 CONFIG REQUIRED)
-else ()
-    FetchContent_Declare(
-            cli11_proj
-            QUIET
-            GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
-            GIT_TAG v2.6.2
-    )
-    FetchContent_MakeAvailable(cli11_proj)
-endif ()
 
 if (USE_SYSTEM_SPDLOG)
     find_package(spdlog CONFIG REQUIRED)

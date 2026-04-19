@@ -4,7 +4,6 @@
 
 #include <cstddef>
 #include <string>
-#include <vector>
 
 struct LoaderLogRotationConfiguration
 {
@@ -32,7 +31,6 @@ struct LoaderConfiguration
     std::string override_config_path;
     LoaderLogConfiguration log;
     bool verbose = false;
-    std::vector<std::string> arguments;
 };
 
 struct LoaderConfigurationDocument

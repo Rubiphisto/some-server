@@ -127,7 +127,6 @@ bool ResolveConfiguration(LoaderConfiguration& loader_config,
 {
     LoaderConfiguration resolved_loader_config = BuildDefaultLoaderConfiguration(app);
     resolved_loader_config.executable_path = std::move(loader_config.executable_path);
-    resolved_loader_config.arguments = std::move(loader_config.arguments);
     resolved_loader_config.verbose = loader_config.verbose;
     app_config = app.CreateConfiguration();
     if (!app_config)
