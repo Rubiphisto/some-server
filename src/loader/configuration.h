@@ -26,11 +26,7 @@ struct LoaderLogConfiguration
 
 struct LoaderConfiguration
 {
-    std::string executable_path;
-    std::string config_path;
-    std::string override_config_path;
     LoaderLogConfiguration log;
-    bool verbose = false;
 };
 
 struct LoaderConfigurationDocument
@@ -78,5 +74,5 @@ template <>
 struct glz::meta<LoaderConfiguration>
 {
     using T = LoaderConfiguration;
-    static constexpr auto value = glz::object("log", &T::log, "verbose", &T::verbose);
+    static constexpr auto value = glz::object("log", &T::log);
 };

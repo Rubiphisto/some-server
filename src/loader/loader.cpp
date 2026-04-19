@@ -8,7 +8,6 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
-#include <optional>
 #include <string>
 #include <string_view>
 
@@ -132,24 +131,19 @@ int Loader::Run(IApplication& app, int argc, char* argv[])
     const std::string application_name = app.GetName();
     std::map<std::string, std::string> option_values;
     const ParseResult parse_result = ParseArguments(argc, argv, application_name, option_values);
-    if (parse_result == ParseResult::exit_success)
-    {
-        return 0;
-    }
+    if (ParseResult::ok != parse_result)
+        return ParseResult::exit_success == parse_result ? 0 : 1;
 
-    if (parse_result == ParseResult::exit_failure)
-    {
-        return 1;
-    }
+    LoaderConfiguration loader_config = BuildDefaultLoaderConfiguration(app);
+    std::unique_ptr<IApplicationConfiguration> application_configuration;
+    const auto config_option = option_values.find("config");
+    const std::string override_path =
+        config_option != option_values.end()
+            ? config_option->second
+            : "conf/" + application_name + "_my.json";
+    const std::string main_path = "conf/" + application_name + ".json";
 
-    LoaderConfiguration loader_config;
-    loader_config.executable_path = argc > 0 ? argv[0] : "";
-    std::unique_ptr<IApplicationConfiguration> app_config;
-    const auto config_it = option_values.find("config");
-    const std::optional<std::string> override_config_path =
-        config_it != option_values.end() ? std::optional<std::string>{config_it->second} : std::nullopt;
-
-    if (!ResolveConfiguration(loader_config, app_config, override_config_path, app))
+    if (!LoadConfiguration(loader_config, main_path, override_path, application_configuration, app))
     {
         return 1;
     }
@@ -159,51 +153,11 @@ int Loader::Run(IApplication& app, int argc, char* argv[])
         return 1;
     }
 
-    if (loader_config.verbose)
+    if (!Initialize(app, *application_configuration))
     {
-        spdlog::info("starting {}", application_name);
-        if (!loader_config.config_path.empty())
-        {
-            spdlog::info("using main config: {}", loader_config.config_path);
-        }
-        if (!loader_config.override_config_path.empty())
-        {
-            spdlog::info("using override config: {}", loader_config.override_config_path);
-        }
-        if (!loader_config.log.file.empty())
-        {
-            spdlog::info("writing logs to: {}", loader_config.log.file);
-        }
-        if (!loader_config.log.error_file.empty())
-        {
-            spdlog::info("writing error logs to: {}", loader_config.log.error_file);
-        }
-        spdlog::info("log level: {}", loader_config.log.level);
-        spdlog::info("log rotation mode: {}", loader_config.log.rotate.mode);
-        if (loader_config.log.rotate.mode == "daily")
-        {
-            spdlog::info("daily rotation time: {:02d}:{:02d} max_files={}",
-                         static_cast<int>(loader_config.log.rotate.daily_hour),
-                         static_cast<int>(loader_config.log.rotate.daily_minute),
-                         loader_config.log.rotate.max_files);
-        }
-        else
-        {
-            spdlog::info("log rotation: max_size={} max_files={}",
-                         loader_config.log.rotate.max_size,
-                         loader_config.log.rotate.max_files);
-        }
-        spdlog::info("console logging: {}", loader_config.log.console ? "enabled" : "disabled");
-        spdlog::info("syslog logging: {}", loader_config.log.syslog ? "enabled" : "disabled");
-    }
-
-    if (!Initialize(app, *app_config))
-    {
-        spdlog::shutdown();
         return 1;
     }
 
-    spdlog::shutdown();
     return 0;
 }
 

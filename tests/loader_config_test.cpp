@@ -6,19 +6,36 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <chrono>
 
 namespace
 {
-    struct TempFile
+    struct ScopedCurrentPath
+    {
+        std::filesystem::path original_path = std::filesystem::current_path();
+
+        explicit ScopedCurrentPath(const std::filesystem::path& path)
+        {
+            std::filesystem::current_path(path);
+        }
+
+        ~ScopedCurrentPath()
+        {
+            std::error_code ignored;
+            std::filesystem::current_path(original_path, ignored);
+        }
+    };
+
+    struct TempDirectory
     {
         std::filesystem::path path;
 
-        ~TempFile()
+        ~TempDirectory()
         {
             std::error_code ignored;
             if (!path.empty())
             {
-                std::filesystem::remove(path, ignored);
+                std::filesystem::remove_all(path, ignored);
             }
         }
     };
@@ -31,13 +48,20 @@ namespace
         }
     }
 
-    TempFile WriteTempJson(const std::string& name, const std::string& content)
+    TempDirectory CreateTempDirectory(const std::string& name)
     {
-        const auto path = std::filesystem::temp_directory_path() / name;
+        const auto suffix = std::to_string(
+            std::chrono::steady_clock::now().time_since_epoch().count());
+        const auto path = std::filesystem::temp_directory_path() / (name + "_" + suffix);
+        std::filesystem::create_directories(path);
+        return TempDirectory{path};
+    }
+
+    void WriteJson(const std::filesystem::path& path, const std::string& content)
+    {
+        std::filesystem::create_directories(path.parent_path());
         std::ofstream out(path);
         out << content;
-        out.close();
-        return TempFile{path};
     }
 
     void TestDefaults()
@@ -45,16 +69,16 @@ namespace
         Application app;
         LoaderConfiguration configuration = BuildDefaultLoaderConfiguration(app);
 
-        Require(configuration.config_path ==
-                    (std::filesystem::current_path() / "conf" / "gate.json").lexically_normal().string(),
-                "default config path");
+        Require(std::string{"conf/"} + app.GetName() + ".json" == "conf/gate.json",
+                "main config path");
         Require(configuration.log.rotate.max_size == 10 * 1024 * 1024, "default log max size");
     }
 
     void TestJsonLoad()
     {
-        auto main_config = WriteTempJson(
-            "loader_config_main_test.json",
+        auto temp_directory = CreateTempDirectory("loader_config_test");
+        WriteJson(
+            temp_directory.path / "conf" / "gate.json",
             "{\n"
             "  \"loader\": {\n"
             "    \"log\": {\n"
@@ -76,8 +100,9 @@ namespace
             "    }\n"
             "  }\n"
             "}\n");
-        auto override_config = WriteTempJson(
-            "loader_config_override_test.json",
+        const auto override_path = temp_directory.path / "override.json";
+        WriteJson(
+            override_path,
             "{\n"
             "  \"loader\": {\n"
             "    \"log\": {\n"
@@ -95,21 +120,93 @@ namespace
             "  }\n"
             "}\n");
 
-        std::string error;
         Application app;
         LoaderConfiguration loader = BuildDefaultLoaderConfiguration(app);
-        GateConfiguration application;
-        Require(ApplyConfigurationDocument(loader, application, main_config.path.string(), error),
-                "main config should apply");
-        Require(ApplyConfigurationDocument(loader, application, override_config.path.string(), error),
-                "override config should apply");
+        std::unique_ptr<IApplicationConfiguration> application;
+        const ScopedCurrentPath scoped_current_path(temp_directory.path);
+        const std::string main_path = "conf/" + app.GetName() + ".json";
+        Require(LoadConfiguration(loader, main_path, override_path.string(), application, app),
+                "configs should load");
+        auto* gate_configuration = dynamic_cast<GateConfiguration*>(application.get());
+        Require(gate_configuration != nullptr, "gate configuration type");
         Require(loader.log.level == "debug", "json log level");
         Require(!loader.log.console, "override console flag");
         Require(loader.log.rotate.mode == "daily", "json rotation mode");
         Require(loader.log.rotate.max_size == 20 * 1024 * 1024, "json size parsing");
         Require(loader.log.rotate.max_files == 9, "override max files");
-        Require(application.listen.host == "0.0.0.0", "main listen host should remain");
-        Require(application.listen.port == 7001, "override listen port");
+        Require(gate_configuration->listen.host == "0.0.0.0", "main listen host should remain");
+        Require(gate_configuration->listen.port == 7001, "override listen port");
+    }
+
+    void TestDefaultOverridePath()
+    {
+        auto temp_directory = CreateTempDirectory("loader_config_default_override_test");
+        WriteJson(
+            temp_directory.path / "conf" / "gate.json",
+            "{\n"
+            "  \"loader\": {\n"
+            "    \"log\": {\n"
+            "      \"level\": \"warn\",\n"
+            "      \"console\": true\n"
+            "    }\n"
+            "  },\n"
+            "  \"application\": {\n"
+            "    \"listen\": {\n"
+            "      \"port\": 7000\n"
+            "    }\n"
+            "  }\n"
+            "}\n");
+        WriteJson(
+            temp_directory.path / "conf" / "gate_my.json",
+            "{\n"
+            "  \"loader\": {\n"
+            "    \"log\": {\n"
+            "      \"console\": false\n"
+            "    }\n"
+            "  },\n"
+            "  \"application\": {\n"
+            "    \"listen\": {\n"
+            "      \"port\": 7002\n"
+            "    }\n"
+            "  }\n"
+            "}\n");
+
+        Application app;
+        LoaderConfiguration loader = BuildDefaultLoaderConfiguration(app);
+        std::unique_ptr<IApplicationConfiguration> application;
+        const ScopedCurrentPath scoped_current_path(temp_directory.path);
+        const std::string main_path = "conf/" + app.GetName() + ".json";
+        const std::string default_override_path = "conf/" + app.GetName() + "_my.json";
+        Require(LoadConfiguration(loader, main_path, default_override_path, application, app),
+                "default override should be applied");
+        Require(loader.log.level == "warn", "main config should still load");
+        Require(!loader.log.console, "default override should update loader config");
+        auto* gate_configuration = dynamic_cast<GateConfiguration*>(application.get());
+        Require(gate_configuration != nullptr, "gate configuration type");
+        Require(gate_configuration->listen.port == 7002, "default override should update application config");
+    }
+
+    void TestMissingOverrideIsIgnored()
+    {
+        auto temp_directory = CreateTempDirectory("loader_config_missing_override_test");
+        WriteJson(
+            temp_directory.path / "conf" / "gate.json",
+            "{\n"
+            "  \"loader\": {\n"
+            "    \"log\": {\n"
+            "      \"level\": \"warn\"\n"
+            "    }\n"
+            "  }\n"
+            "}\n");
+
+        Application app;
+        LoaderConfiguration loader = BuildDefaultLoaderConfiguration(app);
+        std::unique_ptr<IApplicationConfiguration> application;
+        const ScopedCurrentPath scoped_current_path(temp_directory.path);
+        const std::string main_path = "conf/" + app.GetName() + ".json";
+        Require(LoadConfiguration(loader, main_path, "missing.json", application, app),
+                "missing override should be ignored");
+        Require(loader.log.level == "warn", "main config should still load");
     }
 
     void TestValidation()
@@ -127,6 +224,8 @@ int main()
     {
         TestDefaults();
         TestJsonLoad();
+        TestDefaultOverridePath();
+        TestMissingOverrideIsIgnored();
         TestValidation();
         std::cout << "loader_config_test: ok" << std::endl;
         return 0;
