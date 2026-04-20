@@ -31,11 +31,9 @@ public:
         mLoadedServices.clear();
         try
         {
-            for (IService* service : mServicesInOrder)
-            {
-                service->Load().Wait();
-                mLoadedServices.push_back(service);
-            }
+            RunForwardBatches(
+                [](IService& service) { service.Load().Wait(); },
+                [this](IService& service) { mLoadedServices.push_back(&service); });
         }
         catch (...)
         {
@@ -52,11 +50,9 @@ public:
         mStartedServices.clear();
         try
         {
-            for (IService* service : mServicesInOrder)
-            {
-                service->Start().Wait();
-                mStartedServices.push_back(service);
-            }
+            RunForwardBatches(
+                [](IService& service) { service.Start().Wait(); },
+                [this](IService& service) { mStartedServices.push_back(&service); });
         }
         catch (...)
         {
@@ -70,10 +66,11 @@ public:
     {
         std::exception_ptr first_error;
 
-        for (auto it = mStartedServices.rbegin(); it != mStartedServices.rend(); ++it)
-        {
-            CaptureFailure(first_error, [&]() { (*it)->Stop().Wait(); });
-        }
+        RunReverseBatches(
+            mStartedServices,
+            [&first_error](IService& service) {
+                CaptureFailure(first_error, [&]() { service.Stop().Wait(); });
+            });
         mStartedServices.clear();
 
         CaptureFailure(first_error, [&]() { OnStop().Wait(); });
@@ -88,10 +85,11 @@ public:
     {
         std::exception_ptr first_error;
 
-        for (auto it = mLoadedServices.rbegin(); it != mLoadedServices.rend(); ++it)
-        {
-            CaptureFailure(first_error, [&]() { (*it)->Unload().Wait(); });
-        }
+        RunReverseBatches(
+            mLoadedServices,
+            [&first_error](IService& service) {
+                CaptureFailure(first_error, [&]() { service.Unload().Wait(); });
+            });
         mLoadedServices.clear();
 
         CaptureFailure(first_error, [&]() { OnUnload().Wait(); });
@@ -205,6 +203,52 @@ private:
         if (rollback_error)
         {
             std::rethrow_exception(rollback_error);
+        }
+    }
+
+    template <typename TOperation, typename TSuccess>
+    void RunForwardBatches(TOperation&& operation, TSuccess&& on_success)
+    {
+        std::size_t index = 0;
+        while (index < mServicesInOrder.size())
+        {
+            const std::int32_t batch = mServicesInOrder[index]->GetBatch();
+            std::size_t batch_end = index;
+            while (batch_end < mServicesInOrder.size() && mServicesInOrder[batch_end]->GetBatch() == batch)
+            {
+                ++batch_end;
+            }
+
+            for (std::size_t current = index; current < batch_end; ++current)
+            {
+                IService& service = *mServicesInOrder[current];
+                std::forward<TOperation>(operation)(service);
+                std::forward<TSuccess>(on_success)(service);
+            }
+
+            index = batch_end;
+        }
+    }
+
+    template <typename TOperation>
+    static void RunReverseBatches(const std::vector<IService*>& services, TOperation&& operation)
+    {
+        std::size_t index = services.size();
+        while (index > 0)
+        {
+            const std::int32_t batch = services[index - 1]->GetBatch();
+            std::size_t batch_begin = index;
+            while (batch_begin > 0 && services[batch_begin - 1]->GetBatch() == batch)
+            {
+                --batch_begin;
+            }
+
+            for (std::size_t current = index; current > batch_begin; --current)
+            {
+                std::forward<TOperation>(operation)(*services[current - 1]);
+            }
+
+            index = batch_begin;
         }
     }
 
