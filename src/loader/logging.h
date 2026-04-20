@@ -1,5 +1,5 @@
 #pragma once
 
-#include "configuration.h"
+#include "framework/application/configuration.h"
 
-bool SetupLogging(const std::string& application_name, LoaderConfiguration& configuration);
+bool SetupLogging(const std::string& application_name, CommonConfiguration& configuration);

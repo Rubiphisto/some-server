@@ -67,7 +67,7 @@ namespace
     void TestDefaults()
     {
         Application app;
-        LoaderConfiguration configuration = BuildDefaultLoaderConfiguration(app);
+        CommonConfiguration configuration = BuildDefaultCommonConfiguration(app);
 
         Require(std::string{"conf/"} + app.GetName() + ".json" == "conf/gate.json",
                 "main config path");
@@ -117,19 +117,19 @@ namespace
             "}\n");
 
         Application app;
-        LoaderConfiguration loader = BuildDefaultLoaderConfiguration(app);
+        CommonConfiguration common_configuration = BuildDefaultCommonConfiguration(app);
         std::unique_ptr<IApplicationConfiguration> application;
         const ScopedCurrentPath scoped_current_path(temp_directory.path);
         const std::string main_path = "conf/" + app.GetName() + ".json";
-        Require(LoadConfiguration(loader, main_path, override_path.string(), application, app),
+        Require(LoadConfiguration(common_configuration, main_path, override_path.string(), application, app),
                 "configs should load");
         auto* gate_configuration = dynamic_cast<GateConfiguration*>(application.get());
         Require(gate_configuration != nullptr, "gate configuration type");
-        Require(loader.log.level == "debug", "json log level");
-        Require(!loader.log.console, "override console flag");
-        Require(loader.log.rotate.mode == "daily", "json rotation mode");
-        Require(loader.log.rotate.max_size == 20 * 1024 * 1024, "json size parsing");
-        Require(loader.log.rotate.max_files == 9, "override max files");
+        Require(common_configuration.log.level == "debug", "json log level");
+        Require(!common_configuration.log.console, "override console flag");
+        Require(common_configuration.log.rotate.mode == "daily", "json rotation mode");
+        Require(common_configuration.log.rotate.max_size == 20 * 1024 * 1024, "json size parsing");
+        Require(common_configuration.log.rotate.max_files == 9, "override max files");
         Require(gate_configuration->listen.host == "0.0.0.0", "main listen host should remain");
         Require(gate_configuration->listen.port == 7001, "override listen port");
     }
@@ -164,15 +164,15 @@ namespace
             "}\n");
 
         Application app;
-        LoaderConfiguration loader = BuildDefaultLoaderConfiguration(app);
+        CommonConfiguration common_configuration = BuildDefaultCommonConfiguration(app);
         std::unique_ptr<IApplicationConfiguration> application;
         const ScopedCurrentPath scoped_current_path(temp_directory.path);
         const std::string main_path = "conf/" + app.GetName() + ".json";
         const std::string default_override_path = "conf/" + app.GetName() + "_my.json";
-        Require(LoadConfiguration(loader, main_path, default_override_path, application, app),
+        Require(LoadConfiguration(common_configuration, main_path, default_override_path, application, app),
                 "default override should be applied");
-        Require(loader.log.level == "warn", "main config should still load");
-        Require(!loader.log.console, "default override should update loader config");
+        Require(common_configuration.log.level == "warn", "main config should still load");
+        Require(!common_configuration.log.console, "default override should update common config");
         auto* gate_configuration = dynamic_cast<GateConfiguration*>(application.get());
         Require(gate_configuration != nullptr, "gate configuration type");
         Require(gate_configuration->listen.port == 7002, "default override should update application config");
@@ -190,21 +190,21 @@ namespace
             "}\n");
 
         Application app;
-        LoaderConfiguration loader = BuildDefaultLoaderConfiguration(app);
+        CommonConfiguration common_configuration = BuildDefaultCommonConfiguration(app);
         std::unique_ptr<IApplicationConfiguration> application;
         const ScopedCurrentPath scoped_current_path(temp_directory.path);
         const std::string main_path = "conf/" + app.GetName() + ".json";
-        Require(LoadConfiguration(loader, main_path, "missing.json", application, app),
+        Require(LoadConfiguration(common_configuration, main_path, "missing.json", application, app),
                 "missing override should be ignored");
-        Require(loader.log.level == "warn", "main config should still load");
+        Require(common_configuration.log.level == "warn", "main config should still load");
     }
 
     void TestValidation()
     {
-        LoaderConfiguration context;
+        CommonConfiguration context;
         std::string error;
         context.log.rotate.max_files = 0;
-        Require(!ValidateLoaderConfiguration(context, error), "max files zero should fail validation");
+        Require(!ValidateCommonConfiguration(context, error), "max files zero should fail validation");
     }
 }
 

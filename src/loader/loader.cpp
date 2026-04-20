@@ -134,7 +134,7 @@ int Loader::Run(IApplication& app, int argc, char* argv[])
     if (ParseResult::ok != parse_result)
         return ParseResult::exit_success == parse_result ? 0 : 1;
 
-    LoaderConfiguration loader_config = BuildDefaultLoaderConfiguration(app);
+    CommonConfiguration common_configuration = BuildDefaultCommonConfiguration(app);
     std::unique_ptr<IApplicationConfiguration> application_configuration;
     const auto config_option = option_values.find("config");
     const std::string override_path =
@@ -143,17 +143,17 @@ int Loader::Run(IApplication& app, int argc, char* argv[])
             : "conf/" + application_name + "_my.json";
     const std::string main_path = "conf/" + application_name + ".json";
 
-    if (!LoadConfiguration(loader_config, main_path, override_path, application_configuration, app))
+    if (!LoadConfiguration(common_configuration, main_path, override_path, application_configuration, app))
     {
         return 1;
     }
 
-    if (!SetupLogging(application_name, loader_config))
+    if (!SetupLogging(application_name, common_configuration))
     {
         return 1;
     }
 
-    if (!Initialize(app, *application_configuration))
+    if (!Initialize(app, common_configuration, *application_configuration))
     {
         return 1;
     }
@@ -161,9 +161,11 @@ int Loader::Run(IApplication& app, int argc, char* argv[])
     return 0;
 }
 
-bool Loader::Initialize(IApplication& app, const IApplicationConfiguration& configuration) const
+bool Loader::Initialize(IApplication& app,
+                        const CommonConfiguration& common_configuration,
+                        const IApplicationConfiguration& application_configuration) const
 {
-    if (!app.Configure(configuration))
+    if (!app.Configure(common_configuration, application_configuration))
     {
         spdlog::error("application configure failed");
         return false;

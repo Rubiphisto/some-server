@@ -8,5 +8,7 @@ public:
     int Run(IApplication& app, int argc, char* argv[]);
 
 private:
-    bool Initialize(IApplication& app, const IApplicationConfiguration& configuration) const;
+    bool Initialize(IApplication& app,
+                    const CommonConfiguration& common_configuration,
+                    const IApplicationConfiguration& application_configuration) const;
 };

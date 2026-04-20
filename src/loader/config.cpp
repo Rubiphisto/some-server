@@ -20,9 +20,9 @@ namespace
     }
 }
 
-LoaderConfiguration BuildDefaultLoaderConfiguration(const IApplication& application)
+CommonConfiguration BuildDefaultCommonConfiguration(const IApplication& application)
 {
-    LoaderConfiguration configuration;
+    CommonConfiguration configuration;
     const std::string application_name = application.GetName();
     configuration.log.file = (std::filesystem::path("logs") / (application_name + ".log")).string();
     configuration.log.error_file = (std::filesystem::path("logs") / (application_name + ".error.log")).string();
@@ -106,28 +106,28 @@ bool MergeConfigurationFile(glz::generic& configuration_value,
 }
 }
 
-bool ValidateLoaderConfiguration(const LoaderConfiguration& loader_config, std::string& error)
+bool ValidateCommonConfiguration(const CommonConfiguration& common_configuration, std::string& error)
 {
-    const std::string mode = ToLower(loader_config.log.rotate.mode);
+    const std::string mode = ToLower(common_configuration.log.rotate.mode);
     if (mode != "size" && mode != "daily")
     {
         error = "loader.log.rotate.mode must be one of [size, daily]";
         return false;
     }
 
-    if (loader_config.log.rotate.max_files == 0)
+    if (common_configuration.log.rotate.max_files == 0)
     {
         error = "loader.log.rotate.max_files must be greater than 0";
         return false;
     }
 
-    if (loader_config.log.rotate.daily_hour > 23)
+    if (common_configuration.log.rotate.daily_hour > 23)
     {
         error = "loader.log.rotate.daily_hour must be in range 0-23";
         return false;
     }
 
-    if (loader_config.log.rotate.daily_minute > 59)
+    if (common_configuration.log.rotate.daily_minute > 59)
     {
         error = "loader.log.rotate.daily_minute must be in range 0-59";
         return false;
@@ -136,7 +136,7 @@ bool ValidateLoaderConfiguration(const LoaderConfiguration& loader_config, std::
     return true;
 }
 
-bool LoadConfiguration(LoaderConfiguration& loader_config,
+bool LoadConfiguration(CommonConfiguration& common_configuration,
                        const std::string& main_path,
                        const std::string& override_path,
                        std::unique_ptr<IApplicationConfiguration>& application_configuration,
@@ -181,7 +181,7 @@ bool LoadConfiguration(LoaderConfiguration& loader_config,
         return false;
     }
 
-    if (auto result = glz::read<glz::opts{.error_on_unknown_keys = false}>(loader_config, *document))
+    if (auto result = glz::read<glz::opts{.error_on_unknown_keys = false}>(common_configuration, *document))
     {
         error = glz::format_error(result, *document);
         std::cerr << error << std::endl;
@@ -196,7 +196,7 @@ bool LoadConfiguration(LoaderConfiguration& loader_config,
         return false;
     }
 
-    if (!ValidateLoaderConfiguration(loader_config, error))
+    if (!ValidateCommonConfiguration(common_configuration, error))
     {
         std::cerr << error << std::endl;
         return false;

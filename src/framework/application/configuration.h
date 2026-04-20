@@ -2,9 +2,34 @@
 
 #include <glaze/glaze.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <utility>
+
+struct LogRotationConfiguration
+{
+    std::string mode = "size";
+    std::size_t max_size = 10 * 1024 * 1024;
+    std::size_t max_files = 5;
+    std::size_t daily_hour = 0;
+    std::size_t daily_minute = 0;
+};
+
+struct LogConfiguration
+{
+    std::string file;
+    std::string error_file;
+    std::string level = "info";
+    bool console = true;
+    bool syslog = false;
+    LogRotationConfiguration rotate;
+};
+
+struct CommonConfiguration
+{
+    LogConfiguration log;
+};
 
 struct ListenConfiguration
 {
@@ -54,6 +79,49 @@ constexpr auto MakeApplicationConfigObject(TArgs&&... args)
 {
     return glz::object("listen", &TConfiguration::listen, std::forward<TArgs>(args)...);
 }
+
+template <>
+struct glz::meta<LogRotationConfiguration>
+{
+    using T = LogRotationConfiguration;
+    static constexpr auto value = glz::object(
+        "mode",
+        &T::mode,
+        "max_size",
+        &T::max_size,
+        "max_files",
+        &T::max_files,
+        "daily_hour",
+        &T::daily_hour,
+        "daily_minute",
+        &T::daily_minute);
+};
+
+template <>
+struct glz::meta<LogConfiguration>
+{
+    using T = LogConfiguration;
+    static constexpr auto value = glz::object(
+        "file",
+        &T::file,
+        "error_file",
+        &T::error_file,
+        "level",
+        &T::level,
+        "console",
+        &T::console,
+        "syslog",
+        &T::syslog,
+        "rotate",
+        &T::rotate);
+};
+
+template <>
+struct glz::meta<CommonConfiguration>
+{
+    using T = CommonConfiguration;
+    static constexpr auto value = glz::object("log", &T::log);
+};
 
 template <>
 struct glz::meta<ListenConfiguration>

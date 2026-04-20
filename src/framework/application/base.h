@@ -13,22 +13,26 @@ public:
         return std::make_unique<TConfiguration>();
     }
 
-    bool Configure(const IApplicationConfiguration& configuration) override
+    bool Configure(const CommonConfiguration& common_configuration,
+                   const IApplicationConfiguration& application_configuration) override
     {
-        const auto* typed = dynamic_cast<const TConfiguration*>(&configuration);
+        const auto* typed = dynamic_cast<const TConfiguration*>(&application_configuration);
         if (typed == nullptr)
         {
             return false;
         }
 
-        mConfiguration = *typed;
+        mCommonConfiguration = common_configuration;
+        mApplicationConfiguration = *typed;
         return OnConfigure();
     }
 
 protected:
     virtual bool OnConfigure() { return true; }
-    const TConfiguration& AppConfig() const { return mConfiguration; }
+    const CommonConfiguration& CommonConfig() const { return mCommonConfiguration; }
+    const TConfiguration& AppConfig() const { return mApplicationConfiguration; }
 
 private:
-    TConfiguration mConfiguration;
+    CommonConfiguration mCommonConfiguration;
+    TConfiguration mApplicationConfiguration;
 };
