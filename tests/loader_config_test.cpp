@@ -1,4 +1,5 @@
 #include "gate/application.h"
+#include "loader/command_registry.h"
 #include "loader/config.h"
 
 #include <filesystem>
@@ -206,6 +207,32 @@ namespace
         context.log.rotate.max_files = 0;
         Require(!ValidateCommonConfiguration(context, error), "max files zero should fail validation");
     }
+
+    void TestCommandRegistry()
+    {
+        CommandRegistry command_registry;
+        Require(command_registry.RegisterCommand(
+                    "exit",
+                    "Stop the application and exit the loader",
+                    [](const CommandArguments&) { return CommandExecutionStatus::exit_requested; }),
+                "register exit command");
+        Require(!command_registry.RegisterCommand(
+                    "exit",
+                    "duplicate",
+                    [](const CommandArguments&) { return CommandExecutionStatus::handled; }),
+                "duplicate command should fail");
+
+        const CommandExecutionResult empty_result = command_registry.Execute("   ");
+        Require(empty_result.status == CommandExecutionStatus::handled, "empty command should be ignored");
+
+        const CommandExecutionResult unknown_result = command_registry.Execute("status");
+        Require(unknown_result.status == CommandExecutionStatus::unknown_command, "unknown command");
+        Require(unknown_result.command_name == "status", "unknown command name");
+
+        const CommandExecutionResult exit_result = command_registry.Execute("exit now");
+        Require(exit_result.status == CommandExecutionStatus::exit_requested, "exit command");
+        Require(exit_result.command_name == "exit", "exit command name");
+    }
 }
 
 int main()
@@ -217,6 +244,7 @@ int main()
         TestDefaultOverridePath();
         TestMissingOverrideIsIgnored();
         TestValidation();
+        TestCommandRegistry();
         std::cout << "loader_config_test: ok" << std::endl;
         return 0;
     }

@@ -5,9 +5,13 @@
 #include <spdlog/spdlog.h>
 
 #include <array>
+#include <condition_variable>
+#include <exception>
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <mutex>
+#include <thread>
 #include <string>
 #include <string_view>
 
@@ -163,17 +167,135 @@ int Loader::Run(IApplication& app, int argc, char* argv[])
 
 bool Loader::Initialize(IApplication& app,
                         const CommonConfiguration& common_configuration,
-                        const IApplicationConfiguration& application_configuration) const
+                        const IApplicationConfiguration& application_configuration)
 {
+    mCommandRegistry.Clear();
+    RegisterCommand(
+        "exit",
+        "Stop the application and exit the loader",
+        [this](const CommandArguments&) {
+            RequestStop();
+            return CommandExecutionStatus::exit_requested;
+        });
+
+    app.SetRuntime(*this);
     if (!app.Configure(common_configuration, application_configuration))
     {
         spdlog::error("application configure failed");
         return false;
     }
 
-    app.Load();
-    app.Start();
-    app.Stop();
-    app.Unload();
+    RuntimeState runtime_state;
+    mRuntimeState = &runtime_state;
+
+    std::thread application_thread([&app, &runtime_state]() {
+        try
+        {
+            app.Load();
+            app.Start();
+
+            {
+                std::lock_guard lock(runtime_state.mutex);
+                runtime_state.start_completed = true;
+            }
+            runtime_state.condition.notify_all();
+
+            std::unique_lock lock(runtime_state.mutex);
+            runtime_state.condition.wait(lock, [&runtime_state] { return runtime_state.stop_requested; });
+            lock.unlock();
+
+            app.Stop();
+            app.Unload();
+        }
+        catch (const std::exception& ex)
+        {
+            {
+                std::lock_guard lock(runtime_state.mutex);
+                runtime_state.start_completed = true;
+                runtime_state.stop_requested = true;
+                runtime_state.runtime_failed = true;
+                runtime_state.error_message = ex.what();
+            }
+            runtime_state.condition.notify_all();
+        }
+        catch (...)
+        {
+            {
+                std::lock_guard lock(runtime_state.mutex);
+                runtime_state.start_completed = true;
+                runtime_state.stop_requested = true;
+                runtime_state.runtime_failed = true;
+                runtime_state.error_message = "application lifecycle failed with unknown exception";
+            }
+            runtime_state.condition.notify_all();
+        }
+    });
+
+    {
+        std::unique_lock lock(runtime_state.mutex);
+        runtime_state.condition.wait(lock, [&runtime_state] { return runtime_state.start_completed; });
+        if (runtime_state.runtime_failed)
+        {
+            spdlog::error(runtime_state.error_message);
+            lock.unlock();
+            application_thread.join();
+            mRuntimeState = nullptr;
+            return false;
+        }
+    }
+
+    for (std::string input; true;)
+    {
+        std::cout << "> " << std::flush;
+        if (!std::getline(std::cin, input))
+        {
+            RequestStop();
+            break;
+        }
+
+        const CommandExecutionResult result = mCommandRegistry.Execute(input);
+        if (result.status == CommandExecutionStatus::unknown_command)
+        {
+            std::cerr << "unknown command: " << result.command_name << std::endl;
+            continue;
+        }
+
+        if (result.status == CommandExecutionStatus::exit_requested)
+        {
+            break;
+        }
+    }
+
+    application_thread.join();
+    mRuntimeState = nullptr;
+
+    {
+        std::lock_guard lock(runtime_state.mutex);
+        if (runtime_state.runtime_failed)
+        {
+            spdlog::error(runtime_state.error_message);
+            return false;
+        }
+    }
+
     return true;
+}
+
+bool Loader::RegisterCommand(std::string command_name,
+                             std::string description,
+                             CommandHandler handler)
+{
+    return mCommandRegistry.RegisterCommand(std::move(command_name), std::move(description), std::move(handler));
+}
+
+void Loader::RequestStop()
+{
+    if (mRuntimeState == nullptr)
+    {
+        return;
+    }
+
+    std::lock_guard lock(mRuntimeState->mutex);
+    mRuntimeState->stop_requested = true;
+    mRuntimeState->condition.notify_all();
 }

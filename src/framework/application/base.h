@@ -2,6 +2,7 @@
 
 #include "interface.h"
 
+#include <cassert>
 #include <memory>
 
 template <typename TConfiguration>
@@ -11,6 +12,11 @@ public:
     std::unique_ptr<IApplicationConfiguration> CreateConfiguration() const override
     {
         return std::make_unique<TConfiguration>();
+    }
+
+    void SetRuntime(IApplicationRuntime& runtime) override
+    {
+        mRuntime = &runtime;
     }
 
     bool Configure(const CommonConfiguration& common_configuration,
@@ -31,8 +37,14 @@ protected:
     virtual bool OnConfigure() { return true; }
     const CommonConfiguration& CommonConfig() const { return mCommonConfiguration; }
     const TConfiguration& AppConfig() const { return mApplicationConfiguration; }
+    IApplicationRuntime& Runtime() const
+    {
+        assert(mRuntime != nullptr && "Application runtime has not been set");
+        return *mRuntime;
+    }
 
 private:
+    IApplicationRuntime* mRuntime = nullptr;
     CommonConfiguration mCommonConfiguration;
     TConfiguration mApplicationConfiguration;
 };
