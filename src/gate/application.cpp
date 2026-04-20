@@ -2,25 +2,29 @@
 
 #include <spdlog/spdlog.h>
 
-void Application::Load()
+LifecycleTask Application::OnLoad()
 {
     spdlog::info("Application::Configure(listen={}:{})",
                  AppConfig().listen.host,
                  AppConfig().listen.port);
     spdlog::info("Application::Load()");
+    return LifecycleTask::Completed();
 }
 
-void Application::Start()
+LifecycleTask Application::OnStart()
 {
     spdlog::info("Application::Start()");
+    return LifecycleTask::Completed();
 }
 
-void Application::Stop()
+LifecycleTask Application::OnStop()
 {
     spdlog::info("Application::Stop()");
+    return LifecycleTask::Completed();
 }
 
-void Application::Unload()
+LifecycleTask Application::OnUnload()
 {
     spdlog::info("Application::Unload()");
+    return LifecycleTask::Completed();
 }

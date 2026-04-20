@@ -10,10 +10,12 @@ class Application : public ApplicationBase<GateConfiguration>
 {
 public:
     std::string GetName() const override { return "gate"; }
-    void Unload() override;
-    void Start() override;
-    void Stop() override;
-    void Load() override;
+
+protected:
+    LifecycleTask OnUnload() override;
+    LifecycleTask OnStart() override;
+    LifecycleTask OnStop() override;
+    LifecycleTask OnLoad() override;
 };
 
 SOME_SERVER_APPLICATION_CONFIG(GateConfiguration);
