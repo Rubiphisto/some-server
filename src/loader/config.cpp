@@ -10,13 +10,13 @@
 
 namespace
 {
-    std::string ToLower(std::string value)
+    std::string ToLower(std::string text)
     {
-        for (char& ch : value)
+        for (char& ch : text)
         {
             ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
         }
-        return value;
+        return text;
     }
 }
 
@@ -51,23 +51,41 @@ bool LoadConfigurationDocument(const std::filesystem::path& file_path, std::stri
     return true;
 }
 
-bool ApplyLoaderConfiguration(LoaderConfiguration& loader_config, std::string_view document, std::string& error)
+bool LoadConfigurationValue(const std::string& document, glz::generic& value, std::string& error)
 {
-    LoaderConfigurationDocument root{};
-    root.loader = loader_config;
-
-    if (auto result = glz::read<glz::opts{.error_on_unknown_keys = false}>(root, document))
+    auto result = glz::read_json<glz::generic>(document);
+    if (!result)
     {
-        error = glz::format_error(result, document);
+        error = glz::format_error(result.error(), document);
         return false;
     }
 
-    loader_config = std::move(root.loader);
+    value = std::move(*result);
     return true;
 }
 
-bool ApplyConfigurationFile(LoaderConfiguration& loader_config,
-                            IApplicationConfiguration& application_configuration,
+void MergeConfigurationValue(glz::generic& base_value, const glz::generic& override_value)
+{
+    if (base_value.is_object() && override_value.is_object())
+    {
+        for (const auto& [key, child_value] : override_value.get_object())
+        {
+            if (base_value.contains(key))
+            {
+                MergeConfigurationValue(base_value[key], child_value);
+            }
+            else
+            {
+                base_value[key] = child_value;
+            }
+        }
+        return;
+    }
+
+    base_value = override_value;
+}
+
+bool MergeConfigurationFile(glz::generic& configuration_value,
                             const std::filesystem::path& file_path,
                             std::string& error)
 {
@@ -77,16 +95,13 @@ bool ApplyConfigurationFile(LoaderConfiguration& loader_config,
         return false;
     }
 
-    if (!ApplyLoaderConfiguration(loader_config, document, error))
+    glz::generic file_value;
+    if (!LoadConfigurationValue(document, file_value, error))
     {
         return false;
     }
 
-    if (!application_configuration.LoadFromJson(document, error))
-    {
-        return false;
-    }
-
+    MergeConfigurationValue(configuration_value, file_value);
     return true;
 }
 }
@@ -141,7 +156,8 @@ bool LoadConfiguration(LoaderConfiguration& loader_config,
         return false;
     }
 
-    if (!ApplyConfigurationFile(loader_config, *application_configuration, main_path, error))
+    glz::generic configuration_value;
+    if (!MergeConfigurationFile(configuration_value, main_path, error))
     {
         std::cerr << error << std::endl;
         return false;
@@ -150,11 +166,34 @@ bool LoadConfiguration(LoaderConfiguration& loader_config,
     if (!override_path.empty())
     {
         if (std::filesystem::exists(override_path) &&
-            !ApplyConfigurationFile(loader_config, *application_configuration, override_path, error))
+            !MergeConfigurationFile(configuration_value, override_path, error))
         {
             std::cerr << error << std::endl;
             return false;
         }
+    }
+
+    const auto document = configuration_value.dump();
+    if (!document)
+    {
+        error = glz::format_error(document.error());
+        std::cerr << error << std::endl;
+        return false;
+    }
+
+    if (auto result = glz::read<glz::opts{.error_on_unknown_keys = false}>(loader_config, *document))
+    {
+        error = glz::format_error(result, *document);
+        std::cerr << error << std::endl;
+        return false;
+    }
+
+    const std::string application_name = application.GetName();
+    if (configuration_value.contains(application_name) &&
+        !application_configuration->LoadFromGeneric(configuration_value[application_name], error))
+    {
+        std::cerr << error << std::endl;
+        return false;
     }
 
     if (!ValidateLoaderConfiguration(loader_config, error))

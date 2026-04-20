@@ -29,11 +29,6 @@ struct LoaderConfiguration
     LoaderLogConfiguration log;
 };
 
-struct LoaderConfigurationDocument
-{
-    LoaderConfiguration loader;
-};
-
 template <>
 struct glz::meta<LoaderLogRotationConfiguration>
 {

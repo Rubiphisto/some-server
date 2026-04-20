@@ -4,8 +4,6 @@
 
 #include <cstdint>
 #include <string>
-#include <string_view>
-#include <type_traits>
 #include <utility>
 
 struct ListenConfiguration
@@ -23,34 +21,30 @@ class IApplicationConfiguration
 {
 public:
     virtual ~IApplicationConfiguration() = default;
-    virtual bool LoadFromJson(std::string_view document, std::string& error) = 0;
-};
-
-template <typename TConfiguration>
-struct ApplicationConfigurationDocument
-{
-    TConfiguration application;
+    virtual bool LoadFromGeneric(const glz::generic& value, std::string& error) = 0;
 };
 
 template <typename TConfiguration>
 class JsonApplicationConfiguration : public IApplicationConfiguration
 {
 public:
-    bool LoadFromJson(std::string_view document, std::string& error) override
+    bool LoadFromGeneric(const glz::generic& value, std::string& error) override
     {
-        static_assert(std::is_base_of_v<BaseApplicationConfiguration, TConfiguration>,
-                      "Application configurations must derive from BaseApplicationConfiguration");
-
-        ApplicationConfigurationDocument<TConfiguration> root{};
-        root.application = static_cast<const TConfiguration&>(*this);
-
-        if (auto result = glz::read<glz::opts{.error_on_unknown_keys = false}>(root, document))
+        TConfiguration configuration = static_cast<const TConfiguration&>(*this);
+        const auto document = value.dump();
+        if (!document)
         {
-            error = glz::format_error(result, document);
+            error = glz::format_error(document.error());
             return false;
         }
 
-        static_cast<TConfiguration&>(*this) = std::move(root.application);
+        if (auto result = glz::read<glz::opts{.error_on_unknown_keys = false}>(configuration, *document))
+        {
+            error = glz::format_error(result, *document);
+            return false;
+        }
+
+        static_cast<TConfiguration&>(*this) = std::move(configuration);
         return true;
     }
 };
