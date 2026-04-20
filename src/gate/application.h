@@ -12,6 +12,7 @@ public:
     std::string GetName() const override { return "gate"; }
 
 protected:
+    void RegisterServices() override;
     LifecycleTask OnUnload() override;
     LifecycleTask OnStart() override;
     LifecycleTask OnStop() override;

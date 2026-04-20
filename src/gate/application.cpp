@@ -2,6 +2,44 @@
 
 #include <spdlog/spdlog.h>
 
+namespace
+{
+class GateLifecycleService final : public ServiceBase
+{
+public:
+    GateLifecycleService() : ServiceBase("gate.lifecycle", 0) {}
+
+    LifecycleTask Load() override
+    {
+        spdlog::info("GateLifecycleService::Load()");
+        return LifecycleTask::Completed();
+    }
+
+    LifecycleTask Start() override
+    {
+        spdlog::info("GateLifecycleService::Start()");
+        return LifecycleTask::Completed();
+    }
+
+    LifecycleTask Stop() override
+    {
+        spdlog::info("GateLifecycleService::Stop()");
+        return LifecycleTask::Completed();
+    }
+
+    LifecycleTask Unload() override
+    {
+        spdlog::info("GateLifecycleService::Unload()");
+        return LifecycleTask::Completed();
+    }
+};
+}
+
+void Application::RegisterServices()
+{
+    AddService(std::make_unique<GateLifecycleService>());
+}
+
 LifecycleTask Application::OnLoad()
 {
     spdlog::info("Application::Configure(listen={}:{})",
