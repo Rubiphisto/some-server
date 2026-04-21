@@ -22,3 +22,20 @@ add_test(NAME loader_config_test COMMAND $<TARGET_FILE:loader_config_test>)
 set_tests_properties(loader_config_test PROPERTIES
         WORKING_DIRECTORY ${SERVER_BINARY_FOLDER}/bin
 )
+
+add_executable(application_service_lifecycle_test
+        application_service_lifecycle_test.cpp
+)
+
+target_include_directories(application_service_lifecycle_test PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(application_service_lifecycle_test PRIVATE
+        framework
+)
+
+add_test(NAME application_service_lifecycle_test COMMAND $<TARGET_FILE:application_service_lifecycle_test>)
+set_tests_properties(application_service_lifecycle_test PROPERTIES
+        WORKING_DIRECTORY ${SERVER_BINARY_FOLDER}/bin
+)
