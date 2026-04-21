@@ -1,35 +1,45 @@
-version: '3.8'
+version: "3.8"
 
 services:
   dev:
     build: .
-    container_name: cpp23-dev-env
+    container_name: dev-debian
+    hostname: dev-debian
 
     ports:
-      - "2222:22"   # SSH
+      - "2222:22"
+
+    environment:
+      # 改成你自己的密码；若配置了公钥，SSH 会优先用公钥，密码仍可兜底
+      DEV_PASSWORD: "somegame"
+
+      # 也可以直接把公钥内容写在这里，或留空并使用下面的文件挂载方式
+      # DEV_AUTHORIZED_KEY: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... your@email"
 
     volumes:
-      # 代码目录（建议打开）
-      #- ./code:/root/code
+      # 项目代码
+      - ./workspace:/workspace
 
       # 数据持久化
       - mariadb_data:/var/lib/mysql
       - redis_data:/var/lib/redis
 
-    environment:
-      - TZ=Asia/Singapore
+      # Codex 用户级配置；默认会读 ~/.codex/config.toml
+      - ./codex-home:/home/dev/.codex
 
-    # 网络 & 调试能力增强（关键）
-    tty: true
-    stdin_open: true
+      # 可选：直接挂一个 authorized_keys 文件，推荐
+      - ./ssh/authorized_keys:/run/dev_authorized_keys/authorized_keys:ro
 
-    # 有些网络工具（如 tcpdump）或调试需要
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
+      # 可选：缓存，加快 npm/pip/Codex 使用体验
+      - npm_cache:/home/dev/.npm
+      - dev_cache:/home/dev/.cache
 
     restart: unless-stopped
+    tty: true
+    stdin_open: true
 
 volumes:
   mariadb_data:
   redis_data:
+  npm_cache:
+  dev_cache:

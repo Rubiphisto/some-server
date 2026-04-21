@@ -2,40 +2,66 @@ FROM debian:trixie-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 更新系统并安装开发工具、SSH、MariaDB、Redis、网络基础工具
+# 基础开发环境 + SSH + DB/Redis + 网络工具 + 常用本地工具链
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        gcc g++ gdb make cmake \
-        openssh-server mariadb-server redis-server \
-        git procps vim-tiny sudo curl wget ca-certificates \
-        iputils-ping \
-        iproute2 \
-        dnsutils \
-        net-tools \
-        inetutils-telnet \
-        netcat-openbsd \
-        traceroute \
-        lsof && \
-    apt-get clean && \
+    apt-get install -y \
+        openssh-server sudo \
+        gcc g++ make cmake gdb pkg-config \
+        git vim tmux \
+        curl wget ca-certificates jq \
+        python3 python3-pip \
+        procps less file rsync unzip zip xz-utils tar \
+        mariadb-server redis-server \
+        iputils-ping iproute2 dnsutils net-tools \
+        inetutils-telnet netcat-openbsd traceroute \
+        lsof strace ripgrep fd-find && \
     rm -rf /var/lib/apt/lists/*
 
-# 配置 SSH（允许 root 登录，密码设为 root）
+# 安装最新 LTS Node.js（官方发布包）
+RUN set -eux; \
+    ARCH="$(dpkg --print-architecture)"; \
+    case "$ARCH" in \
+        amd64) NODE_ARCH="x64" ;; \
+        arm64) NODE_ARCH="arm64" ;; \
+        *) echo "Unsupported arch: $ARCH"; exit 1 ;; \
+    esac; \
+    NODE_VERSION="$(curl -fsSL https://nodejs.org/dist/index.json | jq -r 'map(select(.lts != false))[0].version')"; \
+    echo "Installing Node.js LTS ${NODE_VERSION}"; \
+    curl -fsSL "https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" -o /tmp/node.tar.xz; \
+    tar -xJf /tmp/node.tar.xz -C /usr/local --strip-components=1; \
+    rm -f /tmp/node.tar.xz; \
+    node -v; \
+    npm -v
+
+# 安装 Codex CLI
+RUN npm install -g @openai/codex && \
+    codex --version || true
+
+# SSH 基础配置：公钥优先，密码兜底；禁止 root 远程登录
 RUN mkdir -p /var/run/sshd && \
-    echo 'root:root' | chpasswd && \
-    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    ssh-keygen -A && \
+    sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config && \
+    printf '\nUsePAM yes\nX11Forwarding no\nClientAliveInterval 120\nClientAliveCountMax 3\nAuthorizedKeysFile .ssh/authorized_keys\nSubsystem sftp /usr/lib/openssh/sftp-server\n' >> /etc/ssh/sshd_config
 
-# 准备数据库目录和权限
-RUN mkdir -p /var/run/mysqld && \
+# 创建开发用户与目录
+RUN useradd -m -s /bin/bash dev && \
+    echo 'dev:somegame' | chpasswd && \
+    usermod -aG sudo dev && \
+    mkdir -p /home/dev/.ssh /home/dev/.codex /home/dev/.npm /home/dev/.cache /workspace /var/run/mysqld /var/lib/redis && \
+    chown -R dev:dev /home/dev /workspace && \
     chown -R mysql:mysql /var/run/mysqld && \
-    mkdir -p /var/lib/redis && \
-    chown -R redis:redis /var/lib/redis
+    chown -R redis:redis /var/lib/redis && \
+    echo 'dev ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/dev && \
+    chmod 0440 /etc/sudoers.d/dev && \
+    chmod 700 /home/dev/.ssh
 
-# 复制启动脚本
 COPY start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
-# 暴露端口
+WORKDIR /workspace
+
 EXPOSE 22
 
 CMD ["/usr/local/bin/start.sh"]

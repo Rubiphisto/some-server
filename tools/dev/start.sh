@@ -1,36 +1,47 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-echo "===> Starting services..."
+DEV_USER="${DEV_USER:-dev}"
+DEV_HOME="/home/${DEV_USER}"
+AUTHORIZED_KEYS_FILE="${DEV_HOME}/.ssh/authorized_keys"
 
-# ========= SSH =========
-echo "[+] Starting SSH..."
-/usr/sbin/sshd
+mkdir -p /var/run/sshd
+mkdir -p /var/run/mysqld
+mkdir -p /var/lib/redis
+mkdir -p "${DEV_HOME}/.ssh"
+mkdir -p "${DEV_HOME}/.codex"
+mkdir -p /workspace
 
-# ========= MariaDB =========
-echo "[+] Initializing MariaDB..."
+chown -R mysql:mysql /var/run/mysqld
+chown -R redis:redis /var/lib/redis
+chown -R "${DEV_USER}:${DEV_USER}" "${DEV_HOME}" /workspace
+chmod 700 "${DEV_HOME}/.ssh"
 
-# 如果数据库未初始化，则初始化
-if [ ! -d "/var/lib/mysql/mysql" ]; then
-    echo "    -> First time setup"
-    mysqld --initialize-insecure --user=mysql
+# 允许通过环境变量注入密码
+if [[ -n "${DEV_PASSWORD:-}" ]]; then
+  echo "${DEV_USER}:${DEV_PASSWORD}" | chpasswd
 fi
 
-echo "[+] Starting MariaDB..."
-mysqld_safe --user=mysql &
+# 允许通过环境变量注入公钥（推荐）
+if [[ -n "${DEV_AUTHORIZED_KEY:-}" ]]; then
+  touch "${AUTHORIZED_KEYS_FILE}"
+  grep -qxF "${DEV_AUTHORIZED_KEY}" "${AUTHORIZED_KEYS_FILE}" || echo "${DEV_AUTHORIZED_KEY}" >> "${AUTHORIZED_KEYS_FILE}"
+fi
 
-# 等待数据库启动
-sleep 3
+# 如果挂载了公钥文件，则复制进去
+if [[ -f /run/dev_authorized_keys/authorized_keys ]]; then
+  cp /run/dev_authorized_keys/authorized_keys "${AUTHORIZED_KEYS_FILE}"
+fi
 
-# ========= Redis =========
-echo "[+] Starting Redis..."
-redis-server --daemonize yes
+touch "${AUTHORIZED_KEYS_FILE}"
+chown "${DEV_USER}:${DEV_USER}" "${AUTHORIZED_KEYS_FILE}"
+chmod 600 "${AUTHORIZED_KEYS_FILE}"
 
-# ========= 网络信息（调试用）=========
-echo "[+] Network info:"
-ip addr || true
-cat /etc/resolv.conf || true
+echo "Starting MariaDB..."
+service mariadb start
 
-# ========= 保持容器运行 =========
-echo "===> All services started"
-tail -f /dev/null
+echo "Starting Redis..."
+service redis-server start
+
+echo "Starting SSH..."
+exec /usr/sbin/sshd -D -e
