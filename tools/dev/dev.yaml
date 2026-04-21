@@ -18,21 +18,21 @@ services:
 
     volumes:
       # 项目代码
-      - ./workspace:/workspace
+      - ${PWD}/projects:/projects
 
       # 数据持久化
-      - mariadb_data:/var/lib/mysql
-      - redis_data:/var/lib/redis
+      - ${PWD}/mariadb_data:/var/lib/mysql
+      - ${PWD}/redis_data:/var/lib/redis
 
       # Codex 用户级配置；默认会读 ~/.codex/config.toml
-      - ./codex-home:/home/dev/.codex
+      - ${PWD}/codex-home:/home/dev/.codex
 
       # 可选：直接挂一个 authorized_keys 文件，推荐
-      - ./ssh/authorized_keys:/run/dev_authorized_keys/authorized_keys:ro
+      #- ./ssh/authorized_keys:/run/dev_authorized_keys/authorized_keys:ro
 
       # 可选：缓存，加快 npm/pip/Codex 使用体验
-      - npm_cache:/home/dev/.npm
-      - dev_cache:/home/dev/.cache
+      #- npm_cache:/home/dev/.npm
+      #- dev_cache:/home/dev/.cache
 
     restart: unless-stopped
     tty: true
