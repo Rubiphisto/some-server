@@ -36,6 +36,17 @@ RUN set -eux; \
 # 安装 Codex CLI
 RUN npm install -g @openai/codex && \
     codex --version || true
+# 安装 etcd
+RUN ETCD_VER=v3.9.10 && \
+    ARCH="$(dpkg --print-architecture)" && \
+    case "$ARCH" in \
+        amd64) ETCD_ARCH=amd64 ;; \
+        arm64) ETCD_ARCH=arm64 ;; \
+        *) echo "Unsupported arch: $ARCH"; exit 1 ;; \
+    esac && \
+    curl -L https://github.com/etcd-io/etcd/releases/download/${ETCD_VER}/etcd-${ETCD_VER}-linux-${ETCD_ARCH}.tar.gz -o /tmp/etcd.tar.gz && \
+    tar -xzf /tmp/etcd.tar.gz -C /usr/local --strip-components=1 etcd-${ETCD_VER}-linux-${ETCD_ARCH}/etcd etcd-${ETCD_VER}-linux-${ETCD_ARCH}/etcdctl && \
+    rm -f /tmp/etcd.tar.gz
 
 # SSH 基础配置：公钥优先，密码兜底；禁止 root 远程登录
 RUN mkdir -p /var/run/sshd && \
@@ -49,8 +60,8 @@ RUN mkdir -p /var/run/sshd && \
 RUN useradd -m -s /bin/bash dev && \
     echo 'dev:somegame' | chpasswd && \
     usermod -aG sudo dev && \
-    mkdir -p /home/dev/.ssh /home/dev/.codex /home/dev/.npm /home/dev/.cache /workspace /var/run/mysqld /var/lib/redis && \
-    chown -R dev:dev /home/dev /workspace && \
+    mkdir -p /home/dev/.ssh /home/dev/.codex /home/dev/.npm /home/dev/.cache /var/run/mysqld /var/lib/redis /var/lib/etcd && \
+    chown -R dev:dev /home/dev /var/lib/etcd && \
     chown -R mysql:mysql /var/run/mysqld && \
     chown -R redis:redis /var/lib/redis && \
     echo 'dev ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/dev && \
@@ -60,7 +71,7 @@ RUN useradd -m -s /bin/bash dev && \
 COPY start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
-WORKDIR /workspace
+WORKDIR /home/dev
 
 EXPOSE 22
 

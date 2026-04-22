@@ -23,6 +23,7 @@ services:
       # 数据持久化
       - ${PWD}/mariadb_data:/var/lib/mysql
       - ${PWD}/redis_data:/var/lib/redis
+      - ${PWD}/etcd_data:/var/lib/etcd
 
       # Codex 用户级配置；默认会读 ~/.codex/config.toml
       - ${PWD}/codex-home:/home/dev/.codex

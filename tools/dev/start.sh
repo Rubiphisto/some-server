@@ -8,13 +8,14 @@ AUTHORIZED_KEYS_FILE="${DEV_HOME}/.ssh/authorized_keys"
 mkdir -p /var/run/sshd
 mkdir -p /var/run/mysqld
 mkdir -p /var/lib/redis
+mkdir -p /var/lib/etcd
 mkdir -p "${DEV_HOME}/.ssh"
 mkdir -p "${DEV_HOME}/.codex"
-mkdir -p /projects
+mkdir -p "${DEV_HOME}/projects"
 
 chown -R mysql:mysql /var/run/mysqld
 chown -R redis:redis /var/lib/redis
-chown -R "${DEV_USER}:${DEV_USER}" "${DEV_HOME}" /projects
+chown -R "${DEV_USER}:${DEV_USER}" "${DEV_HOME}" "${DEV_HOME}/projects" /var/lib/etcd
 chmod 700 "${DEV_HOME}/.ssh"
 
 # 允许通过环境变量注入密码
@@ -44,6 +45,13 @@ service mariadb start
 
 echo "Starting Redis..."
 service redis-server start
+
+echo "Starting etcd..."
+ETCD_DATA_DIR=/var/lib/etcd
+nohup etcd --data-dir $ETCD_DATA_DIR \
+    --listen-client-urls http://0.0.0.0:2379 \
+    --advertise-client-urls http://0.0.0.0:2379 \
+    > /var/log/etcd.log 2>&1 &
 
 echo "Starting SSH..."
 exec /usr/sbin/sshd -D -e
