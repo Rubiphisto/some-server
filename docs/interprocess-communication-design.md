@@ -1,0 +1,1078 @@
+# Interprocess Communication Design
+
+## Status
+
+- Draft
+- Scope: process-to-process communication foundation inside this repository
+- Current step: architecture layering and core identity/object model
+
+## Goals
+
+- Provide a process communication foundation that is independent from external client-facing protocols.
+- Keep service discovery, transport, routing, and receiver semantics clearly separated.
+- Hide topology details from application code.
+- Support multiple instances per application.
+- Support two primary send semantics:
+  - send to a specific process
+  - broadcast
+- Make room for higher-level receiver concepts such as player, system, service, or group.
+- Allow a hybrid topology:
+  - relay-first as the default path
+  - direct-connect as an optimization path
+
+## Non-Goals For The First Phase
+
+- Cross-region or cross-datacenter routing
+- Full-blown group membership protocols
+- Rich load-balancing policy matrix
+- Transparent hot-path optimization for every traffic type
+- Tight coupling with any single discovery backend client library
+
+## Design Principles
+
+- KISS first: the first usable version must be relay-first and predictable.
+- Clear layering: each layer owns one kind of complexity.
+- Stable upper APIs: topology changes must not force application changes.
+- Identity first: process identity and receiver identity must be explicit and stable.
+- Control plane and data plane must be separated.
+- C++ implementation must be backend-adaptable: etcd is the current preferred backend, not a hardwired architectural dependency.
+
+## Terminology
+
+- Service: a logical application type such as `gate`, `game`, `match`, or `relay`.
+- Process: one running instance of a service.
+- Process descriptor: immutable or slowly changing metadata that describes a process instance.
+- Link: a logical process-to-process communication relationship built on top of a transport connection.
+- Receiver: a logical message target above process level.
+- Control plane: discovery, registration, liveness, topology, route metadata.
+- Data plane: process-to-process message transfer.
+
+## Layering
+
+Dependency direction must remain bottom-up only.
+
+```text
+Messaging Facade
+    |
+Receiver Directory ---- Routing
+    |                     |
+    +---------------------+
+              |
+          Discovery
+              |
+             Link
+              |
+          Transport
+```
+
+### 1. Transport Layer
+
+Responsibilities:
+
+- TCP listen, connect, send, close
+- frame read/write
+- heartbeats and timeouts at connection level if needed
+- backpressure and send queue ownership
+
+Must not know:
+
+- discovery backend
+- process identity
+- receiver identity
+- routing decisions
+- protobuf business messages
+
+Output:
+
+- raw frames
+- connection lifecycle events
+
+### 2. Link Layer
+
+Responsibilities:
+
+- upgrade transport connections into process links
+- perform internal handshake and version negotiation
+- authenticate or validate remote process identity if required
+- maintain link state
+- exchange internal control messages such as hello, register, ping, bye
+
+Must not know:
+
+- discovery storage layout
+- receiver ownership
+- application routing policy
+
+Output:
+
+- link established / link lost events
+- remote process identity
+- validated control messages
+
+### 3. Discovery Layer
+
+Responsibilities:
+
+- register the local process into a discovery backend
+- renew liveness
+- watch membership changes
+- expose process snapshots and membership events
+
+Must not know:
+
+- which peers should be connected directly
+- how a message should be routed
+- receiver mapping
+
+Output:
+
+- membership snapshot
+- membership add/update/remove events
+
+### 4. Routing Layer
+
+Responsibilities:
+
+- resolve how a message should move through the topology
+- choose local delivery, direct link, relay hop, or broadcast fanout
+- own topology policy selection
+- hide topology differences from upper layers
+
+Must not know:
+
+- application-specific receiver lifecycle
+- discovery backend protocol details
+
+Output:
+
+- resolved route
+- next-hop process
+
+### 5. Receiver Directory Layer
+
+Responsibilities:
+
+- maintain mapping from receiver addresses to process locations
+- support lookup, bind, migrate, and invalidate
+- abstract higher-level targets such as player, system, or service
+
+Must not know:
+
+- transport connection details
+- etcd key layout
+
+Output:
+
+- receiver location or receiver group expansion
+
+### 6. Messaging Facade Layer
+
+Responsibilities:
+
+- expose a stable application-facing messaging API
+- wrap business protobuf messages into internal envelopes
+- dispatch inbound envelopes to registered handlers
+
+Must not know:
+
+- direct TCP connection details
+- discovery backend specifics
+- relay implementation details
+
+## Cross-Layer Rules
+
+The following concepts are allowed to cross layer boundaries:
+
+- `ServiceType`
+- `ProcessId`
+- `InstanceId`
+- `IncarnationId`
+- `ProcessDescriptor`
+- `ReceiverAddress`
+- `BroadcastScope`
+- `Envelope`
+- `Route`
+
+The following concepts must not escape their owning layer:
+
+- `ConnectionId` must not be visible to application code.
+- discovery backend paths or keys must not be visible above discovery.
+- TCP endpoint must not be used by business code as the primary destination identity.
+- topology rules such as "who dials whom" must not appear in application APIs.
+
+## Core Identity And Object Model
+
+This section is the main output of step 2.
+
+### ServiceType
+
+`ServiceType` identifies a logical service kind, not a running process.
+
+Examples:
+
+- `gate`
+- `game`
+- `relay`
+- `match`
+
+Suggested representation in C++:
+
+```cpp
+using ServiceType = std::uint32_t;
+```
+
+Rules:
+
+- Stable across deployments
+- Assigned by configuration or generated code, not by runtime discovery
+- Used for routing policy, broadcast scope, and receiver resolution
+
+### InstanceId
+
+`InstanceId` identifies one logical slot inside a service type.
+
+Suggested representation:
+
+```cpp
+using InstanceId = std::uint32_t;
+```
+
+Rules:
+
+- Unique within one `ServiceType`
+- Not enough by itself to identify a running process after restart
+- Can be allocated from discovery or from deployment configuration
+
+### IncarnationId
+
+`IncarnationId` distinguishes restarts of the same logical process slot.
+
+Suggested representation:
+
+```cpp
+using IncarnationId = std::uint64_t;
+```
+
+Rules:
+
+- Must change every time a process restarts
+- Can be derived from startup timestamp, monotonic sequence, or discovery lease-bound token
+- Used to reject stale routes and stale receiver ownership
+
+### ProcessId
+
+`ProcessId` identifies a logical process slot.
+
+Suggested representation:
+
+```cpp
+struct ProcessId {
+    ServiceType service_type;
+    InstanceId instance_id;
+};
+```
+
+Rules:
+
+- Unique within one cluster namespace
+- Stable across short-lived reconnects if the same process instance is still alive
+- Must be paired with `IncarnationId` whenever stale-vs-current matters
+
+### ProcessRef
+
+`ProcessRef` identifies one concrete running process instance.
+
+Suggested representation:
+
+```cpp
+struct ProcessRef {
+    ProcessId process_id;
+    IncarnationId incarnation_id;
+};
+```
+
+Use `ProcessRef` when:
+
+- validating receiver ownership
+- validating direct links
+- detecting stale routing information
+
+Use only `ProcessId` when:
+
+- expressing a stable logical target
+- defining broadcast filters
+- defining service-level policy
+
+### ProcessDescriptor
+
+`ProcessDescriptor` is the discovery-visible metadata for one running process.
+
+Suggested representation:
+
+```cpp
+struct Endpoint {
+    std::string host;
+    std::uint16_t port;
+};
+
+struct ProcessDescriptor {
+    ProcessRef process;
+    std::string service_name;
+    Endpoint listen_endpoint;
+    std::uint32_t protocol_version;
+    std::uint64_t start_time_unix_ms;
+    std::map<std::string, std::string> labels;
+    std::vector<ServiceType> relay_capabilities;
+};
+```
+
+Required fields:
+
+- process identity
+- transport endpoint
+- protocol compatibility marker
+
+Optional fields:
+
+- labels for environment, shard, zone, role
+- relay capability metadata
+- load hints later if needed
+
+Rules:
+
+- Discovery owns publication of the descriptor.
+- Routing and receiver resolution may consume it.
+- Application code should rarely need the raw descriptor.
+
+### ReceiverType
+
+`ReceiverType` identifies the semantic kind of a receiver.
+
+Suggested representation:
+
+```cpp
+enum class ReceiverType : std::uint16_t {
+    Process = 1,
+    Player = 2,
+    System = 3,
+    Service = 4,
+    Group = 5
+};
+```
+
+Initial semantics:
+
+- `Process`: target is a specific process
+- `Player`: target is a player receiver
+- `System`: target is a named or keyed subsystem
+- `Service`: target is a logical service endpoint, with concrete instance chosen by routing
+- `Group`: target expands to multiple receivers or processes
+
+### ReceiverAddress
+
+`ReceiverAddress` is the stable upper-layer target abstraction.
+
+Suggested representation:
+
+```cpp
+struct ReceiverAddress {
+    ReceiverType type;
+    std::uint64_t key_hi;
+    std::uint64_t key_lo;
+};
+```
+
+Encoding examples:
+
+- `Process`: `key_hi = service_type`, `key_lo = instance_id`
+- `Player`: `key_lo = player_id`
+- `System`: hashed system key
+- `Service`: `key_lo = service_type`
+- `Group`: group identifier
+
+Rules:
+
+- Application code should prefer `ReceiverAddress` over raw process routing whenever possible.
+- The internal communication foundation owns the mapping from receiver to process.
+- A receiver may temporarily resolve to:
+  - local process
+  - one remote process
+  - multiple remote processes
+  - unresolved
+
+### ReceiverLocation
+
+`ReceiverLocation` is the result of resolving a receiver address.
+
+Suggested representation:
+
+```cpp
+enum class ReceiverLocationKind : std::uint8_t {
+    Local,
+    SingleProcess,
+    MultiProcess,
+    Unresolved
+};
+
+struct ReceiverLocation {
+    ReceiverLocationKind kind;
+    std::vector<ProcessRef> processes;
+};
+```
+
+Rules:
+
+- `Process` receivers usually resolve directly.
+- `Player` receivers usually resolve to one process.
+- `Group` receivers may resolve to many processes.
+
+### BroadcastScope
+
+`BroadcastScope` defines how a broadcast is expanded.
+
+Suggested representation:
+
+```cpp
+struct BroadcastScope {
+    std::optional<ServiceType> service_type;
+    std::map<std::string, std::string> required_labels;
+    bool include_local = true;
+};
+```
+
+Examples:
+
+- all `game` processes
+- all `gate` processes in one zone
+- all relay nodes
+
+Rules:
+
+- Broadcast is a routing concern, not an application-managed peer iteration concern.
+- Application code must not manually enumerate discovered peers for routine broadcast.
+
+### Envelope
+
+`Envelope` is the internal data-plane wrapper for application business payloads.
+
+Suggested representation:
+
+```cpp
+enum class DeliverySemantic : std::uint8_t {
+    Direct = 1,
+    Broadcast = 2
+};
+
+struct EnvelopeHeader {
+    ProcessRef source_process;
+    DeliverySemantic semantic;
+    ReceiverAddress target_receiver;
+    std::string message_type;
+    std::uint64_t request_id;
+    std::uint32_t flags;
+};
+
+struct Envelope {
+    EnvelopeHeader header;
+    std::string payload_type_url;
+    std::string payload_bytes;
+};
+```
+
+Rules:
+
+- Internal envelope is separate from external client protocol packets.
+- `message_type` or `payload_type_url` must allow deterministic protobuf dispatch.
+- Envelope must not embed transport-specific identifiers.
+
+### Route
+
+`Route` is the routing layer result for one outbound envelope.
+
+Suggested representation:
+
+```cpp
+enum class RouteKind : std::uint8_t {
+    Local,
+    DirectLink,
+    RelayHop,
+    BroadcastFanout,
+    Drop
+};
+
+struct Route {
+    RouteKind kind;
+    std::vector<ProcessRef> next_hops;
+};
+```
+
+Rules:
+
+- Route output is internal to the messaging stack.
+- Upper application code must never branch on direct-vs-relay behavior.
+
+## Identity Usage Rules
+
+These rules are critical and should remain stable.
+
+1. `ProcessId` is the stable logical identity.
+2. `ProcessRef` is the concrete running identity.
+3. `ReceiverAddress` is the preferred application-facing target.
+4. `ConnectionId` is transport-only and never leaves the lower layers.
+5. `Endpoint` is connectivity metadata, not business identity.
+6. Stale state detection must rely on `IncarnationId`, not on endpoint comparison.
+
+## Example Flows
+
+### Send To A Specific Process
+
+1. Application calls `SendToProcess(ProcessId, protobuf message)`.
+2. Messaging facade converts the process target into a `ReceiverAddress` of type `Process`, or routes directly via process semantics.
+3. Routing resolves local, direct link, or relay hop.
+4. Link layer delivers over one or more transport connections.
+
+### Send To A Player Receiver
+
+1. Application calls `SendToReceiver(PlayerReceiver(player_id), protobuf message)`.
+2. Receiver directory resolves player ownership to a `ProcessRef`.
+3. Routing decides local, direct, or relay.
+4. Messaging facade sends the internal envelope without exposing network details to business code.
+
+### Broadcast To All Game Processes
+
+1. Application calls `Broadcast(scope=service_type: game, protobuf message)`.
+2. Routing expands the scope using membership and topology policy.
+3. Messaging layer performs fanout.
+
+## Phase Guidance
+
+The first implementation should intentionally stay narrow.
+
+Must include:
+
+- process identity model
+- process descriptor model
+- receiver address model
+- envelope model
+- relay-first routing baseline
+- direct-connect extension point
+
+Should wait until later:
+
+- advanced group semantics
+- sophisticated load-aware routing
+- multi-region discovery federation
+
+## Open Questions
+
+These are intentionally deferred to later design steps.
+
+- How should `InstanceId` be assigned: deployment config, discovery allocation, or hybrid?
+- Should `ServiceType` be numeric-only, string-only, or dual-mapped?
+- Should `ReceiverAddress` support richer typed payloads instead of the `key_hi/key_lo` form?
+- How should relay capability be advertised and selected?
+- What consistency guarantees are required for receiver ownership changes?
+
+## Internal Protocol Model
+
+This section is the main output of step 3.
+
+The internal protocol model is split into two independent protobuf systems:
+
+- control-plane protocol
+- data-plane protocol
+
+Both are internal-only and must remain independent from any external client-facing protocol.
+
+### Protocol Split
+
+#### Control-Plane Protocol
+
+Purpose:
+
+- build and validate process links
+- advertise process metadata
+- exchange liveness and routing-related state
+- manage receiver ownership metadata later when needed
+
+Typical messages:
+
+- hello
+- hello_ack
+- ping
+- pong
+- close
+- route_update
+- receiver_bind
+- receiver_unbind
+
+#### Data-Plane Protocol
+
+Purpose:
+
+- carry application business protobuf payloads between processes
+- provide a uniform internal envelope
+- support direct send, relay hop, and broadcast semantics
+
+Typical content:
+
+- source process
+- destination receiver
+- payload metadata
+- message payload bytes
+
+### Why The Split Is Mandatory
+
+If control-plane and data-plane messages share one undifferentiated protocol namespace, these problems appear quickly:
+
+- control logic becomes coupled to business dispatch
+- protocol evolution becomes harder
+- relay and direct-connect paths become less clear
+- receiver ownership sync gets mixed with business payload transport
+
+The split keeps behavior understandable:
+
+- control plane changes topology or metadata
+- data plane carries business messages
+
+## Wire Framing
+
+The transport layer should expose framed byte messages to the link layer.
+
+Recommended wire frame:
+
+```text
++----------------+----------------+----------------+-------------------+
+| Magic (u32)    | Version (u16)  | Kind (u16)     | Length (u32)      |
++----------------+----------------+----------------+-------------------+
+| Payload bytes...                                                   |
++--------------------------------------------------------------------+
+```
+
+Fields:
+
+- `Magic`: identifies the internal IPC protocol family
+- `Version`: wire framing version, not business payload version
+- `Kind`: distinguishes control-plane protobuf from data-plane protobuf
+- `Length`: payload size in bytes
+
+Initial kinds:
+
+- `1`: control-plane message
+- `2`: data-plane message
+
+Rules:
+
+- framing version changes only when the binary frame format changes
+- protobuf schema evolution inside the payload must not require a framing version bump
+- transport owns frame parsing, link layer owns payload decoding
+
+## Control-Plane Protocol
+
+### Control-Plane Design Rules
+
+- All control-plane messages must use a dedicated protobuf package.
+- Control-plane message handlers must live in the link, discovery, or routing parts of the stack.
+- Application business code must never handle raw control-plane messages.
+- Control-plane messages may change routing or receiver metadata, but must not carry business payloads.
+
+### Suggested Protobuf Package
+
+```proto
+package some_server.ipc.control.v1;
+```
+
+### Envelope Strategy
+
+Use one top-level protobuf wrapper for control-plane dispatch.
+
+Suggested shape:
+
+```proto
+message ControlMessage {
+  uint64 sequence = 1;
+  oneof body {
+    Hello hello = 10;
+    HelloAck hello_ack = 11;
+    Ping ping = 12;
+    Pong pong = 13;
+    Close close = 14;
+    RouteUpdate route_update = 20;
+    ReceiverBind receiver_bind = 30;
+    ReceiverUnbind receiver_unbind = 31;
+  }
+}
+```
+
+Rationale:
+
+- one decode entry point
+- explicit control-plane message namespace
+- easy validation in the link layer
+
+### Hello / HelloAck
+
+These messages establish a process link and validate compatibility.
+
+Suggested shape:
+
+```proto
+message ProcessIdentity {
+  uint32 service_type = 1;
+  uint32 instance_id = 2;
+  uint64 incarnation_id = 3;
+}
+
+message Endpoint {
+  string host = 1;
+  uint32 port = 2;
+}
+
+message Hello {
+  ProcessIdentity self = 1;
+  string service_name = 2;
+  uint32 protocol_version = 3;
+  uint32 min_supported_protocol_version = 4;
+  Endpoint listen_endpoint = 5;
+  map<string, string> labels = 6;
+  repeated uint32 relay_capabilities = 7;
+}
+
+message HelloAck {
+  enum Result {
+    RESULT_UNSPECIFIED = 0;
+    RESULT_OK = 1;
+    RESULT_INCOMPATIBLE_VERSION = 2;
+    RESULT_DUPLICATE_PROCESS = 3;
+    RESULT_REJECTED = 4;
+  }
+
+  Result result = 1;
+  ProcessIdentity self = 2;
+  uint32 protocol_version = 3;
+  string reason = 4;
+}
+```
+
+Rules:
+
+- `Hello` is the first semantic message on a new link.
+- `HelloAck` confirms acceptance or explains rejection.
+- `incarnation_id` is mandatory for stale link rejection.
+- if compatibility fails, the link must be closed cleanly.
+
+### Ping / Pong
+
+Purpose:
+
+- liveness
+- RTT measurement if needed
+- dead peer detection above plain TCP failure detection
+
+Suggested shape:
+
+```proto
+message Ping {
+  uint64 nonce = 1;
+  uint64 send_time_unix_ms = 2;
+}
+
+message Pong {
+  uint64 nonce = 1;
+  uint64 send_time_unix_ms = 2;
+}
+```
+
+### Close
+
+Purpose:
+
+- explicit semantic shutdown of a process link
+- diagnostic visibility
+
+Suggested shape:
+
+```proto
+message Close {
+  uint32 code = 1;
+  string reason = 2;
+}
+```
+
+### RouteUpdate
+
+This message is optional in the first implementation, but the protocol should reserve space for it now.
+
+Purpose:
+
+- distribute route hints
+- advertise relay capabilities
+- propagate topology changes later if routing becomes partially explicit
+
+Suggested shape:
+
+```proto
+message RouteUpdate {
+  repeated RouteEntry entries = 1;
+}
+
+message RouteEntry {
+  uint32 service_type = 1;
+  ProcessIdentity next_hop = 2;
+  uint32 metric = 3;
+}
+```
+
+### ReceiverBind / ReceiverUnbind
+
+These messages are not required for the first runnable version if receiver ownership stays local-only or discovery-backed, but they should be part of the protocol plan.
+
+Suggested shape:
+
+```proto
+message ReceiverAddress {
+  uint32 type = 1;
+  uint64 key_hi = 2;
+  uint64 key_lo = 3;
+}
+
+message ReceiverBind {
+  ReceiverAddress receiver = 1;
+  ProcessIdentity owner = 2;
+  uint64 version = 3;
+}
+
+message ReceiverUnbind {
+  ReceiverAddress receiver = 1;
+  ProcessIdentity owner = 2;
+  uint64 version = 3;
+}
+```
+
+`version` here is a receiver ownership version, not a process protocol version.
+
+## Data-Plane Protocol
+
+### Data-Plane Design Rules
+
+- Data-plane protobuf must be independent from control-plane protobuf.
+- Data-plane messages must always travel inside a stable internal envelope.
+- Business payload bytes must be opaque to routing and link layers.
+- External client packet formats must not be tunneled directly as the internal envelope.
+
+### Suggested Protobuf Package
+
+```proto
+package some_server.ipc.data.v1;
+```
+
+### Envelope Model
+
+Suggested shape:
+
+```proto
+message ProcessRef {
+  uint32 service_type = 1;
+  uint32 instance_id = 2;
+  uint64 incarnation_id = 3;
+}
+
+message ReceiverAddress {
+  uint32 type = 1;
+  uint64 key_hi = 2;
+  uint64 key_lo = 3;
+}
+
+message BroadcastScope {
+  optional uint32 service_type = 1;
+  map<string, string> required_labels = 2;
+  bool include_local = 3;
+}
+
+message DataEnvelope {
+  enum DeliverySemantic {
+    DELIVERY_SEMANTIC_UNSPECIFIED = 0;
+    DELIVERY_SEMANTIC_DIRECT = 1;
+    DELIVERY_SEMANTIC_BROADCAST = 2;
+  }
+
+  ProcessRef source_process = 1;
+  DeliverySemantic semantic = 2;
+  ReceiverAddress target_receiver = 3;
+  optional BroadcastScope broadcast_scope = 4;
+  string payload_type_url = 5;
+  bytes payload_bytes = 6;
+  uint64 request_id = 7;
+  uint32 flags = 8;
+}
+```
+
+Rules:
+
+- `payload_type_url` is the protobuf dispatch key
+- `payload_bytes` stores serialized business protobuf
+- `target_receiver` is always present
+- `broadcast_scope` is set only for broadcast semantics
+- `source_process` always includes `incarnation_id`
+
+### Relay Header Consideration
+
+For the first phase, relay metadata should remain part of the envelope-processing context, not exposed as a separate application-visible header.
+
+If needed later, extend with:
+
+```proto
+message TransitMetadata {
+  uint32 hop_count = 1;
+  repeated ProcessRef visited_relays = 2;
+}
+```
+
+This must stay internal to the routing/data-plane implementation.
+
+## Payload Dispatch Strategy
+
+Business payload dispatch should use `payload_type_url`, not transport protocol ids or ad hoc integer enums owned by each application.
+
+Recommended approach:
+
+- protobuf payload types remain application-owned
+- messaging facade maintains a registry:
+  - type URL -> protobuf factory
+  - type URL -> handler
+
+This gives:
+
+- deterministic dispatch
+- fewer global integer collisions
+- easier protocol evolution
+
+## Versioning Strategy
+
+There are three different versions and they must not be mixed.
+
+### 1. Wire Framing Version
+
+Scope:
+
+- raw frame layout only
+
+Changes when:
+
+- binary frame header changes
+- framing semantics change
+
+Does not change when:
+
+- protobuf fields are added compatibly
+
+### 2. Internal Protocol Version
+
+Scope:
+
+- control-plane and data-plane protobuf compatibility contract
+
+Represented by:
+
+- `protocol_version`
+- `min_supported_protocol_version`
+
+Used during:
+
+- hello / hello_ack handshake
+
+Rules:
+
+- a process must reject a peer whose protocol version is lower than its minimum supported version
+- a process may also reject a peer if its own version is lower than the peer's minimum supported version
+- this version should change only for intentionally incompatible internal protocol changes
+
+### 3. Business Payload Schema Evolution
+
+Scope:
+
+- application-owned protobuf payload messages inside `payload_bytes`
+
+Rules:
+
+- handled through protobuf-compatible schema evolution
+- should not require a transport or framing version bump
+- should not require changing control-plane protocol unless routing semantics change
+
+## Compatibility Rules
+
+These rules should remain stable.
+
+1. Additive protobuf field changes are the default path.
+2. Required semantic changes must trigger an internal protocol version decision.
+3. Framing changes are rare and must be treated as exceptional.
+4. Unknown control-plane messages must be logged and rejected safely.
+5. Unknown data-plane payload types must be rejected at dispatch time without crashing the process.
+6. Stale messages must be rejected using `ProcessRef.incarnation_id` when ownership or source identity matters.
+
+## Error Handling Rules
+
+### Control Plane
+
+- link establishment failures must be explicit in logs
+- version mismatch should return `HelloAck.RESULT_INCOMPATIBLE_VERSION`
+- duplicate live process identity should return `HelloAck.RESULT_DUPLICATE_PROCESS`
+- invalid or malformed control messages should close the link
+
+### Data Plane
+
+- unknown payload type should produce a structured error log and drop the message
+- unresolved receiver should be dropped or dead-lettered according to later policy
+- route resolution failure must not surface as transport-layer corruption
+
+## Initial Protobuf File Layout
+
+Recommended repository layout once protocol implementation starts:
+
+```text
+proto/ipc/control/v1/control.proto
+proto/ipc/data/v1/envelope.proto
+proto/ipc/common/v1/types.proto
+```
+
+Recommended split:
+
+- `common/v1/types.proto`
+  - `ProcessIdentity`
+  - `ProcessRef`
+  - `Endpoint`
+  - `ReceiverAddress`
+  - `BroadcastScope`
+- `control/v1/control.proto`
+  - control-plane wrapper and control-plane messages
+- `data/v1/envelope.proto`
+  - data-plane envelope
+
+## Initial Implementation Guidance
+
+The first implementation should only require this subset:
+
+- wire frame with control/data kind split
+- `Hello`
+- `HelloAck`
+- `Ping`
+- `Pong`
+- `Close`
+- `DataEnvelope`
+
+These can wait:
+
+- `RouteUpdate`
+- `ReceiverBind`
+- `ReceiverUnbind`
+- transit metadata
+
+## Recommended Next Step
+
+Step 4 should define discovery storage and membership modeling:
+
+- etcd key layout
+- lease ownership model
+- process registration records
+- snapshot and watch semantics
+- stale record handling
