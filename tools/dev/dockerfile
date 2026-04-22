@@ -37,7 +37,7 @@ RUN set -eux; \
 RUN npm install -g @openai/codex && \
     codex --version || true
 # 安装 etcd
-RUN ETCD_VER=v3.9.10 && \
+RUN ETCD_VER=v3.6.10 && \
     ARCH="$(dpkg --print-architecture)" && \
     case "$ARCH" in \
         amd64) ETCD_ARCH=amd64 ;; \
