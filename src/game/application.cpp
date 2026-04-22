@@ -4,23 +4,19 @@
 
 #include <stdexcept>
 
-void Application::RegisterServices()
-{
-}
-
 void Application::RegisterRuntimeCommands()
 {
     const bool registered = Runtime().RegisterCommand(
         "status",
-        "Show gate runtime status",
+        "Show game runtime status",
         [](const CommandArguments&) {
-            spdlog::info("gate status: {}", "running");
+            spdlog::info("game status: {}", "running");
             return CommandExecutionStatus::handled;
         });
 
     if (!registered)
     {
-        throw std::runtime_error("failed to register gate status command");
+        throw std::runtime_error("failed to register game status command");
     }
 }
 
