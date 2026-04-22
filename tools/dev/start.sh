@@ -10,11 +10,11 @@ mkdir -p /var/run/mysqld
 mkdir -p /var/lib/redis
 mkdir -p "${DEV_HOME}/.ssh"
 mkdir -p "${DEV_HOME}/.codex"
-mkdir -p /workspace
+mkdir -p /projects
 
 chown -R mysql:mysql /var/run/mysqld
 chown -R redis:redis /var/lib/redis
-chown -R "${DEV_USER}:${DEV_USER}" "${DEV_HOME}" /workspace
+chown -R "${DEV_USER}:${DEV_USER}" "${DEV_HOME}" /projects
 chmod 700 "${DEV_HOME}/.ssh"
 
 # 允许通过环境变量注入密码
@@ -37,6 +37,8 @@ touch "${AUTHORIZED_KEYS_FILE}"
 chown "${DEV_USER}:${DEV_USER}" "${AUTHORIZED_KEYS_FILE}"
 chmod 600 "${AUTHORIZED_KEYS_FILE}"
 
+echo "Initializing MariaDB database..."
+sudo mariadb-install-db --user=mysql --ldata=/var/lib/mysql
 echo "Starting MariaDB..."
 service mariadb start
 

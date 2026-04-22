@@ -18,7 +18,7 @@ services:
 
     volumes:
       # 项目代码
-      - ${PWD}/projects:/projects
+      - ${PWD}/projects:/home/dev/projects
 
       # 数据持久化
       - ${PWD}/mariadb_data:/var/lib/mysql
@@ -38,8 +38,8 @@ services:
     tty: true
     stdin_open: true
 
-volumes:
-  mariadb_data:
-  redis_data:
-  npm_cache:
-  dev_cache:
+#volumes:
+  #mariadb_data:
+  #redis_data:
+  #npm_cache:
+  #dev_cache:
