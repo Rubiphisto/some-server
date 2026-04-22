@@ -16,8 +16,11 @@ namespace
     class NullRuntime final : public IApplicationRuntime
     {
     public:
-        bool RegisterCommand(std::string, std::string, CommandHandler) override
+        std::vector<std::string> registered_commands;
+
+        bool RegisterCommand(std::string command_name, std::string, CommandHandler) override
         {
+            registered_commands.push_back(std::move(command_name));
             return true;
         }
 
@@ -202,6 +205,56 @@ namespace
         Require(threw, "start should throw on service failure");
         Require(IndexOf(events, "svc_b1:Stop") > IndexOf(events, "svc_b2_fail:Start"), "started services should rollback stop");
     }
+
+    class RuntimeCommandApplication final : public ApplicationBase<TestConfiguration>
+    {
+    public:
+        explicit RuntimeCommandApplication(std::vector<std::string>& events) : mEvents(events) {}
+
+        std::string GetName() const override
+        {
+            return "test";
+        }
+
+    protected:
+        void RegisterRuntimeCommands() override
+        {
+            mEvents.emplace_back("App:RegisterRuntimeCommands");
+            const bool registered =
+                Runtime().RegisterCommand("status", "test", [](const CommandArguments&) {
+                    return CommandExecutionStatus::handled;
+                });
+            Require(registered, "runtime command registration should succeed");
+        }
+
+        LifecycleTask OnLoad() override
+        {
+            mEvents.emplace_back("App:Load");
+            return LifecycleTask::Completed();
+        }
+
+    private:
+        std::vector<std::string>& mEvents;
+    };
+
+    void TestRuntimeCommandRegistration()
+    {
+        std::vector<std::string> events;
+        RuntimeCommandApplication app(events);
+
+        NullRuntime runtime;
+        CommonConfiguration common_configuration;
+        TestConfiguration app_configuration;
+        app.SetRuntime(runtime);
+        Require(app.Configure(common_configuration, app_configuration), "configure should succeed");
+
+        app.Load();
+
+        Require(runtime.registered_commands.size() == 1, "runtime commands should register once");
+        Require(runtime.registered_commands.front() == "status", "runtime command name should match");
+        Require(IndexOf(events, "App:RegisterRuntimeCommands") < IndexOf(events, "App:Load"),
+                "runtime commands should register before app load");
+    }
 }
 
 SOME_SERVER_APPLICATION_CONFIG(TestConfiguration);
@@ -212,6 +265,7 @@ int main()
     {
         TestBatchOrder();
         TestStartRollback();
+        TestRuntimeCommandRegistration();
         std::cout << "application_service_lifecycle_test: ok" << std::endl;
         return 0;
     }

@@ -13,6 +13,7 @@ public:
 
 protected:
     void RegisterServices() override;
+    void RegisterRuntimeCommands() override;
     LifecycleTask OnUnload() override;
     LifecycleTask OnStart() override;
     LifecycleTask OnStop() override;

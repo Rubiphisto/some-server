@@ -1,13 +1,29 @@
 #include "application.h"
 #include "services/listener_service.h"
-#include "services/runtime_command_service.h"
 
 #include <spdlog/spdlog.h>
 
+#include <stdexcept>
+
 void Application::RegisterServices()
 {
-    AddService(std::make_unique<RuntimeCommandService>(Runtime()));
     AddService(std::make_unique<ListenerService>(AppConfig()));
+}
+
+void Application::RegisterRuntimeCommands()
+{
+    const bool registered = Runtime().RegisterCommand(
+        "status",
+        "Show gate runtime status",
+        [](const CommandArguments&) {
+            spdlog::info("gate status: {}", "running");
+            return CommandExecutionStatus::handled;
+        });
+
+    if (!registered)
+    {
+        throw std::runtime_error("failed to register gate status command");
+    }
 }
 
 LifecycleTask Application::OnLoad()

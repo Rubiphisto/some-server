@@ -26,6 +26,7 @@ public:
     void Load() final override
     {
         EnsureServicesRegistered();
+        EnsureRuntimeCommandsRegistered();
         OnLoad().Wait();
 
         mLoadedServices.clear();
@@ -122,6 +123,7 @@ public:
 protected:
     virtual bool OnConfigure() { return true; }
     virtual void RegisterServices() {}
+    virtual void RegisterRuntimeCommands() {}
     virtual LifecycleTask OnLoad() { return LifecycleTask::Completed(); }
     virtual LifecycleTask OnStart() { return LifecycleTask::Completed(); }
     virtual LifecycleTask OnStop() { return LifecycleTask::Completed(); }
@@ -177,6 +179,17 @@ private:
             [](const IService* lhs, const IService* rhs) { return lhs->GetBatch() < rhs->GetBatch(); });
 
         mServicesRegistered = true;
+    }
+
+    void EnsureRuntimeCommandsRegistered()
+    {
+        if (mRuntimeCommandsRegistered)
+        {
+            return;
+        }
+
+        RegisterRuntimeCommands();
+        mRuntimeCommandsRegistered = true;
     }
 
     void ValidateServices() const
@@ -276,4 +289,5 @@ private:
     std::vector<IService*> mLoadedServices;
     std::vector<IService*> mStartedServices;
     bool mServicesRegistered = false;
+    bool mRuntimeCommandsRegistered = false;
 };

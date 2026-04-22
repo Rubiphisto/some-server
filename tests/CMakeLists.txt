@@ -1,7 +1,6 @@
 add_executable(loader_config_test
         loader_config_test.cpp
         ${CMAKE_SOURCE_DIR}/src/gate/application.cpp
-        ${CMAKE_SOURCE_DIR}/src/gate/services/runtime_command_service.cpp
         ${CMAKE_SOURCE_DIR}/src/gate/services/listener_service.cpp
 )
 
