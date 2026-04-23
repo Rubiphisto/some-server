@@ -1,7 +1,10 @@
 #pragma once
 
 #include "../base/process.h"
+#include "../base/result.h"
 #include "../transport/frame.h"
+
+#include "ipc/control/v1/control.pb.h"
 
 namespace ipc
 {
@@ -14,22 +17,12 @@ enum class ControlMessageType : std::uint16_t
     close = 5
 };
 
-struct ControlMessageHeader
-{
-    ControlMessageType type = ControlMessageType::hello;
-    std::uint16_t reserved = 0;
-};
+using ProtoControlMessage = some_server::ipc::control::v1::ControlMessage;
 
-struct HelloPayload
-{
-    // This milestone-1 skeleton still uses a tiny ad hoc payload for link bootstrap.
-    // It will be replaced by the real protobuf control-plane messages later.
-    ProcessRef self;
-    std::uint32_t protocol_version = 1;
-};
-
-ByteBuffer EncodeControlMessage(ControlMessageType type, const ByteBuffer& payload);
-bool DecodeControlMessage(const ByteBuffer& bytes, ControlMessageType& type, ByteBuffer& payload);
-ByteBuffer EncodeHelloPayload(const HelloPayload& payload);
-bool DecodeHelloPayload(const ByteBuffer& bytes, HelloPayload& payload);
+ByteBuffer EncodeHello(const ProcessRef& self, std::uint32_t protocol_version);
+ByteBuffer EncodeHelloAck(const ProcessRef& self, std::uint32_t protocol_version);
+ByteBuffer EncodePong();
+bool DecodeControlMessage(const ByteBuffer& bytes, ProtoControlMessage& message);
+ControlMessageType GetControlMessageType(const ProtoControlMessage& message);
+Result ExtractHelloProcessRef(const ProtoControlMessage& message, ProcessRef& process_ref);
 } // namespace ipc

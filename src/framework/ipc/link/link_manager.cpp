@@ -15,14 +15,7 @@ void LinkManager::OnConnectionEvent(const ConnectionEvent& event)
         Link& link = mLinks[event.connection_id];
         link.connection_id = event.connection_id;
         link.state = LinkState::handshaking;
-        // The current skeleton always starts with an outbound hello so tests can
-        // exercise symmetric link establishment before discovery/routing exist.
-        QueueFrame(
-            event.connection_id,
-            FrameKind::control,
-            EncodeControlMessage(
-                ControlMessageType::hello,
-                EncodeHelloPayload(HelloPayload{mSelf, 1})));
+        QueueFrame(event.connection_id, FrameKind::control, EncodeHello(mSelf, 1));
         break;
     }
     case ConnectionEventType::disconnected:
@@ -38,17 +31,17 @@ Result LinkManager::OnFrame(const RawFrame& frame)
         return Result::Failure("unsupported frame kind");
     }
 
-    ControlMessageType type = ControlMessageType::hello;
-    ByteBuffer payload;
-    if (!DecodeControlMessage(frame.payload, type, payload))
+    ProtoControlMessage message;
+    if (!DecodeControlMessage(frame.payload, message))
     {
         return Result::Failure("invalid control message");
     }
 
+    const ControlMessageType type = GetControlMessageType(message);
     switch (type)
     {
     case ControlMessageType::hello:
-        return HandleHello(frame.connection_id, payload);
+        return HandleHello(frame.connection_id, frame.payload);
     case ControlMessageType::hello_ack: {
         auto it = mLinks.find(frame.connection_id);
         if (it == mLinks.end())
@@ -61,7 +54,7 @@ Result LinkManager::OnFrame(const RawFrame& frame)
         return Result::Success();
     }
     case ControlMessageType::ping:
-        QueueFrame(frame.connection_id, FrameKind::control, EncodeControlMessage(ControlMessageType::pong, {}));
+        QueueFrame(frame.connection_id, FrameKind::control, EncodePong());
         return Result::Success();
     case ControlMessageType::pong:
     case ControlMessageType::close:
@@ -105,19 +98,24 @@ std::vector<RawFrame> LinkManager::DrainOutboundFrames()
 
 Result LinkManager::HandleHello(ConnectionId connection_id, const ByteBuffer& payload)
 {
-    HelloPayload hello{};
-    if (!DecodeHelloPayload(payload, hello))
+    ProtoControlMessage message;
+    if (!DecodeControlMessage(payload, message))
     {
-        return Result::Failure("invalid hello payload");
+        return Result::Failure("invalid hello control message");
+    }
+
+    ProcessRef remote_process;
+    const Result extracted = ExtractHelloProcessRef(message, remote_process);
+    if (!extracted.ok)
+    {
+        return extracted;
     }
 
     Link& link = mLinks[connection_id];
     link.connection_id = connection_id;
-    link.remote_process = hello.self;
+    link.remote_process = remote_process;
     link.state = LinkState::active;
-    // The responder becomes active as soon as the peer identity is decoded,
-    // then sends hello_ack so the initiator can also transition to active.
-    QueueFrame(connection_id, FrameKind::control, EncodeControlMessage(ControlMessageType::hello_ack, {}));
+    QueueFrame(connection_id, FrameKind::control, EncodeHelloAck(mSelf, 1));
     return Result::Success();
 }
 

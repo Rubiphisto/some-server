@@ -56,3 +56,37 @@ add_test(NAME ipc_transport_link_test COMMAND $<TARGET_FILE:ipc_transport_link_t
 set_tests_properties(ipc_transport_link_test PROPERTIES
         WORKING_DIRECTORY ${SERVER_BINARY_FOLDER}/bin
 )
+
+add_executable(ipc_discovery_routing_test
+        ipc_discovery_routing_test.cpp
+)
+
+target_include_directories(ipc_discovery_routing_test PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(ipc_discovery_routing_test PRIVATE
+        ipc
+)
+
+add_test(NAME ipc_discovery_routing_test COMMAND $<TARGET_FILE:ipc_discovery_routing_test>)
+set_tests_properties(ipc_discovery_routing_test PROPERTIES
+        WORKING_DIRECTORY ${SERVER_BINARY_FOLDER}/bin
+)
+
+add_executable(ipc_etcd_discovery_test
+        ipc_etcd_discovery_test.cpp
+)
+
+target_include_directories(ipc_etcd_discovery_test PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(ipc_etcd_discovery_test PRIVATE
+        ipc
+)
+
+add_test(NAME ipc_etcd_discovery_test COMMAND $<TARGET_FILE:ipc_etcd_discovery_test>)
+set_tests_properties(ipc_etcd_discovery_test PROPERTIES
+        WORKING_DIRECTORY ${SERVER_BINARY_FOLDER}/bin
+)

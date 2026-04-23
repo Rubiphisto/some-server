@@ -16,6 +16,7 @@ set(SERVER_BINARY_FOLDER "${CMAKE_BINARY_DIR}")
 
 option(USE_SYSTEM_SPDLOG "Use a preinstalled spdlog package" OFF)
 option(USE_SYSTEM_GLAZE "Use a preinstalled glaze package" OFF)
+option(USE_SYSTEM_PROTOBUF "Use a preinstalled protobuf package" ON)
 
 if (USE_SYSTEM_SPDLOG)
     find_package(spdlog CONFIG REQUIRED)
@@ -40,6 +41,23 @@ else ()
             GIT_SHALLOW TRUE
     )
     FetchContent_MakeAvailable(glaze_proj)
+endif ()
+
+if (USE_SYSTEM_PROTOBUF)
+    find_package(Protobuf REQUIRED)
+else ()
+    set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(protobuf_INSTALL OFF CACHE BOOL "" FORCE)
+    set(protobuf_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    FetchContent_Declare(
+            protobuf_proj
+            QUIET
+            GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
+            GIT_TAG v3.21.12
+            GIT_SHALLOW TRUE
+            OVERRIDE_FIND_PACKAGE
+    )
+    FetchContent_MakeAvailable(protobuf_proj)
 endif ()
 
 set(CMAKE_MODULE_PATH

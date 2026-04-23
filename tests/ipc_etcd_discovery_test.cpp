@@ -1,0 +1,151 @@
+#include "framework/ipc/discovery/etcd_discovery.h"
+
+#include <chrono>
+#include <csignal>
+#include <filesystem>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <thread>
+#include <unistd.h>
+
+namespace
+{
+    struct ScopedEtcd
+    {
+        pid_t pid = -1;
+        std::filesystem::path data_dir;
+        std::string client_endpoint;
+
+        ~ScopedEtcd()
+        {
+            if (pid > 0)
+            {
+                kill(pid, SIGTERM);
+                waitpid(pid, nullptr, 0);
+            }
+            std::error_code ignored;
+            if (!data_dir.empty())
+            {
+                std::filesystem::remove_all(data_dir, ignored);
+            }
+        }
+    };
+
+    void Require(bool condition, const std::string& message)
+    {
+        if (!condition)
+        {
+            throw std::runtime_error(message);
+        }
+    }
+
+    ipc::ProcessDescriptor MakeProcess(ipc::ServiceType service_type, ipc::InstanceId instance_id, ipc::IncarnationId incarnation)
+    {
+        ipc::ProcessDescriptor descriptor;
+        descriptor.process = ipc::ProcessRef{ipc::ProcessId{service_type, instance_id}, incarnation};
+        descriptor.service_name = service_type == 99 ? "relay" : "game";
+        descriptor.listen_endpoint = {"127.0.0.1", static_cast<std::uint16_t>(9200 + instance_id)};
+        descriptor.protocol_version = 1;
+        descriptor.start_time_unix_ms = 1;
+        descriptor.labels.push_back({"role", descriptor.service_name});
+        return descriptor;
+    }
+
+    ScopedEtcd StartEtcd()
+    {
+        ScopedEtcd scoped;
+        const auto suffix = std::to_string(
+            std::chrono::steady_clock::now().time_since_epoch().count());
+        scoped.data_dir = std::filesystem::temp_directory_path() / ("ipc_etcd_" + suffix);
+        std::filesystem::create_directories(scoped.data_dir);
+
+        const std::string client_url = "http://127.0.0.1:32379";
+        const std::string peer_url = "http://127.0.0.1:32380";
+        scoped.client_endpoint = "127.0.0.1:32379";
+
+        const pid_t pid = fork();
+        if (pid == -1)
+        {
+            throw std::runtime_error("fork failed");
+        }
+        if (pid == 0)
+        {
+            execl(
+                "/usr/local/bin/etcd",
+                "etcd",
+                "--name",
+                "ipc-test",
+                "--data-dir",
+                scoped.data_dir.c_str(),
+                "--listen-client-urls",
+                client_url.c_str(),
+                "--advertise-client-urls",
+                client_url.c_str(),
+                "--listen-peer-urls",
+                peer_url.c_str(),
+                "--initial-advertise-peer-urls",
+                peer_url.c_str(),
+                "--initial-cluster",
+                "ipc-test=http://127.0.0.1:32380",
+                "--initial-cluster-state",
+                "new",
+                static_cast<char*>(nullptr));
+            _exit(127);
+        }
+
+        scoped.pid = pid;
+
+        for (int attempt = 0; attempt < 50; ++attempt)
+        {
+            const int rc = std::system(
+                "etcdctl --endpoints=127.0.0.1:32379 endpoint health >/dev/null 2>&1");
+            if (rc == 0)
+            {
+                return scoped;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        throw std::runtime_error("etcd did not become healthy");
+    }
+
+    void TestEtcdDiscoveryLifecycle()
+    {
+        const ScopedEtcd etcd = StartEtcd();
+
+        ipc::EtcdDiscovery discovery({
+            .etcdctl_path = "etcdctl",
+            .endpoints = {etcd.client_endpoint},
+            .prefix = "/some_server/ipc/test/local"});
+
+        const ipc::ProcessDescriptor game = MakeProcess(10, 1, 101);
+        Require(discovery.RegisterSelf(game).ok, "register self");
+        Require(discovery.RefreshSnapshot().ok, "refresh snapshot");
+
+        const auto found = discovery.Find(game.process.process_id);
+        Require(found.has_value(), "find registered process");
+        Require(found->process == game.process, "registered process ref");
+
+        Require(discovery.Remove(game.process.process_id).ok, "remove process");
+        Require(discovery.RefreshSnapshot().ok, "refresh after remove");
+        Require(!discovery.Find(game.process.process_id).has_value(), "removed process should disappear");
+    }
+} // namespace
+
+int main()
+{
+    try
+    {
+        TestEtcdDiscoveryLifecycle();
+        std::cout << "ipc_etcd_discovery_test: ok" << std::endl;
+        return 0;
+    }
+    catch (const std::exception& ex)
+    {
+        std::cerr << "ipc_etcd_discovery_test: " << ex.what() << std::endl;
+        return 1;
+    }
+}
