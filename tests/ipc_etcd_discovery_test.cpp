@@ -133,6 +133,79 @@ namespace
         Require(discovery.RefreshSnapshot().ok, "refresh after remove");
         Require(!discovery.Find(game.process.process_id).has_value(), "removed process should disappear");
     }
+
+    void TestEtcdDiscoveryLeaseExpiry()
+    {
+        const ScopedEtcd etcd = StartEtcd();
+
+        ipc::EtcdDiscovery discovery({
+            .etcdctl_path = "etcdctl",
+            .endpoints = {etcd.client_endpoint},
+            .prefix = "/some_server/ipc/test/lease_expiry",
+            .lease_ttl_seconds = 2});
+
+        const ipc::ProcessDescriptor game = MakeProcess(10, 2, 102);
+        Require(discovery.RegisterSelf(game).ok, "register leased process");
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        Require(discovery.RefreshSnapshot().ok, "refresh after lease expiry");
+        Require(!discovery.Find(game.process.process_id).has_value(), "expired lease should remove member");
+
+        const auto events = discovery.DrainEvents();
+        Require(events.size() == 1, "lease expiry removed event count");
+        Require(events.front().type == ipc::MembershipEventType::removed, "lease expiry removed event type");
+    }
+
+    void TestEtcdDiscoveryKeepAlive()
+    {
+        const ScopedEtcd etcd = StartEtcd();
+
+        ipc::EtcdDiscovery discovery({
+            .etcdctl_path = "etcdctl",
+            .endpoints = {etcd.client_endpoint},
+            .prefix = "/some_server/ipc/test/keep_alive",
+            .lease_ttl_seconds = 2});
+
+        const ipc::ProcessDescriptor game = MakeProcess(10, 3, 103);
+        Require(discovery.RegisterSelf(game).ok, "register keepalive process");
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        Require(discovery.KeepAliveOnce().ok, "keepalive once");
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        Require(discovery.RefreshSnapshot().ok, "refresh after keepalive");
+
+        const auto found = discovery.Find(game.process.process_id);
+        Require(found.has_value(), "keepalive should retain member");
+    }
+
+    void TestEtcdDiscoverySnapshotEvents()
+    {
+        const ScopedEtcd etcd = StartEtcd();
+
+        ipc::EtcdDiscovery writer({
+            .etcdctl_path = "etcdctl",
+            .endpoints = {etcd.client_endpoint},
+            .prefix = "/some_server/ipc/test/events",
+            .lease_ttl_seconds = 0});
+        ipc::EtcdDiscovery observer({
+            .etcdctl_path = "etcdctl",
+            .endpoints = {etcd.client_endpoint},
+            .prefix = "/some_server/ipc/test/events",
+            .lease_ttl_seconds = 0});
+
+        const ipc::ProcessDescriptor game = MakeProcess(10, 4, 104);
+        Require(writer.RegisterSelf(game).ok, "register event member");
+        Require(observer.RefreshSnapshot().ok, "observer initial snapshot");
+
+        auto events = observer.DrainEvents();
+        Require(events.size() == 1, "snapshot add event count");
+        Require(events.front().type == ipc::MembershipEventType::added, "snapshot add event type");
+
+        Require(writer.Remove(game.process.process_id).ok, "remove event member");
+        Require(observer.RefreshSnapshot().ok, "observer refresh after remove");
+
+        events = observer.DrainEvents();
+        Require(events.size() == 1, "snapshot remove event count");
+        Require(events.front().type == ipc::MembershipEventType::removed, "snapshot remove event type");
+    }
 } // namespace
 
 int main()
@@ -140,6 +213,9 @@ int main()
     try
     {
         TestEtcdDiscoveryLifecycle();
+        TestEtcdDiscoveryLeaseExpiry();
+        TestEtcdDiscoveryKeepAlive();
+        TestEtcdDiscoverySnapshotEvents();
         std::cout << "ipc_etcd_discovery_test: ok" << std::endl;
         return 0;
     }

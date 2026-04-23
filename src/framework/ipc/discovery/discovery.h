@@ -7,19 +7,6 @@
 
 namespace ipc
 {
-enum class MembershipEventType : std::uint8_t
-{
-    added,
-    updated,
-    removed
-};
-
-struct MembershipEvent
-{
-    MembershipEventType type = MembershipEventType::added;
-    ProcessDescriptor process;
-};
-
 class Discovery final : public IMembershipView
 {
 public:

@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cstdio>
+#include <iomanip>
 #include <sstream>
 
 namespace ipc
@@ -33,6 +34,11 @@ namespace detail
     struct JsonGetResponse
     {
         std::vector<JsonKv> kvs;
+    };
+
+    struct JsonLeaseGrantResponse
+    {
+        std::uint64_t ID = 0;
     };
 
     std::string ShellEscape(const std::string& value)
@@ -99,6 +105,48 @@ namespace detail
         }
         return decoded;
     }
+
+    std::string LeaseIdArg(std::uint64_t lease_id)
+    {
+        std::ostringstream stream;
+        stream << std::hex << std::nouppercase << lease_id;
+        return stream.str();
+    }
+
+    void QueueDiffEvents(
+        const std::unordered_map<std::uint64_t, ProcessDescriptor>& previous,
+        const std::unordered_map<std::uint64_t, ProcessDescriptor>& current,
+        std::vector<MembershipEvent>& events)
+    {
+        for (const auto& [key, process] : current)
+        {
+            const auto it = previous.find(key);
+            if (it == previous.end())
+            {
+                events.push_back(MembershipEvent{MembershipEventType::added, process});
+                continue;
+            }
+
+            if (!(it->second.process == process.process) ||
+                !(it->second.listen_endpoint == process.listen_endpoint) ||
+                it->second.protocol_version != process.protocol_version ||
+                it->second.start_time_unix_ms != process.start_time_unix_ms ||
+                it->second.service_name != process.service_name ||
+                it->second.labels != process.labels ||
+                it->second.relay_capabilities != process.relay_capabilities)
+            {
+                events.push_back(MembershipEvent{MembershipEventType::updated, process});
+            }
+        }
+
+        for (const auto& [key, process] : previous)
+        {
+            if (!current.contains(key))
+            {
+                events.push_back(MembershipEvent{MembershipEventType::removed, process});
+            }
+        }
+    }
 } // namespace detail
 } // namespace ipc
 
@@ -143,6 +191,13 @@ struct glz::meta<ipc::detail::JsonGetResponse>
     static constexpr auto value = glz::object("kvs", &T::kvs);
 };
 
+template <>
+struct glz::meta<ipc::detail::JsonLeaseGrantResponse>
+{
+    using T = ipc::detail::JsonLeaseGrantResponse;
+    static constexpr auto value = glz::object("ID", &T::ID);
+};
+
 namespace ipc
 {
 EtcdDiscovery::EtcdDiscovery(EtcdDiscoveryOptions options)
@@ -150,16 +205,44 @@ EtcdDiscovery::EtcdDiscovery(EtcdDiscoveryOptions options)
 {
 }
 
+EtcdDiscovery::~EtcdDiscovery()
+{
+    if (mSelf.has_value())
+    {
+        Remove(mSelf->process.process_id);
+    }
+}
+
 Result EtcdDiscovery::RegisterSelf(const ProcessDescriptor& self)
 {
+    if (mOptions.lease_ttl_seconds > 0 && mLeaseId == 0)
+    {
+        const Result lease = GrantLease();
+        if (!lease.ok)
+        {
+            return lease;
+        }
+    }
+
     const Result put = RunPut(MemberKey(self.process.process_id), SerializeDescriptor(self));
     if (!put.ok)
     {
         return put;
     }
 
+    mSelf = self;
     mProcesses[MakeKey(self.process.process_id)] = self;
     return Result::Success();
+}
+
+Result EtcdDiscovery::KeepAliveOnce()
+{
+    if (mLeaseId == 0)
+    {
+        return Result::Failure("lease not initialized");
+    }
+
+    return RunLeaseKeepAliveOnce();
 }
 
 Result EtcdDiscovery::RefreshSnapshot()
@@ -189,6 +272,7 @@ Result EtcdDiscovery::RefreshSnapshot()
         refreshed[MakeKey(descriptor.process.process_id)] = std::move(descriptor);
     }
 
+    detail::QueueDiffEvents(mProcesses, refreshed, mEvents);
     mProcesses = std::move(refreshed);
     return Result::Success();
 }
@@ -202,7 +286,19 @@ Result EtcdDiscovery::Remove(const ProcessId& id)
     }
 
     mProcesses.erase(MakeKey(id));
+    if (mSelf.has_value() && mSelf->process.process_id == id)
+    {
+        mSelf.reset();
+        mLeaseId = 0;
+    }
     return Result::Success();
+}
+
+std::vector<MembershipEvent> EtcdDiscovery::DrainEvents()
+{
+    std::vector<MembershipEvent> events = std::move(mEvents);
+    mEvents.clear();
+    return events;
 }
 
 std::optional<ProcessDescriptor> EtcdDiscovery::Find(const ProcessId& id) const
@@ -282,6 +378,32 @@ Result EtcdDiscovery::DeserializeDescriptor(const std::string& json, ProcessDesc
     return Result::Success();
 }
 
+Result EtcdDiscovery::GrantLease()
+{
+    std::string output;
+    const std::string command =
+        detail::ShellEscape(mOptions.etcdctl_path) + " --endpoints=" + detail::ShellEscape(EndpointsArg()) +
+        " lease grant " + std::to_string(mOptions.lease_ttl_seconds) + " -w json 2>/dev/null";
+    const Result run = RunCommand(command, output);
+    if (!run.ok)
+    {
+        return run;
+    }
+
+    detail::JsonLeaseGrantResponse response;
+    if (auto result = glz::read<glz::opts{.error_on_unknown_keys = false}>(response, output))
+    {
+        return Result::Failure(glz::format_error(result, output));
+    }
+    if (response.ID == 0)
+    {
+        return Result::Failure("etcd lease grant returned empty lease id");
+    }
+
+    mLeaseId = response.ID;
+    return Result::Success();
+}
+
 std::string EtcdDiscovery::EndpointsArg() const
 {
     std::ostringstream stream;
@@ -327,9 +449,23 @@ Result EtcdDiscovery::RunCommand(const std::string& command, std::string& output
 Result EtcdDiscovery::RunPut(const std::string& key, const std::string& value) const
 {
     std::string output;
+    std::string command =
+        detail::ShellEscape(mOptions.etcdctl_path) + " --endpoints=" + detail::ShellEscape(EndpointsArg()) +
+        " put " + detail::ShellEscape(key) + " " + detail::ShellEscape(value);
+    if (mLeaseId != 0)
+    {
+        command += " --lease=" + detail::LeaseIdArg(mLeaseId);
+    }
+    command += " -w json 2>/dev/null";
+    return RunCommand(command, output);
+}
+
+Result EtcdDiscovery::RunLeaseKeepAliveOnce() const
+{
+    std::string output;
     const std::string command =
         detail::ShellEscape(mOptions.etcdctl_path) + " --endpoints=" + detail::ShellEscape(EndpointsArg()) +
-        " put " + detail::ShellEscape(key) + " " + detail::ShellEscape(value) + " -w json 2>/dev/null";
+        " lease keep-alive " + detail::LeaseIdArg(mLeaseId) + " --once -w json 2>/dev/null";
     return RunCommand(command, output);
 }
 
