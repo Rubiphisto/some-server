@@ -14,9 +14,17 @@
     }
   },
   "relay": {
+    "instance_id": 1,
     "listen": {
       "host": "127.0.0.1",
       "port": 9200
+    },
+    "discovery": {
+      "endpoints": [
+        "127.0.0.1:2379"
+      ],
+      "prefix": "/some_server/ipc/dev/local",
+      "lease_ttl_seconds": 5
     }
   }
 }
