@@ -1,0 +1,30 @@
+#pragma once
+
+#include "control_codec.h"
+#include "link_view.h"
+
+#include <unordered_map>
+
+namespace ipc
+{
+class LinkManager final : public ILinkView
+{
+public:
+    explicit LinkManager(ProcessRef self);
+
+    void OnConnectionEvent(const ConnectionEvent& event);
+    Result OnFrame(const RawFrame& frame);
+
+    bool HasHealthyDirectLink(const ProcessRef& target) const override;
+    std::vector<ProcessRef> GetHealthyLinks() const override;
+    std::vector<RawFrame> DrainOutboundFrames();
+
+private:
+    Result HandleHello(ConnectionId connection_id, const ByteBuffer& payload);
+    void QueueFrame(ConnectionId connection_id, FrameKind kind, ByteBuffer payload);
+
+    ProcessRef mSelf;
+    std::unordered_map<ConnectionId, Link> mLinks;
+    std::vector<RawFrame> mOutboundFrames;
+};
+} // namespace ipc

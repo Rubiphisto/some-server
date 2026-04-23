@@ -39,3 +39,20 @@ add_test(NAME application_service_lifecycle_test COMMAND $<TARGET_FILE:applicati
 set_tests_properties(application_service_lifecycle_test PROPERTIES
         WORKING_DIRECTORY ${SERVER_BINARY_FOLDER}/bin
 )
+
+add_executable(ipc_transport_link_test
+        ipc_transport_link_test.cpp
+)
+
+target_include_directories(ipc_transport_link_test PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(ipc_transport_link_test PRIVATE
+        ipc
+)
+
+add_test(NAME ipc_transport_link_test COMMAND $<TARGET_FILE:ipc_transport_link_test>)
+set_tests_properties(ipc_transport_link_test PROPERTIES
+        WORKING_DIRECTORY ${SERVER_BINARY_FOLDER}/bin
+)

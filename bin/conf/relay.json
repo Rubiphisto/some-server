@@ -1,0 +1,22 @@
+{
+  "log": {
+    "file": "logs/relay.log",
+    "error_file": "logs/relay.error.log",
+    "level": "info",
+    "console": true,
+    "syslog": false,
+    "rotate": {
+      "mode": "size",
+      "max_size": 10485760,
+      "max_files": 5,
+      "daily_hour": 0,
+      "daily_minute": 0
+    }
+  },
+  "relay": {
+    "listen": {
+      "host": "127.0.0.1",
+      "port": 9200
+    }
+  }
+}

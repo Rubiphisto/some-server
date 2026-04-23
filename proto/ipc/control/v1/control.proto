@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package some_server.ipc.control.v1;
+
+import "ipc/common/v1/types.proto";
+
+// Control-plane protocol for the link/discovery/routing side of IPC.
+// Application business messages must not be defined in this file.
+
+// Top-level wrapper used by the link layer to dispatch control-plane messages.
+message ControlMessage {
+  uint64 sequence = 1;
+  oneof body {
+    Hello hello = 10;
+    HelloAck hello_ack = 11;
+    Ping ping = 12;
+    Pong pong = 13;
+    Close close = 14;
+  }
+}
+
+// First handshake message on a newly established process link.
+message Hello {
+  some_server.ipc.common.v1.ProcessIdentity self = 1;
+  string service_name = 2;
+  uint32 protocol_version = 3;
+  uint32 min_supported_protocol_version = 4;
+  some_server.ipc.common.v1.Endpoint listen_endpoint = 5;
+  map<string, string> labels = 6;
+  repeated uint32 relay_capabilities = 7;
+}
+
+// Handshake result returned by the remote side after validating Hello.
+message HelloAck {
+  enum Result {
+    RESULT_UNSPECIFIED = 0;
+    RESULT_OK = 1;
+    RESULT_INCOMPATIBLE_VERSION = 2;
+    RESULT_DUPLICATE_PROCESS = 3;
+    RESULT_REJECTED = 4;
+  }
+
+  Result result = 1;
+  some_server.ipc.common.v1.ProcessIdentity self = 2;
+  uint32 protocol_version = 3;
+  string reason = 4;
+}
+
+// Liveness probe used by the link layer.
+message Ping {
+  uint64 nonce = 1;
+  uint64 send_time_unix_ms = 2;
+}
+
+// Liveness response used by the link layer.
+message Pong {
+  uint64 nonce = 1;
+  uint64 send_time_unix_ms = 2;
+}
+
+// Explicit semantic link shutdown notification.
+message Close {
+  uint32 code = 1;
+  string reason = 2;
+}

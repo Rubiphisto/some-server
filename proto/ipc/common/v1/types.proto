@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package some_server.ipc.common.v1;
+
+// Common identity and addressing types shared by control-plane and data-plane
+// protocols. This file belongs to the IPC base/common layer.
+
+// Stable process identity used during link handshake and discovery-visible metadata.
+message ProcessIdentity {
+  uint32 service_type = 1;
+  uint32 instance_id = 2;
+  uint64 incarnation_id = 3;
+}
+
+// Concrete running process reference used in routing and message source metadata.
+message ProcessRef {
+  uint32 service_type = 1;
+  uint32 instance_id = 2;
+  uint64 incarnation_id = 3;
+}
+
+// Network endpoint used by discovery and control-plane bootstrap.
+message Endpoint {
+  string host = 1;
+  uint32 port = 2;
+}
+
+// Upper-layer logical message target. Routing and receiver directory interpret it,
+// while transport and link layers do not.
+message ReceiverAddress {
+  uint32 type = 1;
+  uint64 key_hi = 2;
+  uint64 key_lo = 3;
+}
+
+// Broadcast selector consumed by the routing layer to expand one logical send into
+// multiple process targets.
+message BroadcastScope {
+  optional uint32 service_type = 1;
+  map<string, string> required_labels = 2;
+  bool include_local = 3;
+}
