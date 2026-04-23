@@ -2,8 +2,9 @@
 
 namespace ipc
 {
-LinkManager::LinkManager(ProcessRef self)
+LinkManager::LinkManager(ProcessRef self, std::uint32_t protocol_version)
     : mSelf(std::move(self))
+    , mProtocolVersion(protocol_version)
 {
 }
 
@@ -15,7 +16,7 @@ void LinkManager::OnConnectionEvent(const ConnectionEvent& event)
         Link& link = mLinks[event.connection_id];
         link.connection_id = event.connection_id;
         link.state = LinkState::handshaking;
-        QueueFrame(event.connection_id, FrameKind::control, EncodeHello(mSelf, 1));
+        QueueFrame(event.connection_id, FrameKind::control, EncodeHello(mSelf, mProtocolVersion));
         break;
     }
     case ConnectionEventType::disconnected:
@@ -47,6 +48,17 @@ Result LinkManager::OnFrame(const RawFrame& frame)
         if (it == mLinks.end())
         {
             return Result::Failure("link not found");
+        }
+        ProtoHelloAckResult result = some_server::ipc::control::v1::HelloAck_Result_RESULT_UNSPECIFIED;
+        const Result extracted = ExtractHelloAckResult(message, result);
+        if (!extracted.ok)
+        {
+            return extracted;
+        }
+        if (result != some_server::ipc::control::v1::HelloAck_Result_RESULT_OK)
+        {
+            it->second.state = LinkState::closed;
+            return Result::Failure("hello_ack rejected");
         }
         // At this stage hello_ack only confirms the handshake. The remote identity
         // has already been learned from the peer's hello payload.
@@ -104,19 +116,54 @@ Result LinkManager::HandleHello(ConnectionId connection_id, const ByteBuffer& pa
         return Result::Failure("invalid hello control message");
     }
 
-    ProcessRef remote_process;
-    const Result extracted = ExtractHelloProcessRef(message, remote_process);
+    HelloInfo hello;
+    const Result extracted = ExtractHelloInfo(message, hello);
     if (!extracted.ok)
     {
         return extracted;
     }
+    if (!IsProtocolCompatible(hello))
+    {
+        Link& link = mLinks[connection_id];
+        link.connection_id = connection_id;
+        link.remote_process = hello.process_ref;
+        link.state = LinkState::closed;
+        QueueFrame(
+            connection_id,
+            FrameKind::control,
+            EncodeHelloAck(
+                mSelf,
+                mProtocolVersion,
+                some_server::ipc::control::v1::HelloAck_Result_RESULT_INCOMPATIBLE_VERSION));
+        return Result::Failure("incompatible protocol version");
+    }
 
     Link& link = mLinks[connection_id];
     link.connection_id = connection_id;
-    link.remote_process = remote_process;
+    link.remote_process = hello.process_ref;
     link.state = LinkState::active;
-    QueueFrame(connection_id, FrameKind::control, EncodeHelloAck(mSelf, 1));
+    QueueFrame(connection_id, FrameKind::control, EncodeHelloAck(mSelf, mProtocolVersion));
     return Result::Success();
+}
+
+bool LinkManager::IsProtocolCompatible(const HelloInfo& hello) const
+{
+    if (hello.protocol_version == 0)
+    {
+        return false;
+    }
+
+    if (hello.protocol_version < mProtocolVersion)
+    {
+        return false;
+    }
+
+    if (hello.min_supported_protocol_version > mProtocolVersion)
+    {
+        return false;
+    }
+
+    return true;
 }
 
 void LinkManager::QueueFrame(ConnectionId connection_id, FrameKind kind, ByteBuffer payload)

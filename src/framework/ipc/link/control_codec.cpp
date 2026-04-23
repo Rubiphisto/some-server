@@ -39,11 +39,11 @@ ByteBuffer EncodeHello(const ProcessRef& self, std::uint32_t protocol_version)
     return SerializeMessage(message);
 }
 
-ByteBuffer EncodeHelloAck(const ProcessRef& self, std::uint32_t protocol_version)
+ByteBuffer EncodeHelloAck(const ProcessRef& self, std::uint32_t protocol_version, ProtoHelloAckResult result)
 {
     ProtoControlMessage message;
     auto* hello_ack = message.mutable_hello_ack();
-    hello_ack->set_result(some_server::ipc::control::v1::HelloAck::RESULT_OK);
+    hello_ack->set_result(result);
     FillProcessIdentity(self, *hello_ack->mutable_self());
     hello_ack->set_protocol_version(protocol_version);
     return SerializeMessage(message);
@@ -82,14 +82,27 @@ ControlMessageType GetControlMessageType(const ProtoControlMessage& message)
     return ControlMessageType::close;
 }
 
-Result ExtractHelloProcessRef(const ProtoControlMessage& message, ProcessRef& process_ref)
+Result ExtractHelloInfo(const ProtoControlMessage& message, HelloInfo& hello_info)
 {
     if (message.body_case() != ProtoControlMessage::kHello || !message.hello().has_self())
     {
         return Result::Failure("hello message missing process identity");
     }
 
-    process_ref = ToProcessRef(message.hello().self());
+    hello_info.process_ref = ToProcessRef(message.hello().self());
+    hello_info.protocol_version = message.hello().protocol_version();
+    hello_info.min_supported_protocol_version = message.hello().min_supported_protocol_version();
+    return Result::Success();
+}
+
+Result ExtractHelloAckResult(const ProtoControlMessage& message, ProtoHelloAckResult& result)
+{
+    if (message.body_case() != ProtoControlMessage::kHelloAck)
+    {
+        return Result::Failure("hello_ack message missing result");
+    }
+
+    result = message.hello_ack().result();
     return Result::Success();
 }
 } // namespace ipc

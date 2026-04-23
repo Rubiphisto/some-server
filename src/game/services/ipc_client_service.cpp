@@ -22,6 +22,22 @@ GameIpcClientService::GameIpcClientService(const GameConfiguration& configuratio
 LifecycleTask GameIpcClientService::Load()
 {
     mSelf = BuildSelfDescriptor();
+    mTransport = std::make_unique<ipc::TcpTransport>();
+    mLinkManager = std::make_unique<ipc::LinkManager>(mSelf->process);
+    mTransport->SetConnectionEventHandler(
+        [this](const ipc::ConnectionEvent& event) {
+            if (mLinkManager)
+            {
+                mLinkManager->OnConnectionEvent(event);
+            }
+        });
+    mTransport->SetFrameHandler(
+        [this](const ipc::RawFrame& frame) {
+            if (mLinkManager)
+            {
+                (void)mLinkManager->OnFrame(frame);
+            }
+        });
     mRegistered = false;
     mLastError.clear();
     return LifecycleTask::Completed();
@@ -32,6 +48,17 @@ LifecycleTask GameIpcClientService::Start()
     if (!mSelf.has_value())
     {
         mLastError = "self descriptor is not initialized";
+        return LifecycleTask::Completed();
+    }
+    if (!mTransport || !mLinkManager)
+    {
+        mLastError = "transport/link are not initialized";
+        return LifecycleTask::Completed();
+    }
+    if (const ipc::Result listen_result = mTransport->Listen(mSelf->listen_endpoint); !listen_result.ok)
+    {
+        mLastError = listen_result.message;
+        spdlog::warn("game ipc transport listen failed: {}", mLastError);
         return LifecycleTask::Completed();
     }
 
@@ -72,6 +99,8 @@ LifecycleTask GameIpcClientService::Stop()
 
 LifecycleTask GameIpcClientService::Unload()
 {
+    mLinkManager.reset();
+    mTransport.reset();
     mSelf.reset();
     return LifecycleTask::Completed();
 }

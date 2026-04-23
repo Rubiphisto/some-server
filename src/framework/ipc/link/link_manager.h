@@ -10,7 +10,7 @@ namespace ipc
 class LinkManager final : public ILinkView
 {
 public:
-    explicit LinkManager(ProcessRef self);
+    explicit LinkManager(ProcessRef self, std::uint32_t protocol_version = 1);
 
     void OnConnectionEvent(const ConnectionEvent& event);
     Result OnFrame(const RawFrame& frame);
@@ -21,9 +21,11 @@ public:
 
 private:
     Result HandleHello(ConnectionId connection_id, const ByteBuffer& payload);
+    bool IsProtocolCompatible(const HelloInfo& hello) const;
     void QueueFrame(ConnectionId connection_id, FrameKind kind, ByteBuffer payload);
 
     ProcessRef mSelf;
+    std::uint32_t mProtocolVersion = 1;
     std::unordered_map<ConnectionId, Link> mLinks;
     std::vector<RawFrame> mOutboundFrames;
 };

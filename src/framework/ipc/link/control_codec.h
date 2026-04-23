@@ -18,11 +18,22 @@ enum class ControlMessageType : std::uint16_t
 };
 
 using ProtoControlMessage = some_server::ipc::control::v1::ControlMessage;
+using ProtoHelloAckResult = some_server::ipc::control::v1::HelloAck_Result;
+
+struct HelloInfo
+{
+    ProcessRef process_ref;
+    std::uint32_t protocol_version = 0;
+    std::uint32_t min_supported_protocol_version = 0;
+};
 
 ByteBuffer EncodeHello(const ProcessRef& self, std::uint32_t protocol_version);
-ByteBuffer EncodeHelloAck(const ProcessRef& self, std::uint32_t protocol_version);
+ByteBuffer EncodeHelloAck(const ProcessRef& self,
+                         std::uint32_t protocol_version,
+                         ProtoHelloAckResult result = some_server::ipc::control::v1::HelloAck_Result_RESULT_OK);
 ByteBuffer EncodePong();
 bool DecodeControlMessage(const ByteBuffer& bytes, ProtoControlMessage& message);
 ControlMessageType GetControlMessageType(const ProtoControlMessage& message);
-Result ExtractHelloProcessRef(const ProtoControlMessage& message, ProcessRef& process_ref);
+Result ExtractHelloInfo(const ProtoControlMessage& message, HelloInfo& hello_info);
+Result ExtractHelloAckResult(const ProtoControlMessage& message, ProtoHelloAckResult& result);
 } // namespace ipc

@@ -3,7 +3,10 @@
 #include "../application.h"
 #include "../../framework/application/service_base.h"
 #include "../../framework/ipc/discovery/etcd_discovery.h"
+#include "../../framework/ipc/link/link_manager.h"
+#include "../../framework/ipc/transport/tcp_transport.h"
 
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -37,6 +40,8 @@ private:
 
     GameConfiguration mConfiguration;
     ipc::ServiceType mGameServiceType = 0;
+    std::unique_ptr<ipc::TcpTransport> mTransport;
+    std::unique_ptr<ipc::LinkManager> mLinkManager;
     ipc::EtcdDiscovery mDiscovery;
     std::optional<ipc::ProcessDescriptor> mSelf;
     bool mRegistered = false;

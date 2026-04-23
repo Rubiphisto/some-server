@@ -63,6 +63,27 @@ namespace
         Require(rhs_links.front().process_id.service_type == 1, "rhs remote service type");
         Require(rhs_links.front().process_id.instance_id == 1, "rhs remote instance");
     }
+
+    void TestLinkRejectsIncompatibleProtocol()
+    {
+        ipc::LinkManager lhs({{1, 1}, 100}, 1);
+        ipc::LinkManager rhs({{1, 2}, 200}, 2);
+
+        lhs.OnConnectionEvent({ipc::ConnectionEventType::connected, 1});
+        auto lhs_frames = lhs.DrainOutboundFrames();
+        Require(lhs_frames.size() == 1, "lhs hello frame for incompatibility test");
+
+        const ipc::Result receive_result = rhs.OnFrame(lhs_frames.front());
+        Require(!receive_result.ok, "rhs should reject incompatible hello");
+
+        auto rhs_frames = rhs.DrainOutboundFrames();
+        Require(rhs_frames.size() == 1, "rhs hello_ack reject frame");
+
+        const ipc::Result ack_result = lhs.OnFrame(rhs_frames.front());
+        Require(!ack_result.ok, "lhs should observe hello_ack rejection");
+        Require(lhs.GetHealthyLinks().empty(), "lhs should have no active links after rejection");
+        Require(rhs.GetHealthyLinks().empty(), "rhs should have no active links after rejection");
+    }
 } // namespace
 
 int main()
@@ -71,6 +92,7 @@ int main()
     {
         TestFrameHeaderRoundTrip();
         TestLinkHelloHandshake();
+        TestLinkRejectsIncompatibleProtocol();
         std::cout << "ipc_transport_link_test: ok" << std::endl;
         return 0;
     }
