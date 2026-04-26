@@ -357,6 +357,78 @@ void TestMessengerSendsRemotePlayerMessage()
     Require(host.DispatchCount() == 0, "source player host should not dispatch remote message");
 }
 
+void TestMessengerBroadcastRejectsUnsupportedReceiverType()
+{
+    const ipc::ProcessRef self{{10, 1}, 101};
+    ipc::LocalReceiverDirectory directory;
+    ipc::ReceiverRegistry receiver_registry;
+    ipc::PayloadRegistry payload_registry;
+
+    google::protobuf::StringValue payload;
+    payload.set_value("broadcast-player");
+    Require(payload_registry.Register(payload).ok, "register payload type");
+
+    ipc::RelayFirstPolicy policy(99);
+    ipc::Router router(policy);
+    ipc::Messenger messenger(self, router, directory, receiver_registry, payload_registry);
+
+    ipc::BroadcastScope scope;
+    scope.include_local = true;
+    const ipc::SendResult send_result = messenger.BroadcastToReceiver(
+        ipc::ReceiverAddress{ipc::ReceiverType::player, 1001, 0},
+        scope,
+        payload);
+    Require(!send_result.ok, "broadcast to player should be rejected");
+}
+
+void TestMessengerBroadcastsServiceMessage()
+{
+    const ipc::ProcessRef self{{10, 1}, 101};
+    const ipc::ProcessRef remote{{10, 2}, 202};
+    const ipc::ReceiverAddress receiver{ipc::ReceiverType::service, 10, 1};
+
+    RecordingHost host(ipc::ReceiverType::service);
+    ipc::ReceiverRegistry receiver_registry;
+    Require(receiver_registry.Register(host, ipc::ReceiverType::service).ok, "register service host");
+
+    google::protobuf::StringValue payload;
+    payload.set_value("broadcast-service");
+
+    ipc::PayloadRegistry payload_registry;
+    Require(payload_registry.Register(payload).ok, "register payload type");
+
+    StaticMembershipView membership({
+        ipc::ProcessDescriptor{
+            .process = self,
+            .service_name = "game",
+            .listen_endpoint = {"127.0.0.1", 9100},
+            .protocol_version = 1},
+        ipc::ProcessDescriptor{
+            .process = remote,
+            .service_name = "game",
+            .listen_endpoint = {"127.0.0.1", 9101},
+            .protocol_version = 1}});
+    StaticLinkView links({remote});
+    RecordingRemoteSender sender;
+    ipc::LocalReceiverDirectory directory;
+
+    ipc::RelayFirstPolicy policy(99);
+    ipc::Router router(policy);
+    ipc::Messenger messenger(self, router, directory, receiver_registry, payload_registry, &membership, &links, &sender);
+
+    ipc::BroadcastScope scope;
+    scope.service_type = 10;
+    scope.include_local = true;
+    const ipc::SendResult send_result = messenger.BroadcastToService(10, scope, payload);
+    Require(send_result.ok, "broadcast to service should succeed");
+    Require(host.DispatchCount() == 1, "broadcast should local-dispatch once");
+    Require(sender.SendCount() == 1, "broadcast should remote-send once");
+    Require(sender.LastNextHop() == remote, "broadcast remote next hop");
+    Require(sender.LastEnvelope().header.target_receiver == receiver, "broadcast target receiver");
+    Require(sender.LastEnvelope().header.resolved_target_process.has_value(), "broadcast resolved owner");
+    Require(*sender.LastEnvelope().header.resolved_target_process == remote, "broadcast resolved owner value");
+}
+
 void TestMessengerForwardsIncomingProcessMessage()
 {
     const ipc::ProcessRef self{{99, 1}, 901};
@@ -488,6 +560,8 @@ int main()
         TestMessengerRejectsUnknownPayload();
         TestMessengerSendsRemoteProcessMessage();
         TestMessengerSendsRemotePlayerMessage();
+        TestMessengerBroadcastRejectsUnsupportedReceiverType();
+        TestMessengerBroadcastsServiceMessage();
         TestMessengerForwardsIncomingProcessMessage();
         TestMessengerForwardsIncomingPlayerMessage();
         std::cout << "ipc_receiver_messaging_test: ok" << std::endl;

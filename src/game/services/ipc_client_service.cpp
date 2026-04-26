@@ -362,6 +362,22 @@ ipc::SendResult GameIpcClientService::SendPlayerMessage(const std::uint64_t play
     return mMessenger->SendToReceiver(PlayerReceiverAddress(player_id), payload);
 }
 
+ipc::SendResult GameIpcClientService::BroadcastServiceMessage(const std::string& value, const bool include_local)
+{
+    std::scoped_lock lock(mMutex);
+    if (!mMessenger)
+    {
+        return ipc::SendResult::Failure("messenger is not initialized");
+    }
+
+    google::protobuf::StringValue payload;
+    payload.set_value(value);
+    ipc::BroadcastScope scope;
+    scope.service_type = mGameServiceType;
+    scope.include_local = include_local;
+    return mMessenger->BroadcastToService(mGameServiceType, scope, payload);
+}
+
 ipc::ProcessDescriptor GameIpcClientService::BuildSelfDescriptor() const
 {
     ipc::ProcessDescriptor self;

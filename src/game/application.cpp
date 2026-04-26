@@ -391,6 +391,39 @@ void Application::RegisterRuntimeCommands()
     {
         throw std::runtime_error("failed to register game ipc player send command");
     }
+
+    const bool broadcast_service_registered = Runtime().RegisterCommand(
+        "ipc_broadcast_service",
+        "Broadcast one IPC service-targeted message to game instances",
+        [this](const CommandArguments& arguments) {
+            if (mIpcService == nullptr)
+            {
+                spdlog::warn("game ipc broadcast service: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+            if (arguments.size() > 2)
+            {
+                spdlog::warn("usage: ipc_broadcast_service [value] [include_local]");
+                return CommandExecutionStatus::handled;
+            }
+
+            const std::string payload = !arguments.empty() ? arguments[0] : "broadcast-ping";
+            const bool include_local = arguments.size() == 2 ? arguments[1] != "0" : true;
+            const ipc::SendResult send_result = mIpcService->BroadcastServiceMessage(payload, include_local);
+            if (!send_result.ok)
+            {
+                spdlog::warn("game ipc broadcast service failed: {}", send_result.message);
+                return CommandExecutionStatus::handled;
+            }
+
+            spdlog::info("game ipc broadcast service: ok");
+            return CommandExecutionStatus::handled;
+        });
+
+    if (!broadcast_service_registered)
+    {
+        throw std::runtime_error("failed to register game ipc broadcast service command");
+    }
 }
 
 LifecycleTask Application::OnLoad()

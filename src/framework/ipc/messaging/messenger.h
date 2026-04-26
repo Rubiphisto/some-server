@@ -39,7 +39,14 @@ public:
 
     SendResult SendToProcess(ProcessId target, const google::protobuf::Message& message) const;
     SendResult SendToReceiver(const ReceiverAddress& target, const google::protobuf::Message& message) const;
-    SendResult Broadcast(const BroadcastScope& scope, const google::protobuf::Message& message) const;
+    SendResult BroadcastToReceiver(
+        const ReceiverAddress& target,
+        BroadcastScope scope,
+        const google::protobuf::Message& message) const;
+    SendResult BroadcastToService(
+        ServiceType service_type,
+        const BroadcastScope& scope,
+        const google::protobuf::Message& message) const;
     Result HandleIncomingFrame(const RawFrame& frame) const;
 
 private:

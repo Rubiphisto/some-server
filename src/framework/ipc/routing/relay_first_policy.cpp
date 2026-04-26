@@ -2,8 +2,60 @@
 
 namespace ipc
 {
+namespace
+{
+bool MatchesLabels(const ProcessDescriptor& process, const StringMap& required_labels)
+{
+    for (const auto& [required_key, required_value] : required_labels)
+    {
+        bool matched = false;
+        for (const auto& [key, value] : process.labels)
+        {
+            if (key == required_key && value == required_value)
+            {
+                matched = true;
+                break;
+            }
+        }
+        if (!matched)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+} // namespace
+
 RoutePlan RelayFirstPolicy::Resolve(const RoutingContext& context) const
 {
+    if (context.envelope.header.semantic == DeliverySemantic::broadcast)
+    {
+        if (context.membership == nullptr || context.envelope.header.target_receiver.type != ReceiverType::service)
+        {
+            return RoutePlan{RoutePlanKind::drop, {}};
+        }
+
+        const ServiceType service_type = context.envelope.broadcast_scope.service_type.value_or(
+            static_cast<ServiceType>(context.envelope.header.target_receiver.key_hi));
+        RoutePlan plan;
+        plan.kind = RoutePlanKind::multi_next_hop;
+        for (const auto& process : context.membership->FindByService(service_type))
+        {
+            if (!context.envelope.broadcast_scope.include_local && process.process == context.self)
+            {
+                continue;
+            }
+            if (!MatchesLabels(process, context.envelope.broadcast_scope.required_labels))
+            {
+                continue;
+            }
+
+            plan.hops.push_back(RouteHop{process.process, process.process == context.self});
+        }
+
+        return plan.hops.empty() ? RoutePlan{RoutePlanKind::drop, {}} : plan;
+    }
+
     if (context.receiver_location.has_value())
     {
         const ReceiverLocation& location = *context.receiver_location;
@@ -22,15 +74,7 @@ RoutePlan RelayFirstPolicy::Resolve(const RoutingContext& context) const
             plan.kind = RoutePlanKind::multi_next_hop;
             for (const ProcessRef& process : location.processes)
             {
-                if (process == context.self)
-                {
-                    continue;
-                }
-                const RoutePlan single = ResolveSingleTarget(context, process);
-                if (!single.hops.empty())
-                {
-                    plan.hops.push_back(single.hops.front());
-                }
+                plan.hops.push_back(RouteHop{process, process == context.self});
             }
             if (!plan.hops.empty())
             {

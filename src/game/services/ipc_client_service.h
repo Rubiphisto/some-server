@@ -66,6 +66,7 @@ public:
     ipc::SendResult SendLocalServiceMessage(const std::string& value);
     ipc::SendResult SendProcessMessage(ipc::InstanceId instance_id, const std::string& value);
     ipc::SendResult SendPlayerMessage(std::uint64_t player_id, const std::string& value);
+    ipc::SendResult BroadcastServiceMessage(const std::string& value, bool include_local);
 
 private:
     ipc::ProcessDescriptor BuildSelfDescriptor() const;

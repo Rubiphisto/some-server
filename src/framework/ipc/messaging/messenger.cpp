@@ -40,12 +40,27 @@ SendResult Messenger::SendToReceiver(const ReceiverAddress& target, const google
     return SendEnvelope(std::move(envelope), mReceiverDirectory.Resolve(target));
 }
 
-SendResult Messenger::Broadcast(const BroadcastScope& scope, const google::protobuf::Message& message) const
+SendResult Messenger::BroadcastToReceiver(
+    const ReceiverAddress& target,
+    BroadcastScope scope,
+    const google::protobuf::Message& message) const
 {
+    if (target.type != ReceiverType::service)
+    {
+        return SendResult::Failure("broadcast is not supported for this receiver type");
+    }
+    if (scope.service_type.has_value() && *scope.service_type != static_cast<ServiceType>(target.key_hi))
+    {
+        return SendResult::Failure("broadcast scope service_type does not match target receiver");
+    }
+
+    scope.service_type = static_cast<ServiceType>(target.key_hi);
+
     Envelope envelope;
     envelope.header.source_process = mSelf;
     envelope.header.semantic = DeliverySemantic::broadcast;
-    envelope.broadcast_scope = scope;
+    envelope.header.target_receiver = target;
+    envelope.broadcast_scope = std::move(scope);
     envelope.payload_type_url = PayloadRegistry::TypeUrlFor(message);
     const std::string bytes = message.SerializeAsString();
     envelope.payload_bytes.assign(
@@ -53,6 +68,20 @@ SendResult Messenger::Broadcast(const BroadcastScope& scope, const google::proto
         reinterpret_cast<const std::byte*>(bytes.data() + bytes.size()));
 
     return SendEnvelope(std::move(envelope), std::nullopt);
+}
+
+SendResult Messenger::BroadcastToService(
+    const ServiceType service_type,
+    const BroadcastScope& scope,
+    const google::protobuf::Message& message) const
+{
+    return BroadcastToReceiver(
+        ReceiverAddress{
+            .type = ReceiverType::service,
+            .key_hi = service_type,
+            .key_lo = 1},
+        scope,
+        message);
 }
 
 ReceiverAddress Messenger::ProcessReceiver(const ProcessId target)
@@ -96,6 +125,32 @@ SendResult Messenger::SendEnvelope(Envelope envelope, std::optional<ReceiverLoca
             return SendResult::Failure("remote message sender is not configured");
         }
         return mRemoteSender->Send(plan.hops.front().next_hop, envelope);
+    }
+
+    if (plan.kind == RoutePlanKind::multi_next_hop)
+    {
+        for (const auto& hop : plan.hops)
+        {
+            Envelope next_envelope = envelope;
+            next_envelope.header.semantic = DeliverySemantic::direct;
+            next_envelope.broadcast_scope = BroadcastScope{};
+            if (next_envelope.header.target_receiver.type != ReceiverType::process)
+            {
+                next_envelope.header.resolved_target_process = hop.next_hop;
+            }
+
+            ReceiverLocation target_location;
+            target_location.kind = ReceiverLocationKind::single_process;
+            target_location.processes.push_back(hop.next_hop);
+            target_location.version = 1;
+
+            const SendResult send_result = SendEnvelope(std::move(next_envelope), std::move(target_location));
+            if (!send_result.ok)
+            {
+                return send_result;
+            }
+        }
+        return SendResult::Success();
     }
 
     return SendResult::Failure("route plan kind is not implemented yet");
