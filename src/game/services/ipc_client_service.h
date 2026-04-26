@@ -12,6 +12,7 @@
 #include "../../framework/ipc/routing/relay_first_policy.h"
 #include "../../framework/ipc/routing/router.h"
 #include "../../framework/ipc/transport/tcp_transport.h"
+#include "player_receiver_host.h"
 #include "process_receiver_host.h"
 #include "service_receiver_host.h"
 
@@ -35,6 +36,9 @@ struct GameIpcClientStatus
     std::size_t member_count = 0;
     std::uint64_t process_dispatch_count = 0;
     std::string last_process_payload_type;
+    std::uint64_t player_dispatch_count = 0;
+    std::uint64_t last_player_id = 0;
+    std::string last_player_payload_type;
     std::uint64_t local_service_dispatch_count = 0;
     std::string last_payload_type;
     std::string last_error;
@@ -57,12 +61,16 @@ public:
     std::vector<ipc::ProcessDescriptor> Members() const;
     std::vector<ipc::ProcessRef> HealthyLinks() const;
     ipc::Result ConnectToProcess(ipc::InstanceId instance_id);
+    ipc::Result BindLocalPlayer(std::uint64_t player_id);
+    ipc::Result BindRemotePlayer(std::uint64_t player_id, ipc::InstanceId instance_id);
     ipc::SendResult SendLocalServiceMessage(const std::string& value);
     ipc::SendResult SendProcessMessage(ipc::InstanceId instance_id, const std::string& value);
+    ipc::SendResult SendPlayerMessage(std::uint64_t player_id, const std::string& value);
 
 private:
     ipc::ProcessDescriptor BuildSelfDescriptor() const;
     ipc::ReceiverAddress LocalServiceReceiverAddress() const;
+    static ipc::ReceiverAddress PlayerReceiverAddress(std::uint64_t player_id);
     void FlushLinkFrames();
     void StartKeepAliveLoop();
     void StopKeepAliveLoop();
@@ -79,6 +87,7 @@ private:
     ipc::ReceiverRegistry mReceiverRegistry;
     ipc::PayloadRegistry mPayloadRegistry;
     std::unique_ptr<ProcessReceiverHost> mProcessReceiverHost;
+    PlayerReceiverHost mPlayerReceiverHost;
     ServiceReceiverHost mServiceReceiverHost;
     std::unique_ptr<ipc::TransportMessageSender> mTransportMessageSender;
     std::unique_ptr<ipc::Messenger> mMessenger;

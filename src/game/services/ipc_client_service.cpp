@@ -66,6 +66,12 @@ LifecycleTask GameIpcClientService::Load()
         spdlog::warn("game ipc process receiver host register failed: {}", mLastError);
         return LifecycleTask::Completed();
     }
+    if (const ipc::Result host_result = mReceiverRegistry.Register(mPlayerReceiverHost, ipc::ReceiverType::player); !host_result.ok)
+    {
+        mLastError = host_result.message;
+        spdlog::warn("game ipc player receiver host register failed: {}", mLastError);
+        return LifecycleTask::Completed();
+    }
     const auto receiver = LocalServiceReceiverAddress();
     if (const ipc::Result bind_result = mReceiverDirectory.Bind(receiver, mSelf->process); !bind_result.ok)
     {
@@ -198,6 +204,9 @@ GameIpcClientStatus GameIpcClientService::Snapshot() const
     status.process_dispatch_count = mProcessReceiverHost ? mProcessReceiverHost->DispatchCount() : 0;
     status.last_process_payload_type =
         mProcessReceiverHost ? mProcessReceiverHost->LastPayloadType() : std::string{};
+    status.player_dispatch_count = mPlayerReceiverHost.DispatchCount();
+    status.last_player_id = mPlayerReceiverHost.LastPlayerId();
+    status.last_player_payload_type = mPlayerReceiverHost.LastPayloadType();
     status.local_service_dispatch_count = mServiceReceiverHost.DispatchCount();
     status.last_payload_type = mServiceReceiverHost.LastPayloadType();
     status.last_error = mLastError;
@@ -275,6 +284,45 @@ ipc::Result GameIpcClientService::ConnectToProcess(const ipc::InstanceId instanc
     return ipc::Result::Failure("target process not found in discovery snapshot");
 }
 
+ipc::Result GameIpcClientService::BindLocalPlayer(const std::uint64_t player_id)
+{
+    std::scoped_lock lock(mMutex);
+    if (!mSelf.has_value())
+    {
+        return ipc::Result::Failure("self descriptor is not initialized");
+    }
+    if (!mPlayerReceiverHost.Bind(player_id))
+    {
+        return ipc::Result::Failure("player is already bound locally");
+    }
+    const ipc::Result bind_result = mReceiverDirectory.Bind(PlayerReceiverAddress(player_id), mSelf->process);
+    if (!bind_result.ok)
+    {
+        (void)mPlayerReceiverHost.Unbind(player_id);
+    }
+    return bind_result;
+}
+
+ipc::Result GameIpcClientService::BindRemotePlayer(const std::uint64_t player_id, const ipc::InstanceId instance_id)
+{
+    std::scoped_lock lock(mMutex);
+    if (!mSelf.has_value())
+    {
+        return ipc::Result::Failure("self descriptor is not initialized");
+    }
+
+    for (const auto& member : mDiscovery.All())
+    {
+        if (member.process.process_id.service_type == mGameServiceType &&
+            member.process.process_id.instance_id == instance_id)
+        {
+            return mReceiverDirectory.Bind(PlayerReceiverAddress(player_id), member.process);
+        }
+    }
+
+    return ipc::Result::Failure("target player owner not found in discovery snapshot");
+}
+
 ipc::SendResult GameIpcClientService::SendLocalServiceMessage(const std::string& value)
 {
     std::scoped_lock lock(mMutex);
@@ -301,6 +349,19 @@ ipc::SendResult GameIpcClientService::SendProcessMessage(const ipc::InstanceId i
     return mMessenger->SendToProcess({mGameServiceType, instance_id}, payload);
 }
 
+ipc::SendResult GameIpcClientService::SendPlayerMessage(const std::uint64_t player_id, const std::string& value)
+{
+    std::scoped_lock lock(mMutex);
+    if (!mMessenger)
+    {
+        return ipc::SendResult::Failure("messenger is not initialized");
+    }
+
+    google::protobuf::StringValue payload;
+    payload.set_value(value);
+    return mMessenger->SendToReceiver(PlayerReceiverAddress(player_id), payload);
+}
+
 ipc::ProcessDescriptor GameIpcClientService::BuildSelfDescriptor() const
 {
     ipc::ProcessDescriptor self;
@@ -322,6 +383,14 @@ ipc::ReceiverAddress GameIpcClientService::LocalServiceReceiverAddress() const
         .type = ipc::ReceiverType::service,
         .key_hi = mGameServiceType,
         .key_lo = 1};
+}
+
+ipc::ReceiverAddress GameIpcClientService::PlayerReceiverAddress(const std::uint64_t player_id)
+{
+    return ipc::ReceiverAddress{
+        .type = ipc::ReceiverType::player,
+        .key_hi = player_id,
+        .key_lo = 0};
 }
 
 void GameIpcClientService::FlushLinkFrames()

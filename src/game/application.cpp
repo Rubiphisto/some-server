@@ -59,7 +59,7 @@ void Application::RegisterRuntimeCommands()
 
             const GameIpcClientStatus status = mIpcService->Snapshot();
             spdlog::info(
-                "game ipc status: service_type={} instance_id={} transport_ready={} registered={} ipc_ready={} keepalive_running={} members={} process_dispatch_count={} last_process_payload_type={} local_service_dispatch_count={} last_payload_type={} last_error={}",
+                "game ipc status: service_type={} instance_id={} transport_ready={} registered={} ipc_ready={} keepalive_running={} members={} process_dispatch_count={} last_process_payload_type={} player_dispatch_count={} last_player_id={} last_player_payload_type={} local_service_dispatch_count={} last_payload_type={} last_error={}",
                 status.self.process.process_id.service_type,
                 status.self.process.process_id.instance_id,
                 status.transport_ready,
@@ -69,6 +69,9 @@ void Application::RegisterRuntimeCommands()
                 status.member_count,
                 status.process_dispatch_count,
                 status.last_process_payload_type.empty() ? "none" : status.last_process_payload_type,
+                status.player_dispatch_count,
+                status.last_player_id,
+                status.last_player_payload_type.empty() ? "none" : status.last_player_payload_type,
                 status.local_service_dispatch_count,
                 status.last_payload_type.empty() ? "none" : status.last_payload_type,
                 status.last_error.empty() ? "none" : status.last_error);
@@ -289,6 +292,104 @@ void Application::RegisterRuntimeCommands()
     if (!process_send_registered)
     {
         throw std::runtime_error("failed to register game ipc process send command");
+    }
+
+    const bool bind_player_local_registered = Runtime().RegisterCommand(
+        "ipc_bind_player_local",
+        "Bind a local player receiver to this game process",
+        [this](const CommandArguments& arguments) {
+            if (mIpcService == nullptr)
+            {
+                spdlog::warn("game ipc bind player local: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+            if (arguments.size() != 1)
+            {
+                spdlog::warn("usage: ipc_bind_player_local <player_id>");
+                return CommandExecutionStatus::handled;
+            }
+
+            const auto player_id = static_cast<std::uint64_t>(std::stoull(arguments.front()));
+            const ipc::Result bind_result = mIpcService->BindLocalPlayer(player_id);
+            if (!bind_result.ok)
+            {
+                spdlog::warn("game ipc bind player local failed: {}", bind_result.message);
+                return CommandExecutionStatus::handled;
+            }
+
+            spdlog::info("game ipc bind player local: ok");
+            return CommandExecutionStatus::handled;
+        });
+
+    if (!bind_player_local_registered)
+    {
+        throw std::runtime_error("failed to register game ipc bind player local command");
+    }
+
+    const bool bind_player_remote_registered = Runtime().RegisterCommand(
+        "ipc_bind_player_remote",
+        "Bind a remote player receiver to another game process in the local directory",
+        [this](const CommandArguments& arguments) {
+            if (mIpcService == nullptr)
+            {
+                spdlog::warn("game ipc bind player remote: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+            if (arguments.size() != 2)
+            {
+                spdlog::warn("usage: ipc_bind_player_remote <player_id> <instance_id>");
+                return CommandExecutionStatus::handled;
+            }
+
+            const auto player_id = static_cast<std::uint64_t>(std::stoull(arguments[0]));
+            const auto instance_id = static_cast<ipc::InstanceId>(std::stoul(arguments[1]));
+            const ipc::Result bind_result = mIpcService->BindRemotePlayer(player_id, instance_id);
+            if (!bind_result.ok)
+            {
+                spdlog::warn("game ipc bind player remote failed: {}", bind_result.message);
+                return CommandExecutionStatus::handled;
+            }
+
+            spdlog::info("game ipc bind player remote: ok");
+            return CommandExecutionStatus::handled;
+        });
+
+    if (!bind_player_remote_registered)
+    {
+        throw std::runtime_error("failed to register game ipc bind player remote command");
+    }
+
+    const bool player_send_registered = Runtime().RegisterCommand(
+        "ipc_send_player",
+        "Send one IPC player-targeted message",
+        [this](const CommandArguments& arguments) {
+            if (mIpcService == nullptr)
+            {
+                spdlog::warn("game ipc player send: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+            if (arguments.empty() || arguments.size() > 2)
+            {
+                spdlog::warn("usage: ipc_send_player <player_id> [value]");
+                return CommandExecutionStatus::handled;
+            }
+
+            const auto player_id = static_cast<std::uint64_t>(std::stoull(arguments.front()));
+            const std::string payload = arguments.size() == 2 ? arguments[1] : "player-ping";
+            const ipc::SendResult send_result = mIpcService->SendPlayerMessage(player_id, payload);
+            if (!send_result.ok)
+            {
+                spdlog::warn("game ipc player send failed: {}", send_result.message);
+                return CommandExecutionStatus::handled;
+            }
+
+            spdlog::info("game ipc player send: ok");
+            return CommandExecutionStatus::handled;
+        });
+
+    if (!player_send_registered)
+    {
+        throw std::runtime_error("failed to register game ipc player send command");
     }
 }
 

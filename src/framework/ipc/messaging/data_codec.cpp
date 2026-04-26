@@ -84,6 +84,10 @@ ByteBuffer EncodeDataEnvelope(const Envelope& envelope)
             ? ProtoDataEnvelope::DELIVERY_SEMANTIC_BROADCAST
             : ProtoDataEnvelope::DELIVERY_SEMANTIC_DIRECT);
     *proto.mutable_target_receiver() = ToProto(envelope.header.target_receiver);
+    if (envelope.header.resolved_target_process.has_value())
+    {
+        *proto.mutable_resolved_target_process() = ToProto(*envelope.header.resolved_target_process);
+    }
     if (envelope.header.semantic == DeliverySemantic::broadcast)
     {
         ToProto(envelope.broadcast_scope, *proto.mutable_broadcast_scope());
@@ -114,6 +118,14 @@ Result DecodeDataEnvelope(const ByteBuffer& bytes, Envelope& envelope)
         ? DeliverySemantic::broadcast
         : DeliverySemantic::direct;
     envelope.header.target_receiver = FromProto(proto.target_receiver());
+    if (proto.has_resolved_target_process())
+    {
+        envelope.header.resolved_target_process = FromProto(proto.resolved_target_process());
+    }
+    else
+    {
+        envelope.header.resolved_target_process.reset();
+    }
     if (proto.has_broadcast_scope())
     {
         envelope.broadcast_scope = FromProto(proto.broadcast_scope());

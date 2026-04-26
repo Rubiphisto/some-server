@@ -15,6 +15,7 @@ struct EnvelopeHeader
     ProcessRef source_process;
     DeliverySemantic semantic = DeliverySemantic::direct;
     ReceiverAddress target_receiver;
+    std::optional<ProcessRef> resolved_target_process;
     RequestId request_id = 0;
     std::uint32_t flags = 0;
 };

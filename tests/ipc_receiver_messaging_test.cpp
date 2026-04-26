@@ -250,6 +250,34 @@ void TestMessengerRejectsUnknownPayload()
     Require(host.DispatchCount() == 0, "host should not receive unknown payload");
 }
 
+void TestMessengerDispatchesLocalPlayerReceiver()
+{
+    const ipc::ProcessRef self{{10, 1}, 101};
+    const ipc::ReceiverAddress receiver{ipc::ReceiverType::player, 1001, 0};
+
+    ipc::LocalReceiverDirectory directory;
+    Require(directory.Bind(receiver, self).ok, "bind local player receiver");
+
+    RecordingHost host(ipc::ReceiverType::player);
+    ipc::ReceiverRegistry receiver_registry;
+    Require(receiver_registry.Register(host, ipc::ReceiverType::player).ok, "register player host");
+
+    google::protobuf::StringValue payload;
+    payload.set_value("player-local");
+
+    ipc::PayloadRegistry payload_registry;
+    Require(payload_registry.Register(payload).ok, "register payload type");
+
+    ipc::RelayFirstPolicy policy(99);
+    ipc::Router router(policy);
+    ipc::Messenger messenger(self, router, directory, receiver_registry, payload_registry);
+
+    const ipc::SendResult send_result = messenger.SendToReceiver(receiver, payload);
+    Require(send_result.ok, "local send to player receiver");
+    Require(host.DispatchCount() == 1, "player host dispatch count");
+    Require(host.LastTarget() == receiver, "player host target");
+}
+
 void TestMessengerSendsRemoteProcessMessage()
 {
     const ipc::ProcessRef self{{10, 1}, 101};
@@ -285,6 +313,48 @@ void TestMessengerSendsRemoteProcessMessage()
     Require(sender.LastNextHop() == remote, "remote next hop");
     Require(sender.LastEnvelope().header.target_receiver.type == ipc::ReceiverType::process, "process receiver type");
     Require(!sender.LastEnvelope().payload_bytes.empty(), "remote payload bytes");
+}
+
+void TestMessengerSendsRemotePlayerMessage()
+{
+    const ipc::ProcessRef self{{10, 1}, 101};
+    const ipc::ProcessRef remote{{10, 2}, 202};
+    const ipc::ReceiverAddress receiver{ipc::ReceiverType::player, 1001, 0};
+
+    ipc::LocalReceiverDirectory directory;
+    Require(directory.Bind(receiver, remote).ok, "bind remote player receiver");
+
+    RecordingHost host(ipc::ReceiverType::player);
+    ipc::ReceiverRegistry receiver_registry;
+    Require(receiver_registry.Register(host, ipc::ReceiverType::player).ok, "register player host");
+
+    google::protobuf::StringValue payload;
+    payload.set_value("player-remote");
+
+    ipc::PayloadRegistry payload_registry;
+    Require(payload_registry.Register(payload).ok, "register payload type");
+
+    StaticMembershipView membership({
+        ipc::ProcessDescriptor{
+            .process = remote,
+            .service_name = "game",
+            .listen_endpoint = {"127.0.0.1", 9101},
+            .protocol_version = 1}});
+    StaticLinkView links({remote});
+    RecordingRemoteSender sender;
+
+    ipc::RelayFirstPolicy policy(99);
+    ipc::Router router(policy);
+    ipc::Messenger messenger(self, router, directory, receiver_registry, payload_registry, &membership, &links, &sender);
+
+    const ipc::SendResult send_result = messenger.SendToReceiver(receiver, payload);
+    Require(send_result.ok, "remote send to player receiver");
+    Require(sender.SendCount() == 1, "remote player sender count");
+    Require(sender.LastNextHop() == remote, "remote player next hop");
+    Require(sender.LastEnvelope().header.target_receiver == receiver, "remote player target");
+    Require(sender.LastEnvelope().header.resolved_target_process.has_value(), "remote player resolved owner");
+    Require(*sender.LastEnvelope().header.resolved_target_process == remote, "remote player resolved owner value");
+    Require(host.DispatchCount() == 0, "source player host should not dispatch remote message");
 }
 
 void TestMessengerForwardsIncomingProcessMessage()
@@ -345,6 +415,67 @@ void TestMessengerForwardsIncomingProcessMessage()
     Require(sender.LastEnvelope().header.target_receiver.type == ipc::ReceiverType::process, "forward process receiver type");
     Require(host.DispatchCount() == 0, "relay should not local-dispatch forwarded process message");
 }
+
+void TestMessengerForwardsIncomingPlayerMessage()
+{
+    const ipc::ProcessRef self{{99, 1}, 901};
+    const ipc::ProcessRef remote{{10, 2}, 202};
+    const ipc::ReceiverAddress player_receiver{
+        .type = ipc::ReceiverType::player,
+        .key_hi = 1001,
+        .key_lo = 0};
+
+    ipc::LocalReceiverDirectory directory;
+    RecordingHost host(ipc::ReceiverType::player);
+    ipc::ReceiverRegistry receiver_registry;
+    Require(receiver_registry.Register(host, ipc::ReceiverType::player).ok, "register player host");
+
+    google::protobuf::StringValue payload;
+    payload.set_value("forwarded-player");
+
+    ipc::PayloadRegistry payload_registry;
+    Require(payload_registry.Register(payload).ok, "register payload type");
+
+    StaticMembershipView membership({
+        ipc::ProcessDescriptor{
+            .process = remote,
+            .service_name = "game",
+            .listen_endpoint = {"127.0.0.1", 9101},
+            .protocol_version = 1}});
+    StaticLinkView links({remote});
+    RecordingRemoteSender sender;
+
+    ipc::RelayFirstPolicy policy(99);
+    ipc::Router router(policy);
+    ipc::Messenger messenger(self, router, directory, receiver_registry, payload_registry, &membership, &links, &sender);
+
+    ipc::Envelope envelope;
+    envelope.header.source_process = {{10, 1}, 101};
+    envelope.header.target_receiver = player_receiver;
+    envelope.header.resolved_target_process = remote;
+    envelope.payload_type_url = ipc::PayloadRegistry::TypeUrlFor(payload);
+    const std::string bytes = payload.SerializeAsString();
+    envelope.payload_bytes.assign(
+        reinterpret_cast<const std::byte*>(bytes.data()),
+        reinterpret_cast<const std::byte*>(bytes.data() + bytes.size()));
+
+    const std::vector<std::byte> encoded = ipc::EncodeDataEnvelope(envelope);
+    Require(!encoded.empty(), "encode forwarded player envelope");
+
+    ipc::RawFrame frame;
+    frame.connection_id = 1;
+    frame.header.kind = ipc::FrameKind::data;
+    frame.header.length = static_cast<std::uint32_t>(encoded.size());
+    frame.payload = encoded;
+
+    const ipc::Result handle_result = messenger.HandleIncomingFrame(frame);
+    Require(handle_result.ok, "forward incoming player message");
+    Require(sender.SendCount() == 1, "forwarded player sender count");
+    Require(sender.LastNextHop() == remote, "forward player next hop");
+    Require(sender.LastEnvelope().header.target_receiver == player_receiver, "forward player target");
+    Require(sender.LastEnvelope().header.resolved_target_process.has_value(), "forward player resolved owner");
+    Require(host.DispatchCount() == 0, "relay should not local-dispatch forwarded player message");
+}
 } // namespace
 
 int main()
@@ -353,9 +484,12 @@ int main()
     {
         TestReceiverDirectoryLifecycle();
         TestMessengerLocalDispatch();
+        TestMessengerDispatchesLocalPlayerReceiver();
         TestMessengerRejectsUnknownPayload();
         TestMessengerSendsRemoteProcessMessage();
+        TestMessengerSendsRemotePlayerMessage();
         TestMessengerForwardsIncomingProcessMessage();
+        TestMessengerForwardsIncomingPlayerMessage();
         std::cout << "ipc_receiver_messaging_test: ok" << std::endl;
         return 0;
     }

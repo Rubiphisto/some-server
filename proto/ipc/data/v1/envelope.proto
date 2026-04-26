@@ -19,6 +19,8 @@ message DataEnvelope {
   DeliverySemantic semantic = 2;
   // Logical destination understood by receiver directory and routing.
   some_server.ipc.common.v1.ReceiverAddress target_receiver = 3;
+  // Optional resolved owner carried across relay hops for receiver-targeted forwarding.
+  optional some_server.ipc.common.v1.ProcessRef resolved_target_process = 9;
   // Present only for broadcast semantics.
   optional some_server.ipc.common.v1.BroadcastScope broadcast_scope = 4;
   // Protobuf payload dispatch key used by the messaging facade.

@@ -65,6 +65,12 @@ ReceiverAddress Messenger::ProcessReceiver(const ProcessId target)
 
 SendResult Messenger::SendEnvelope(Envelope envelope, std::optional<ReceiverLocation> receiver_location) const
 {
+    if (receiver_location.has_value() && receiver_location->kind == ReceiverLocationKind::single_process &&
+        !receiver_location->processes.empty() && envelope.header.target_receiver.type != ReceiverType::process)
+    {
+        envelope.header.resolved_target_process = receiver_location->processes.front();
+    }
+
     RoutingContext context;
     context.self = mSelf;
     context.envelope = envelope;
@@ -121,7 +127,17 @@ Result Messenger::HandleIncomingFrame(const RawFrame& frame) const
     std::optional<ReceiverLocation> receiver_location;
     if (envelope.header.target_receiver.type != ReceiverType::process)
     {
-        receiver_location = mReceiverDirectory.Resolve(envelope.header.target_receiver);
+        if (envelope.header.resolved_target_process.has_value())
+        {
+            receiver_location = ReceiverLocation{
+                .kind = ReceiverLocationKind::single_process,
+                .processes = {*envelope.header.resolved_target_process},
+                .version = 1};
+        }
+        else
+        {
+            receiver_location = mReceiverDirectory.Resolve(envelope.header.target_receiver);
+        }
     }
     return SendEnvelope(std::move(envelope), std::move(receiver_location));
 }
