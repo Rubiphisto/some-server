@@ -90,3 +90,20 @@ add_test(NAME ipc_etcd_discovery_test COMMAND $<TARGET_FILE:ipc_etcd_discovery_t
 set_tests_properties(ipc_etcd_discovery_test PROPERTIES
         WORKING_DIRECTORY ${SERVER_BINARY_FOLDER}/bin
 )
+
+add_executable(ipc_receiver_messaging_test
+        ipc_receiver_messaging_test.cpp
+)
+
+target_include_directories(ipc_receiver_messaging_test PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(ipc_receiver_messaging_test PRIVATE
+        ipc
+)
+
+add_test(NAME ipc_receiver_messaging_test COMMAND $<TARGET_FILE:ipc_receiver_messaging_test>)
+set_tests_properties(ipc_receiver_messaging_test PROPERTIES
+        WORKING_DIRECTORY ${SERVER_BINARY_FOLDER}/bin
+)
