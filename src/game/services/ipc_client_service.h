@@ -4,10 +4,18 @@
 #include "../../framework/application/service_base.h"
 #include "../../framework/ipc/discovery/etcd_discovery.h"
 #include "../../framework/ipc/link/link_manager.h"
+#include "../../framework/ipc/messaging/messenger.h"
+#include "../../framework/ipc/messaging/payload_registry.h"
+#include "../../framework/ipc/receiver/local_receiver_directory.h"
+#include "../../framework/ipc/receiver/receiver_registry.h"
+#include "../../framework/ipc/routing/relay_first_policy.h"
+#include "../../framework/ipc/routing/router.h"
 #include "../../framework/ipc/transport/tcp_transport.h"
+#include "service_receiver_host.h"
 
 #include <atomic>
 #include <condition_variable>
+#include <google/protobuf/wrappers.pb.h>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -23,6 +31,8 @@ struct GameIpcClientStatus
     bool ipc_ready = false;
     bool keepalive_running = false;
     std::size_t member_count = 0;
+    std::uint64_t local_service_dispatch_count = 0;
+    std::string last_payload_type;
     std::string last_error;
 };
 
@@ -41,18 +51,27 @@ public:
     ipc::Result KeepAliveOnce();
     std::vector<ipc::MembershipEvent> DrainMembershipEvents();
     std::vector<ipc::ProcessDescriptor> Members() const;
+    ipc::SendResult SendLocalServiceMessage(const std::string& value);
 
 private:
     ipc::ProcessDescriptor BuildSelfDescriptor() const;
+    ipc::ReceiverAddress LocalServiceReceiverAddress() const;
     void StartKeepAliveLoop();
     void StopKeepAliveLoop();
     void KeepAliveLoop(std::uint32_t interval_seconds);
 
     GameConfiguration mConfiguration;
     ipc::ServiceType mGameServiceType = 0;
+    ipc::RelayFirstPolicy mRoutingPolicy;
+    ipc::Router mRouter;
     std::unique_ptr<ipc::TcpTransport> mTransport;
     std::unique_ptr<ipc::LinkManager> mLinkManager;
     ipc::EtcdDiscovery mDiscovery;
+    ipc::LocalReceiverDirectory mReceiverDirectory;
+    ipc::ReceiverRegistry mReceiverRegistry;
+    ipc::PayloadRegistry mPayloadRegistry;
+    ServiceReceiverHost mServiceReceiverHost;
+    std::unique_ptr<ipc::Messenger> mMessenger;
     std::optional<ipc::ProcessDescriptor> mSelf;
     bool mRegistered = false;
     bool mTransportReady = false;

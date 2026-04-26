@@ -8,17 +8,21 @@
 namespace
 {
 constexpr std::int32_t kGameIpcBatch = 100;
+constexpr ipc::ServiceType kRelayServiceType = 99;
 }
 
 GameIpcClientService::GameIpcClientService(const GameConfiguration& configuration, ipc::ServiceType game_service_type)
     : ServiceBase("game_ipc_client", kGameIpcBatch)
     , mConfiguration(configuration)
     , mGameServiceType(game_service_type)
+    , mRoutingPolicy(kRelayServiceType)
+    , mRouter(mRoutingPolicy)
     , mDiscovery(ipc::EtcdDiscoveryOptions{
           .etcdctl_path = "etcdctl",
           .endpoints = configuration.discovery.endpoints,
           .prefix = configuration.discovery.prefix,
           .lease_ttl_seconds = configuration.discovery.lease_ttl_seconds})
+    , mServiceReceiverHost(game_service_type)
 {
 }
 
@@ -42,6 +46,34 @@ LifecycleTask GameIpcClientService::Load()
                 (void)mLinkManager->OnFrame(frame);
             }
         });
+    const auto receiver = LocalServiceReceiverAddress();
+    if (const ipc::Result bind_result = mReceiverDirectory.Bind(receiver, mSelf->process); !bind_result.ok)
+    {
+        mLastError = bind_result.message;
+        spdlog::warn("game ipc receiver bind failed: {}", mLastError);
+        return LifecycleTask::Completed();
+    }
+    if (const ipc::Result host_result = mReceiverRegistry.Register(mServiceReceiverHost, ipc::ReceiverType::service); !host_result.ok)
+    {
+        mLastError = host_result.message;
+        spdlog::warn("game ipc receiver host register failed: {}", mLastError);
+        return LifecycleTask::Completed();
+    }
+
+    google::protobuf::StringValue sample_message;
+    if (const ipc::Result payload_result = mPayloadRegistry.Register(sample_message); !payload_result.ok)
+    {
+        mLastError = payload_result.message;
+        spdlog::warn("game ipc payload register failed: {}", mLastError);
+        return LifecycleTask::Completed();
+    }
+
+    mMessenger = std::make_unique<ipc::Messenger>(
+        mSelf->process,
+        mRouter,
+        mReceiverDirectory,
+        mReceiverRegistry,
+        mPayloadRegistry);
     mRegistered = false;
     mTransportReady = false;
     mIpcReady = false;
@@ -118,6 +150,7 @@ LifecycleTask GameIpcClientService::Unload()
     std::scoped_lock lock(mMutex);
     mLinkManager.reset();
     mTransport.reset();
+    mMessenger.reset();
     mSelf.reset();
     mTransportReady = false;
     mIpcReady = false;
@@ -137,6 +170,8 @@ GameIpcClientStatus GameIpcClientService::Snapshot() const
     status.ipc_ready = mIpcReady;
     status.keepalive_running = mKeepAliveRunning.load();
     status.member_count = mDiscovery.All().size();
+    status.local_service_dispatch_count = mServiceReceiverHost.DispatchCount();
+    status.last_payload_type = mServiceReceiverHost.LastPayloadType();
     status.last_error = mLastError;
     return status;
 }
@@ -181,6 +216,19 @@ std::vector<ipc::ProcessDescriptor> GameIpcClientService::Members() const
     return mDiscovery.All();
 }
 
+ipc::SendResult GameIpcClientService::SendLocalServiceMessage(const std::string& value)
+{
+    std::scoped_lock lock(mMutex);
+    if (!mMessenger)
+    {
+        return ipc::SendResult::Failure("messenger is not initialized");
+    }
+
+    google::protobuf::StringValue payload;
+    payload.set_value(value);
+    return mMessenger->SendToReceiver(LocalServiceReceiverAddress(), payload);
+}
+
 ipc::ProcessDescriptor GameIpcClientService::BuildSelfDescriptor() const
 {
     ipc::ProcessDescriptor self;
@@ -194,6 +242,14 @@ ipc::ProcessDescriptor GameIpcClientService::BuildSelfDescriptor() const
     self.start_time_unix_ms = 0;
     self.labels.emplace_back("role", "game");
     return self;
+}
+
+ipc::ReceiverAddress GameIpcClientService::LocalServiceReceiverAddress() const
+{
+    return ipc::ReceiverAddress{
+        .type = ipc::ReceiverType::service,
+        .key_hi = mGameServiceType,
+        .key_lo = 1};
 }
 
 void GameIpcClientService::StartKeepAliveLoop()

@@ -59,7 +59,7 @@ void Application::RegisterRuntimeCommands()
 
             const GameIpcClientStatus status = mIpcService->Snapshot();
             spdlog::info(
-                "game ipc status: service_type={} instance_id={} transport_ready={} registered={} ipc_ready={} keepalive_running={} members={} last_error={}",
+                "game ipc status: service_type={} instance_id={} transport_ready={} registered={} ipc_ready={} keepalive_running={} members={} local_service_dispatch_count={} last_payload_type={} last_error={}",
                 status.self.process.process_id.service_type,
                 status.self.process.process_id.instance_id,
                 status.transport_ready,
@@ -67,6 +67,8 @@ void Application::RegisterRuntimeCommands()
                 status.ipc_ready,
                 status.keepalive_running,
                 status.member_count,
+                status.local_service_dispatch_count,
+                status.last_payload_type.empty() ? "none" : status.last_payload_type,
                 status.last_error.empty() ? "none" : status.last_error);
             return CommandExecutionStatus::handled;
         });
@@ -166,6 +168,32 @@ void Application::RegisterRuntimeCommands()
     if (!members_registered)
     {
         throw std::runtime_error("failed to register game ipc members command");
+    }
+
+    const bool local_send_registered = Runtime().RegisterCommand(
+        "ipc_send_local",
+        "Send one local IPC message to the game service receiver host",
+        [this](const CommandArguments&) {
+            if (mIpcService == nullptr)
+            {
+                spdlog::warn("game ipc local send: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+
+            const ipc::SendResult send_result = mIpcService->SendLocalServiceMessage("local-service-ping");
+            if (!send_result.ok)
+            {
+                spdlog::warn("game ipc local send failed: {}", send_result.message);
+                return CommandExecutionStatus::handled;
+            }
+
+            spdlog::info("game ipc local send: ok");
+            return CommandExecutionStatus::handled;
+        });
+
+    if (!local_send_registered)
+    {
+        throw std::runtime_error("failed to register game ipc local send command");
     }
 }
 
