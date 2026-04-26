@@ -43,6 +43,7 @@ public:
 
 private:
     ipc::ProcessDescriptor BuildSelfDescriptor() const;
+    void FlushLinkFrames();
     void StartKeepAliveLoop();
     void StopKeepAliveLoop();
     void KeepAliveLoop(std::uint32_t interval_seconds);

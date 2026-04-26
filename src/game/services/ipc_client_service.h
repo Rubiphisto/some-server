@@ -12,6 +12,7 @@
 #include "../../framework/ipc/routing/relay_first_policy.h"
 #include "../../framework/ipc/routing/router.h"
 #include "../../framework/ipc/transport/tcp_transport.h"
+#include "process_receiver_host.h"
 #include "service_receiver_host.h"
 
 #include <atomic>
@@ -32,6 +33,8 @@ struct GameIpcClientStatus
     bool ipc_ready = false;
     bool keepalive_running = false;
     std::size_t member_count = 0;
+    std::uint64_t process_dispatch_count = 0;
+    std::string last_process_payload_type;
     std::uint64_t local_service_dispatch_count = 0;
     std::string last_payload_type;
     std::string last_error;
@@ -52,11 +55,15 @@ public:
     ipc::Result KeepAliveOnce();
     std::vector<ipc::MembershipEvent> DrainMembershipEvents();
     std::vector<ipc::ProcessDescriptor> Members() const;
+    std::vector<ipc::ProcessRef> HealthyLinks() const;
+    ipc::Result ConnectToProcess(ipc::InstanceId instance_id);
     ipc::SendResult SendLocalServiceMessage(const std::string& value);
+    ipc::SendResult SendProcessMessage(ipc::InstanceId instance_id, const std::string& value);
 
 private:
     ipc::ProcessDescriptor BuildSelfDescriptor() const;
     ipc::ReceiverAddress LocalServiceReceiverAddress() const;
+    void FlushLinkFrames();
     void StartKeepAliveLoop();
     void StopKeepAliveLoop();
     void KeepAliveLoop(std::uint32_t interval_seconds);
@@ -71,6 +78,7 @@ private:
     ipc::LocalReceiverDirectory mReceiverDirectory;
     ipc::ReceiverRegistry mReceiverRegistry;
     ipc::PayloadRegistry mPayloadRegistry;
+    std::unique_ptr<ProcessReceiverHost> mProcessReceiverHost;
     ServiceReceiverHost mServiceReceiverHost;
     std::unique_ptr<ipc::TransportMessageSender> mTransportMessageSender;
     std::unique_ptr<ipc::Messenger> mMessenger;

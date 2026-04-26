@@ -33,6 +33,7 @@ LifecycleTask RelayIpcService::Load()
             if (mLinkManager)
             {
                 mLinkManager->OnConnectionEvent(event);
+                FlushLinkFrames();
             }
         });
     mTransport->SetFrameHandler(
@@ -40,6 +41,7 @@ LifecycleTask RelayIpcService::Load()
             if (mLinkManager)
             {
                 (void)mLinkManager->OnFrame(frame);
+                FlushLinkFrames();
             }
         });
     mRegistered = false;
@@ -195,6 +197,19 @@ ipc::ProcessDescriptor RelayIpcService::BuildSelfDescriptor() const
     self.relay_capabilities.push_back(mRelayServiceType);
     self.labels.emplace_back("role", "relay");
     return self;
+}
+
+void RelayIpcService::FlushLinkFrames()
+{
+    if (!mTransport || !mLinkManager)
+    {
+        return;
+    }
+
+    for (auto& frame : mLinkManager->DrainOutboundFrames())
+    {
+        (void)mTransport->Send(frame);
+    }
 }
 
 void RelayIpcService::StartKeepAliveLoop()

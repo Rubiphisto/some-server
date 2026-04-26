@@ -37,6 +37,7 @@ LifecycleTask GameIpcClientService::Load()
             if (mLinkManager)
             {
                 mLinkManager->OnConnectionEvent(event);
+                FlushLinkFrames();
             }
         });
     mTransport->SetFrameHandler(
@@ -49,6 +50,7 @@ LifecycleTask GameIpcClientService::Load()
             if (frame.header.kind == ipc::FrameKind::control)
             {
                 (void)mLinkManager->OnFrame(frame);
+                FlushLinkFrames();
                 return;
             }
 
@@ -57,6 +59,13 @@ LifecycleTask GameIpcClientService::Load()
                 (void)mMessenger->HandleIncomingFrame(frame);
             }
         });
+    mProcessReceiverHost = std::make_unique<ProcessReceiverHost>(mSelf->process);
+    if (const ipc::Result host_result = mReceiverRegistry.Register(*mProcessReceiverHost, ipc::ReceiverType::process); !host_result.ok)
+    {
+        mLastError = host_result.message;
+        spdlog::warn("game ipc process receiver host register failed: {}", mLastError);
+        return LifecycleTask::Completed();
+    }
     const auto receiver = LocalServiceReceiverAddress();
     if (const ipc::Result bind_result = mReceiverDirectory.Bind(receiver, mSelf->process); !bind_result.ok)
     {
@@ -186,6 +195,9 @@ GameIpcClientStatus GameIpcClientService::Snapshot() const
     status.ipc_ready = mIpcReady;
     status.keepalive_running = mKeepAliveRunning.load();
     status.member_count = mDiscovery.All().size();
+    status.process_dispatch_count = mProcessReceiverHost ? mProcessReceiverHost->DispatchCount() : 0;
+    status.last_process_payload_type =
+        mProcessReceiverHost ? mProcessReceiverHost->LastPayloadType() : std::string{};
     status.local_service_dispatch_count = mServiceReceiverHost.DispatchCount();
     status.last_payload_type = mServiceReceiverHost.LastPayloadType();
     status.last_error = mLastError;
@@ -232,6 +244,37 @@ std::vector<ipc::ProcessDescriptor> GameIpcClientService::Members() const
     return mDiscovery.All();
 }
 
+std::vector<ipc::ProcessRef> GameIpcClientService::HealthyLinks() const
+{
+    std::scoped_lock lock(mMutex);
+    if (!mLinkManager)
+    {
+        return {};
+    }
+    return mLinkManager->GetHealthyLinks();
+}
+
+ipc::Result GameIpcClientService::ConnectToProcess(const ipc::InstanceId instance_id)
+{
+    std::scoped_lock lock(mMutex);
+    if (!mTransport)
+    {
+        return ipc::Result::Failure("transport is not initialized");
+    }
+
+    for (const auto& member : mDiscovery.All())
+    {
+        if (member.process.process_id.service_type == mGameServiceType &&
+            member.process.process_id.instance_id == instance_id &&
+            member.process != mSelf->process)
+        {
+            return mTransport->Connect(member.listen_endpoint);
+        }
+    }
+
+    return ipc::Result::Failure("target process not found in discovery snapshot");
+}
+
 ipc::SendResult GameIpcClientService::SendLocalServiceMessage(const std::string& value)
 {
     std::scoped_lock lock(mMutex);
@@ -243,6 +286,19 @@ ipc::SendResult GameIpcClientService::SendLocalServiceMessage(const std::string&
     google::protobuf::StringValue payload;
     payload.set_value(value);
     return mMessenger->SendToReceiver(LocalServiceReceiverAddress(), payload);
+}
+
+ipc::SendResult GameIpcClientService::SendProcessMessage(const ipc::InstanceId instance_id, const std::string& value)
+{
+    std::scoped_lock lock(mMutex);
+    if (!mMessenger)
+    {
+        return ipc::SendResult::Failure("messenger is not initialized");
+    }
+
+    google::protobuf::StringValue payload;
+    payload.set_value(value);
+    return mMessenger->SendToProcess({mGameServiceType, instance_id}, payload);
 }
 
 ipc::ProcessDescriptor GameIpcClientService::BuildSelfDescriptor() const
@@ -266,6 +322,19 @@ ipc::ReceiverAddress GameIpcClientService::LocalServiceReceiverAddress() const
         .type = ipc::ReceiverType::service,
         .key_hi = mGameServiceType,
         .key_lo = 1};
+}
+
+void GameIpcClientService::FlushLinkFrames()
+{
+    if (!mTransport || !mLinkManager)
+    {
+        return;
+    }
+
+    for (auto& frame : mLinkManager->DrainOutboundFrames())
+    {
+        (void)mTransport->Send(frame);
+    }
 }
 
 void GameIpcClientService::StartKeepAliveLoop()
