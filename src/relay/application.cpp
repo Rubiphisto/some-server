@@ -154,4 +154,65 @@ void Application::RegisterRuntimeCommands()
     {
         throw std::runtime_error("failed to register relay ipc members command");
     }
+
+    const bool links_registered = Runtime().RegisterCommand(
+        "ipc_links",
+        "List relay IPC healthy direct links",
+        [this](const CommandArguments&) {
+            if (mIpcService == nullptr)
+            {
+                spdlog::warn("relay ipc links: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+
+            const auto links = mIpcService->HealthyLinks();
+            spdlog::info("relay ipc links: count={}", links.size());
+            for (const auto& link : links)
+            {
+                spdlog::info(
+                    "relay ipc link: service_type={} instance_id={} incarnation={}",
+                    link.process_id.service_type,
+                    link.process_id.instance_id,
+                    link.incarnation_id);
+            }
+            return CommandExecutionStatus::handled;
+        });
+
+    if (!links_registered)
+    {
+        throw std::runtime_error("failed to register relay ipc links command");
+    }
+
+    const bool connect_registered = Runtime().RegisterCommand(
+        "ipc_connect",
+        "Connect relay to another process by service_type and instance_id",
+        [this](const CommandArguments& arguments) {
+            if (mIpcService == nullptr)
+            {
+                spdlog::warn("relay ipc connect: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+            if (arguments.size() != 2)
+            {
+                spdlog::warn("usage: ipc_connect <service_type> <instance_id>");
+                return CommandExecutionStatus::handled;
+            }
+
+            const auto service_type = static_cast<ipc::ServiceType>(std::stoul(arguments[0]));
+            const auto instance_id = static_cast<ipc::InstanceId>(std::stoul(arguments[1]));
+            const ipc::Result connect_result = mIpcService->ConnectToMember(service_type, instance_id);
+            if (!connect_result.ok)
+            {
+                spdlog::warn("relay ipc connect failed: {}", connect_result.message);
+                return CommandExecutionStatus::handled;
+            }
+
+            spdlog::info("relay ipc connect: ok");
+            return CommandExecutionStatus::handled;
+        });
+
+    if (!connect_registered)
+    {
+        throw std::runtime_error("failed to register relay ipc connect command");
+    }
 }

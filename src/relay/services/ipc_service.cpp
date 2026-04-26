@@ -8,12 +8,15 @@
 namespace
 {
 constexpr std::int32_t kRelayIpcBatch = 100;
+constexpr ipc::ServiceType kRelayServiceType = 99;
 }
 
 RelayIpcService::RelayIpcService(const RelayConfiguration& configuration, ipc::ServiceType relay_service_type)
     : ServiceBase("relay_ipc", kRelayIpcBatch)
     , mConfiguration(configuration)
     , mRelayServiceType(relay_service_type)
+    , mRoutingPolicy(kRelayServiceType)
+    , mRouter(mRoutingPolicy)
     , mDiscovery(ipc::EtcdDiscoveryOptions{
           .etcdctl_path = "etcdctl",
           .endpoints = configuration.discovery.endpoints,
@@ -38,12 +41,41 @@ LifecycleTask RelayIpcService::Load()
         });
     mTransport->SetFrameHandler(
         [this](const ipc::RawFrame& frame) {
-            if (mLinkManager)
+            if (!mLinkManager)
+            {
+                return;
+            }
+
+            if (frame.header.kind == ipc::FrameKind::control)
             {
                 (void)mLinkManager->OnFrame(frame);
                 FlushLinkFrames();
+                return;
+            }
+
+            if (frame.header.kind == ipc::FrameKind::data && mMessenger)
+            {
+                (void)mMessenger->HandleIncomingFrame(frame);
+                return;
+            }
+
+            if (mLinkManager)
+            {
+                (void)mLinkManager->OnFrame(frame);
             }
         });
+    google::protobuf::StringValue sample_message;
+    (void)mPayloadRegistry.Register(sample_message);
+    mTransportMessageSender = std::make_unique<ipc::TransportMessageSender>(*mTransport, *mLinkManager);
+    mMessenger = std::make_unique<ipc::Messenger>(
+        mSelf->process,
+        mRouter,
+        mReceiverDirectory,
+        mReceiverRegistry,
+        mPayloadRegistry,
+        &mDiscovery,
+        mLinkManager.get(),
+        mTransportMessageSender.get());
     mRegistered = false;
     mTransportReady = false;
     mIpcReady = false;
@@ -118,6 +150,8 @@ LifecycleTask RelayIpcService::Unload()
 {
     StopKeepAliveLoop();
     std::scoped_lock lock(mMutex);
+    mMessenger.reset();
+    mTransportMessageSender.reset();
     mLinkManager.reset();
     mTransport.reset();
     mSelf.reset();
@@ -181,6 +215,37 @@ std::vector<ipc::ProcessDescriptor> RelayIpcService::Members() const
 {
     std::scoped_lock lock(mMutex);
     return mDiscovery.All();
+}
+
+std::vector<ipc::ProcessRef> RelayIpcService::HealthyLinks() const
+{
+    std::scoped_lock lock(mMutex);
+    if (!mLinkManager)
+    {
+        return {};
+    }
+    return mLinkManager->GetHealthyLinks();
+}
+
+ipc::Result RelayIpcService::ConnectToMember(const ipc::ServiceType service_type, const ipc::InstanceId instance_id)
+{
+    std::scoped_lock lock(mMutex);
+    if (!mTransport)
+    {
+        return ipc::Result::Failure("transport is not initialized");
+    }
+
+    for (const auto& member : mDiscovery.All())
+    {
+        if (member.process.process_id.service_type == service_type &&
+            member.process.process_id.instance_id == instance_id &&
+            (!mSelf.has_value() || member.process != mSelf->process))
+        {
+            return mTransport->Connect(member.listen_endpoint);
+        }
+    }
+
+    return ipc::Result::Failure("target member not found in discovery snapshot");
 }
 
 ipc::ProcessDescriptor RelayIpcService::BuildSelfDescriptor() const

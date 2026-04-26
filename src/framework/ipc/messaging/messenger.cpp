@@ -118,6 +118,11 @@ Result Messenger::HandleIncomingFrame(const RawFrame& frame) const
         return decode_result;
     }
 
-    return DispatchLocal(envelope);
+    std::optional<ReceiverLocation> receiver_location;
+    if (envelope.header.target_receiver.type != ReceiverType::process)
+    {
+        receiver_location = mReceiverDirectory.Resolve(envelope.header.target_receiver);
+    }
+    return SendEnvelope(std::move(envelope), std::move(receiver_location));
 }
 } // namespace ipc

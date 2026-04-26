@@ -1,4 +1,5 @@
 #include "framework/ipc/messaging/messenger.h"
+#include "framework/ipc/messaging/data_codec.h"
 #include "framework/ipc/messaging/payload_registry.h"
 #include "framework/ipc/messaging/remote_message_sender.h"
 #include "framework/ipc/discovery/membership_view.h"
@@ -285,6 +286,65 @@ void TestMessengerSendsRemoteProcessMessage()
     Require(sender.LastEnvelope().header.target_receiver.type == ipc::ReceiverType::process, "process receiver type");
     Require(!sender.LastEnvelope().payload_bytes.empty(), "remote payload bytes");
 }
+
+void TestMessengerForwardsIncomingProcessMessage()
+{
+    const ipc::ProcessRef self{{99, 1}, 901};
+    const ipc::ProcessRef remote{{10, 2}, 202};
+    const ipc::ReceiverAddress process_receiver{
+        .type = ipc::ReceiverType::process,
+        .key_hi = remote.process_id.service_type,
+        .key_lo = remote.process_id.instance_id};
+
+    ipc::LocalReceiverDirectory directory;
+    RecordingHost host(ipc::ReceiverType::service);
+    ipc::ReceiverRegistry receiver_registry;
+    Require(receiver_registry.Register(host, ipc::ReceiverType::service).ok, "register service host");
+
+    google::protobuf::StringValue payload;
+    payload.set_value("forwarded");
+
+    ipc::PayloadRegistry payload_registry;
+    Require(payload_registry.Register(payload).ok, "register payload type");
+
+    StaticMembershipView membership({
+        ipc::ProcessDescriptor{
+            .process = remote,
+            .service_name = "game",
+            .listen_endpoint = {"127.0.0.1", 9101},
+            .protocol_version = 1}});
+    StaticLinkView links({remote});
+    RecordingRemoteSender sender;
+
+    ipc::RelayFirstPolicy policy(99);
+    ipc::Router router(policy);
+    ipc::Messenger messenger(self, router, directory, receiver_registry, payload_registry, &membership, &links, &sender);
+
+    ipc::Envelope envelope;
+    envelope.header.source_process = {{10, 1}, 101};
+    envelope.header.target_receiver = process_receiver;
+    envelope.payload_type_url = ipc::PayloadRegistry::TypeUrlFor(payload);
+    const std::string bytes = payload.SerializeAsString();
+    envelope.payload_bytes.assign(
+        reinterpret_cast<const std::byte*>(bytes.data()),
+        reinterpret_cast<const std::byte*>(bytes.data() + bytes.size()));
+
+    const std::vector<std::byte> encoded = ipc::EncodeDataEnvelope(envelope);
+    Require(!encoded.empty(), "encode forwarded envelope");
+
+    ipc::RawFrame frame;
+    frame.connection_id = 1;
+    frame.header.kind = ipc::FrameKind::data;
+    frame.header.length = static_cast<std::uint32_t>(encoded.size());
+    frame.payload = encoded;
+
+    const ipc::Result handle_result = messenger.HandleIncomingFrame(frame);
+    Require(handle_result.ok, "forward incoming process message");
+    Require(sender.SendCount() == 1, "forwarded sender count");
+    Require(sender.LastNextHop() == remote, "forward next hop");
+    Require(sender.LastEnvelope().header.target_receiver.type == ipc::ReceiverType::process, "forward process receiver type");
+    Require(host.DispatchCount() == 0, "relay should not local-dispatch forwarded process message");
+}
 } // namespace
 
 int main()
@@ -295,6 +355,7 @@ int main()
         TestMessengerLocalDispatch();
         TestMessengerRejectsUnknownPayload();
         TestMessengerSendsRemoteProcessMessage();
+        TestMessengerForwardsIncomingProcessMessage();
         std::cout << "ipc_receiver_messaging_test: ok" << std::endl;
         return 0;
     }
