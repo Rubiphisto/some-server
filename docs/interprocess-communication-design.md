@@ -2375,7 +2375,13 @@ public:
         const ReceiverAddress& target,
         const google::protobuf::Message& message) = 0;
 
-    virtual SendResult Broadcast(
+    virtual SendResult BroadcastToReceiver(
+        const ReceiverAddress& target,
+        const BroadcastScope& scope,
+        const google::protobuf::Message& message) = 0;
+
+    virtual SendResult BroadcastToService(
+        ServiceType service_type,
         const BroadcastScope& scope,
         const google::protobuf::Message& message) = 0;
 };
@@ -2385,7 +2391,14 @@ public:
 
 - `SendToProcess` exists for explicit process targeting
 - `SendToReceiver` is the preferred application-facing abstraction
-- `Broadcast` is explicit and separate from service receiver send
+- broadcast remains receiver-oriented at the API boundary
+- `BroadcastToService` is the first-phase convenience API
+
+First-phase broadcast support:
+
+- `BroadcastToReceiver(ServiceReceiver, ...)` is supported
+- `BroadcastToService(...)` is supported
+- broadcast to `ProcessReceiver`, `PlayerReceiver`, `SystemReceiver`, and `GroupReceiver` is reserved for later phases and should return a clear not-supported result
 
 The first phase should not require:
 

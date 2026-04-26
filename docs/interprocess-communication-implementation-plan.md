@@ -415,7 +415,7 @@ The first required end-to-end validation path is:
 
 - `game-1 -> relay-1 -> game-2`
 - send semantic: `SendToProcess`
-- receive side: local `ServiceReceiverHost`
+- receive side: local `ProcessReceiverHost`
 
 ### Why This Is The First Path
 
@@ -430,7 +430,7 @@ The second required validation path is:
 
 - `game-1 -> relay-1 -> game-2`
 - send semantic: `SendToReceiver(PlayerReceiver)`
-- receive side: `PlayerManager` as receiver host
+- receive side: local `PlayerReceiverHost`
 
 This path validates:
 
@@ -447,9 +447,15 @@ Validation order:
 1. `SendToProcess`
 2. `SendToReceiver(ServiceReceiver)`
 3. `SendToReceiver(PlayerReceiver)`
-4. `Broadcast`
+4. `BroadcastToService`
 
 This keeps debugging focused and avoids introducing fanout complexity too early.
+
+First-phase broadcast constraint:
+
+- keep the broadcast API receiver-oriented
+- only `ServiceReceiver` broadcast is implemented in the first phase
+- other receiver kinds should return a clear not-supported result
 
 ## First-Phase Runtime Commands
 
