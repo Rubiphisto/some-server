@@ -1,5 +1,8 @@
 #include "framework/ipc/messaging/messenger.h"
 #include "framework/ipc/messaging/payload_registry.h"
+#include "framework/ipc/messaging/remote_message_sender.h"
+#include "framework/ipc/discovery/membership_view.h"
+#include "framework/ipc/link/link_view.h"
 #include "framework/ipc/receiver/local_receiver_directory.h"
 #include "framework/ipc/receiver/receiver_registry.h"
 #include "framework/ipc/routing/relay_first_policy.h"
@@ -61,6 +64,109 @@ private:
     int mDispatchCount = 0;
     ipc::ReceiverAddress mLastTarget;
     ipc::Envelope mLastEnvelope;
+};
+
+class StaticMembershipView final : public ipc::IMembershipView
+{
+public:
+    explicit StaticMembershipView(std::vector<ipc::ProcessDescriptor> processes)
+        : mProcesses(std::move(processes))
+    {
+    }
+
+    std::optional<ipc::ProcessDescriptor> Find(const ipc::ProcessId& id) const override
+    {
+        for (const auto& process : mProcesses)
+        {
+            if (process.process.process_id == id)
+            {
+                return process;
+            }
+        }
+        return std::nullopt;
+    }
+
+    std::vector<ipc::ProcessDescriptor> FindByService(const ipc::ServiceType type) const override
+    {
+        std::vector<ipc::ProcessDescriptor> matches;
+        for (const auto& process : mProcesses)
+        {
+            if (process.process.process_id.service_type == type)
+            {
+                matches.push_back(process);
+            }
+        }
+        return matches;
+    }
+
+    std::vector<ipc::ProcessDescriptor> All() const override
+    {
+        return mProcesses;
+    }
+
+private:
+    std::vector<ipc::ProcessDescriptor> mProcesses;
+};
+
+class StaticLinkView final : public ipc::ILinkView
+{
+public:
+    explicit StaticLinkView(std::vector<ipc::ProcessRef> links)
+        : mLinks(std::move(links))
+    {
+    }
+
+    bool HasHealthyDirectLink(const ipc::ProcessRef& target) const override
+    {
+        for (const auto& link : mLinks)
+        {
+            if (link == target)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    std::vector<ipc::ProcessRef> GetHealthyLinks() const override
+    {
+        return mLinks;
+    }
+
+private:
+    std::vector<ipc::ProcessRef> mLinks;
+};
+
+class RecordingRemoteSender final : public ipc::IRemoteMessageSender
+{
+public:
+    ipc::SendResult Send(const ipc::ProcessRef& next_hop, const ipc::Envelope& envelope) const override
+    {
+        ++mSendCount;
+        mLastNextHop = next_hop;
+        mLastEnvelope = envelope;
+        return ipc::SendResult::Success();
+    }
+
+    int SendCount() const
+    {
+        return mSendCount;
+    }
+
+    const ipc::ProcessRef& LastNextHop() const
+    {
+        return mLastNextHop;
+    }
+
+    const ipc::Envelope& LastEnvelope() const
+    {
+        return mLastEnvelope;
+    }
+
+private:
+    mutable int mSendCount = 0;
+    mutable ipc::ProcessRef mLastNextHop;
+    mutable ipc::Envelope mLastEnvelope;
 };
 
 void TestReceiverDirectoryLifecycle()
@@ -142,6 +248,43 @@ void TestMessengerRejectsUnknownPayload()
     Require(!send_result.ok, "unknown payload should be rejected");
     Require(host.DispatchCount() == 0, "host should not receive unknown payload");
 }
+
+void TestMessengerSendsRemoteProcessMessage()
+{
+    const ipc::ProcessRef self{{10, 1}, 101};
+    const ipc::ProcessRef remote{{10, 2}, 202};
+
+    ipc::LocalReceiverDirectory directory;
+    RecordingHost host(ipc::ReceiverType::service);
+    ipc::ReceiverRegistry receiver_registry;
+    Require(receiver_registry.Register(host, ipc::ReceiverType::service).ok, "register service host");
+
+    google::protobuf::StringValue payload;
+    payload.set_value("remote");
+
+    ipc::PayloadRegistry payload_registry;
+    Require(payload_registry.Register(payload).ok, "register payload type");
+
+    StaticMembershipView membership({
+        ipc::ProcessDescriptor{
+            .process = remote,
+            .service_name = "game",
+            .listen_endpoint = {"127.0.0.1", 9101},
+            .protocol_version = 1}});
+    StaticLinkView links({remote});
+    RecordingRemoteSender sender;
+
+    ipc::RelayFirstPolicy policy(99);
+    ipc::Router router(policy);
+    ipc::Messenger messenger(self, router, directory, receiver_registry, payload_registry, &membership, &links, &sender);
+
+    const ipc::SendResult send_result = messenger.SendToProcess(remote.process_id, payload);
+    Require(send_result.ok, "remote send to process");
+    Require(sender.SendCount() == 1, "remote sender count");
+    Require(sender.LastNextHop() == remote, "remote next hop");
+    Require(sender.LastEnvelope().header.target_receiver.type == ipc::ReceiverType::process, "process receiver type");
+    Require(!sender.LastEnvelope().payload_bytes.empty(), "remote payload bytes");
+}
 } // namespace
 
 int main()
@@ -151,6 +294,7 @@ int main()
         TestReceiverDirectoryLifecycle();
         TestMessengerLocalDispatch();
         TestMessengerRejectsUnknownPayload();
+        TestMessengerSendsRemoteProcessMessage();
         std::cout << "ipc_receiver_messaging_test: ok" << std::endl;
         return 0;
     }

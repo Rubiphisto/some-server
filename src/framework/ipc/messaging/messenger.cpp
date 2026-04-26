@@ -1,5 +1,7 @@
 #include "messenger.h"
 
+#include "data_codec.h"
+
 namespace ipc
 {
 SendResult Messenger::SendToProcess(const ProcessId target, const google::protobuf::Message& message) const
@@ -67,6 +69,8 @@ SendResult Messenger::SendEnvelope(Envelope envelope, std::optional<ReceiverLoca
     context.self = mSelf;
     context.envelope = envelope;
     context.receiver_location = std::move(receiver_location);
+    context.membership = mMembership;
+    context.links = mLinks;
 
     const RoutePlan plan = mRouter.Resolve(context);
     if (plan.kind == RoutePlanKind::local_delivery)
@@ -79,7 +83,16 @@ SendResult Messenger::SendEnvelope(Envelope envelope, std::optional<ReceiverLoca
         return SendResult::Failure("message dropped during route resolution");
     }
 
-    return SendResult::Failure("remote IPC delivery is not implemented yet");
+    if (plan.kind == RoutePlanKind::single_next_hop)
+    {
+        if (mRemoteSender == nullptr)
+        {
+            return SendResult::Failure("remote message sender is not configured");
+        }
+        return mRemoteSender->Send(plan.hops.front().next_hop, envelope);
+    }
+
+    return SendResult::Failure("route plan kind is not implemented yet");
 }
 
 DispatchResult Messenger::DispatchLocal(const Envelope& envelope) const
@@ -90,5 +103,21 @@ DispatchResult Messenger::DispatchLocal(const Envelope& envelope) const
     }
 
     return mReceiverRegistry.Dispatch(envelope.header.target_receiver, envelope);
+}
+
+Result Messenger::HandleIncomingFrame(const RawFrame& frame) const
+{
+    if (frame.header.kind != FrameKind::data)
+    {
+        return Result::Failure("unsupported frame kind");
+    }
+
+    Envelope envelope;
+    if (const Result decode_result = DecodeDataEnvelope(frame.payload, envelope); !decode_result.ok)
+    {
+        return decode_result;
+    }
+
+    return DispatchLocal(envelope);
 }
 } // namespace ipc

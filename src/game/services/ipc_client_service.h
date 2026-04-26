@@ -6,6 +6,7 @@
 #include "../../framework/ipc/link/link_manager.h"
 #include "../../framework/ipc/messaging/messenger.h"
 #include "../../framework/ipc/messaging/payload_registry.h"
+#include "../../framework/ipc/messaging/transport_message_sender.h"
 #include "../../framework/ipc/receiver/local_receiver_directory.h"
 #include "../../framework/ipc/receiver/receiver_registry.h"
 #include "../../framework/ipc/routing/relay_first_policy.h"
@@ -71,6 +72,7 @@ private:
     ipc::ReceiverRegistry mReceiverRegistry;
     ipc::PayloadRegistry mPayloadRegistry;
     ServiceReceiverHost mServiceReceiverHost;
+    std::unique_ptr<ipc::TransportMessageSender> mTransportMessageSender;
     std::unique_ptr<ipc::Messenger> mMessenger;
     std::optional<ipc::ProcessDescriptor> mSelf;
     bool mRegistered = false;

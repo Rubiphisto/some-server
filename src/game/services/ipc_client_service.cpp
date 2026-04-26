@@ -41,9 +41,20 @@ LifecycleTask GameIpcClientService::Load()
         });
     mTransport->SetFrameHandler(
         [this](const ipc::RawFrame& frame) {
-            if (mLinkManager)
+            if (!mLinkManager)
+            {
+                return;
+            }
+
+            if (frame.header.kind == ipc::FrameKind::control)
             {
                 (void)mLinkManager->OnFrame(frame);
+                return;
+            }
+
+            if (frame.header.kind == ipc::FrameKind::data && mMessenger)
+            {
+                (void)mMessenger->HandleIncomingFrame(frame);
             }
         });
     const auto receiver = LocalServiceReceiverAddress();
@@ -68,12 +79,16 @@ LifecycleTask GameIpcClientService::Load()
         return LifecycleTask::Completed();
     }
 
+    mTransportMessageSender = std::make_unique<ipc::TransportMessageSender>(*mTransport, *mLinkManager);
     mMessenger = std::make_unique<ipc::Messenger>(
         mSelf->process,
         mRouter,
         mReceiverDirectory,
         mReceiverRegistry,
-        mPayloadRegistry);
+        mPayloadRegistry,
+        &mDiscovery,
+        mLinkManager.get(),
+        mTransportMessageSender.get());
     mRegistered = false;
     mTransportReady = false;
     mIpcReady = false;
@@ -150,6 +165,7 @@ LifecycleTask GameIpcClientService::Unload()
     std::scoped_lock lock(mMutex);
     mLinkManager.reset();
     mTransport.reset();
+    mTransportMessageSender.reset();
     mMessenger.reset();
     mSelf.reset();
     mTransportReady = false;

@@ -17,6 +17,7 @@ public:
 
     bool HasHealthyDirectLink(const ProcessRef& target) const override;
     std::vector<ProcessRef> GetHealthyLinks() const override;
+    std::optional<ConnectionId> FindConnection(const ProcessRef& target) const;
     std::vector<RawFrame> DrainOutboundFrames();
 
 private:

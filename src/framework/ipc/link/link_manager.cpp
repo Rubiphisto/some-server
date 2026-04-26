@@ -101,6 +101,18 @@ std::vector<ProcessRef> LinkManager::GetHealthyLinks() const
     return links;
 }
 
+std::optional<ConnectionId> LinkManager::FindConnection(const ProcessRef& target) const
+{
+    for (const auto& [connection_id, link] : mLinks)
+    {
+        if (link.state == LinkState::active && link.remote_process == target)
+        {
+            return connection_id;
+        }
+    }
+    return std::nullopt;
+}
+
 std::vector<RawFrame> LinkManager::DrainOutboundFrames()
 {
     std::vector<RawFrame> frames = std::move(mOutboundFrames);
