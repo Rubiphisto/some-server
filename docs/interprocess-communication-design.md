@@ -1891,7 +1891,7 @@ Relay responsibilities:
 
 - accept data-plane envelopes
 - resolve next hop for remote delivery
-- perform remote broadcast fanout
+- perform remote forwarding and may perform broadcast fanout in later phases
 - optionally maintain routing-support metadata
 
 Relay must not become:
@@ -1979,12 +1979,15 @@ The first implementation should support:
 
 ### Fanout Strategy
 
-For the first phase, remote broadcast fanout should prefer relay-mediated distribution.
+For the first phase, remote broadcast fanout should use source-side expansion into
+per-target sends while keeping fanout as a routing/messaging concern rather than an
+application-managed peer loop.
 
 Reason:
 
-- avoids forcing every business process to manage complex remote fanout behavior
-- keeps ordinary process routing logic smaller
+- keeps the first implementation small and easy to verify
+- reuses the existing direct/relay single-target send path for each broadcast target
+- preserves a clean upgrade path to relay-mediated broadcast fanout later if needed
 
 ## Route Failure Semantics
 
