@@ -5,3 +5,6 @@ some_add_source(application/lifecycle_task.h)
 some_add_source(application/runtime.h)
 some_add_source(application/service.h)
 some_add_source(application/service_base.h)
+
+set(IPC_SOURCE_PREFIX "ipc/")
+include(ipc/ipc.cmake)

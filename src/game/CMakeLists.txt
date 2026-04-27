@@ -1,4 +1,4 @@
-some_application(game LIBS loader framework common ipc)
+some_application(game LIBS loader framework common)
 
 add_custom_command(TARGET game POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:game>/conf

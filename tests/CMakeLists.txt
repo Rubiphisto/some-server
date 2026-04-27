@@ -49,7 +49,7 @@ target_include_directories(ipc_transport_link_test PRIVATE
 )
 
 target_link_libraries(ipc_transport_link_test PRIVATE
-        ipc
+        framework
 )
 
 add_test(NAME ipc_transport_link_test COMMAND $<TARGET_FILE:ipc_transport_link_test>)
@@ -66,7 +66,7 @@ target_include_directories(ipc_discovery_routing_test PRIVATE
 )
 
 target_link_libraries(ipc_discovery_routing_test PRIVATE
-        ipc
+        framework
 )
 
 add_test(NAME ipc_discovery_routing_test COMMAND $<TARGET_FILE:ipc_discovery_routing_test>)
@@ -83,7 +83,7 @@ target_include_directories(ipc_etcd_discovery_test PRIVATE
 )
 
 target_link_libraries(ipc_etcd_discovery_test PRIVATE
-        ipc
+        framework
 )
 
 add_test(NAME ipc_etcd_discovery_test COMMAND $<TARGET_FILE:ipc_etcd_discovery_test>)
@@ -100,7 +100,7 @@ target_include_directories(ipc_receiver_messaging_test PRIVATE
 )
 
 target_link_libraries(ipc_receiver_messaging_test PRIVATE
-        ipc
+        framework
 )
 
 add_test(NAME ipc_receiver_messaging_test COMMAND $<TARGET_FILE:ipc_receiver_messaging_test>)

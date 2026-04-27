@@ -1,4 +1,4 @@
-some_application(relay LIBS loader framework common ipc)
+some_application(relay LIBS loader framework common)
 
 add_custom_command(TARGET relay POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:relay>/conf
