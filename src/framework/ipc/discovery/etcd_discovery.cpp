@@ -208,19 +208,38 @@ Result EtcdDiscovery::RegisterSelf(const ProcessDescriptor& self)
 
 Result EtcdDiscovery::KeepAliveOnce()
 {
-    std::scoped_lock lock(mMutex);
-    if (mLeaseId == 0)
+    std::uint64_t lease_id = 0;
+    {
+        std::scoped_lock lock(mMutex);
+        lease_id = mLeaseId;
+    }
+
+    if (lease_id == 0)
     {
         return Result::Failure("lease not initialized");
     }
 
-    return mBackend->KeepAliveOnce(mLeaseId);
+    return mBackend->KeepAliveOnce(lease_id);
 }
 
 Result EtcdDiscovery::RefreshSnapshot()
 {
-    std::scoped_lock lock(mMutex);
-    return RefreshSnapshotUnlocked();
+    std::string output;
+    const Result get = mBackend->GetPrefix(mOptions.prefix + "/members/", output);
+    if (!get.ok)
+    {
+        return get;
+    }
+
+    std::unordered_map<std::uint64_t, ProcessDescriptor> refreshed;
+    const Result parsed = ParseSnapshot(output, refreshed);
+    if (!parsed.ok)
+    {
+        return parsed;
+    }
+
+    ApplySnapshot(std::move(refreshed));
+    return Result::Success();
 }
 
 Result EtcdDiscovery::StartWatch()
@@ -232,19 +251,18 @@ Result EtcdDiscovery::StartWatch()
             return Result::Success();
         }
 
-        // Refresh before and immediately after the watch loop starts so membership
-        // view initialization does not depend on a manual ipc_refresh command.
-        if (const Result refresh = RefreshSnapshotUnlocked(); !refresh.ok)
-        {
-            return refresh;
-        }
         mStopWatch = false;
     }
 
-    mWatchThread = std::thread(&EtcdDiscovery::WatchLoop, this);
+    // Refresh before and immediately after the watch loop starts so membership
+    // view initialization does not depend on a manual ipc_refresh command.
+    if (const Result refresh = RefreshSnapshot(); !refresh.ok)
+    {
+        return refresh;
+    }
 
-    std::scoped_lock lock(mMutex);
-    return RefreshSnapshotUnlocked();
+    mWatchThread = std::thread(&EtcdDiscovery::WatchLoop, this);
+    return RefreshSnapshot();
 }
 
 void EtcdDiscovery::StopWatch()
@@ -266,22 +284,17 @@ bool EtcdDiscovery::WatchRunning() const
     return mBackend->WatchRunning();
 }
 
-Result EtcdDiscovery::RefreshSnapshotUnlocked()
+Result EtcdDiscovery::ParseSnapshot(
+    const std::string& output,
+    std::unordered_map<std::uint64_t, ProcessDescriptor>& refreshed)
 {
-    std::string output;
-    const Result get = mBackend->GetPrefix(mOptions.prefix + "/members/", output);
-    if (!get.ok)
-    {
-        return get;
-    }
-
     detail::JsonGetResponse response;
     if (auto result = glz::read<glz::opts{.error_on_unknown_keys = false}>(response, output))
     {
         return Result::Failure(glz::format_error(result, output));
     }
 
-    std::unordered_map<std::uint64_t, ProcessDescriptor> refreshed;
+    refreshed.clear();
     for (const detail::JsonKv& kv : response.kvs)
     {
         ProcessDescriptor descriptor;
@@ -293,9 +306,14 @@ Result EtcdDiscovery::RefreshSnapshotUnlocked()
         refreshed[MakeKey(descriptor.process.process_id)] = std::move(descriptor);
     }
 
+    return Result::Success();
+}
+
+void EtcdDiscovery::ApplySnapshot(std::unordered_map<std::uint64_t, ProcessDescriptor> refreshed)
+{
+    std::scoped_lock lock(mMutex);
     detail::QueueDiffEvents(mProcesses, refreshed, mEvents);
     mProcesses = std::move(refreshed);
-    return Result::Success();
 }
 
 Result EtcdDiscovery::Remove(const ProcessId& id)
@@ -438,8 +456,7 @@ void EtcdDiscovery::WatchLoop()
             const WatchPollResult poll_result = mBackend->WaitForWatchEvent();
             if (poll_result.kind == WatchPollKind::event)
             {
-                std::scoped_lock lock(mMutex);
-                (void)RefreshSnapshotUnlocked();
+                (void)RefreshSnapshot();
                 continue;
             }
 
@@ -458,8 +475,8 @@ void EtcdDiscovery::WatchLoop()
                     mWatchRunning.store(false);
                     return;
                 }
-                (void)RefreshSnapshotUnlocked();
             }
+            (void)RefreshSnapshot();
             mBackend->StopWatch();
             break;
         }

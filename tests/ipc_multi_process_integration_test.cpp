@@ -1,11 +1,14 @@
 #include <chrono>
+#include <array>
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <netinet/in.h>
 #include <poll.h>
+#include <sys/socket.h>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -24,6 +27,59 @@ void Require(bool condition, const std::string& message)
     {
         throw std::runtime_error(message);
     }
+}
+
+std::string ResolveExecutablePath(const std::string& name)
+{
+    const auto cwd = std::filesystem::current_path();
+    const std::array<std::filesystem::path, 4> candidates{
+        cwd / name,
+        cwd / ".." / "bin" / name,
+        cwd / ".." / name,
+        std::filesystem::path(name),
+    };
+
+    for (const auto& candidate : candidates)
+    {
+        std::error_code ignored;
+        if (std::filesystem::exists(candidate, ignored))
+        {
+            return candidate.lexically_normal().string();
+        }
+    }
+
+    throw std::runtime_error("failed to resolve executable path for " + name);
+}
+
+std::uint16_t AllocateTcpPort()
+{
+    const int fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0)
+    {
+        throw std::runtime_error("failed to create port allocation socket");
+    }
+
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = 0;
+    if (bind(fd, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)) != 0)
+    {
+        close(fd);
+        throw std::runtime_error("failed to bind port allocation socket");
+    }
+
+    sockaddr_in bound{};
+    socklen_t length = sizeof(bound);
+    if (getsockname(fd, reinterpret_cast<sockaddr*>(&bound), &length) != 0)
+    {
+        close(fd);
+        throw std::runtime_error("failed to query allocated port");
+    }
+
+    const std::uint16_t port = ntohs(bound.sin_port);
+    close(fd);
+    return port;
 }
 
 class ScopedEtcd
@@ -177,7 +233,13 @@ public:
 
         if (mStdinFd >= 0)
         {
-            Send("exit");
+            try
+            {
+                Send("exit");
+            }
+            catch (const std::exception&)
+            {
+            }
             close(mStdinFd);
             mStdinFd = -1;
         }
@@ -213,7 +275,7 @@ public:
         const std::string line = command + "\n";
         if (write(mStdinFd, line.data(), line.size()) < 0)
         {
-            throw std::runtime_error("failed to write command");
+            throw std::runtime_error("failed to write command to " + mExecutable);
         }
     }
 
@@ -341,6 +403,27 @@ void PollCommandUntil(
     throw std::runtime_error(message + "\noutput:\n" + process.Output());
 }
 
+void PollCommandUntilWithRetries(
+    ChildProcess& process,
+    const std::string& command,
+    std::string_view needle,
+    const std::string& message,
+    const int attempts,
+    const std::chrono::milliseconds wait_per_attempt)
+{
+    for (int attempt = 0; attempt < attempts; ++attempt)
+    {
+        process.Send(command);
+        if (process.WaitFor(needle, wait_per_attempt))
+        {
+            return;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    throw std::runtime_error(message + "\noutput:\n" + process.Output());
+}
+
 void RunRelayFirstMessagingScenario(const bool relay_first)
 {
     const auto suffix = std::to_string(Clock::now().time_since_epoch().count());
@@ -349,12 +432,11 @@ void RunRelayFirstMessagingScenario(const bool relay_first)
     const auto etcd_dir = temp_dir / "etcd";
     std::filesystem::create_directories(etcd_dir);
 
-    const auto seed = static_cast<std::uint16_t>(Clock::now().time_since_epoch().count() % 1000);
-    const std::uint16_t etcd_port = static_cast<std::uint16_t>(32379 + seed * 2);
-    const std::uint16_t peer_port = static_cast<std::uint16_t>(etcd_port + 1);
-    const std::uint16_t relay_port = static_cast<std::uint16_t>(40000 + seed * 3);
-    const std::uint16_t game1_port = static_cast<std::uint16_t>(relay_port + 1);
-    const std::uint16_t game2_port = static_cast<std::uint16_t>(relay_port + 2);
+    const std::uint16_t etcd_port = AllocateTcpPort();
+    const std::uint16_t peer_port = AllocateTcpPort();
+    const std::uint16_t relay_port = AllocateTcpPort();
+    const std::uint16_t game1_port = AllocateTcpPort();
+    const std::uint16_t game2_port = AllocateTcpPort();
 
     ScopedEtcd etcd(etcd_dir, etcd_port, peer_port);
     etcd.Start();
@@ -364,9 +446,12 @@ void RunRelayFirstMessagingScenario(const bool relay_first)
     const auto game1_config = WriteGameConfig(temp_dir, "game1.json", prefix, 1, game1_port, etcd_port);
     const auto game2_config = WriteGameConfig(temp_dir, "game2.json", prefix, 2, game2_port, etcd_port);
 
-    ChildProcess relay("./relay", relay_config);
-    ChildProcess game1("./game", game1_config);
-    ChildProcess game2("./game", game2_config);
+    const std::string relay_executable = ResolveExecutablePath("relay");
+    const std::string game_executable = ResolveExecutablePath("game");
+
+    ChildProcess relay(relay_executable, relay_config);
+    ChildProcess game1(game_executable, game1_config);
+    ChildProcess game2(game_executable, game2_config);
 
     if (relay_first)
     {
@@ -421,12 +506,11 @@ void TestRelayRestartReconnect()
     const auto etcd_dir = temp_dir / "etcd";
     std::filesystem::create_directories(etcd_dir);
 
-    const auto seed = static_cast<std::uint16_t>(Clock::now().time_since_epoch().count() % 1000);
-    const std::uint16_t etcd_port = static_cast<std::uint16_t>(34379 + seed * 2);
-    const std::uint16_t peer_port = static_cast<std::uint16_t>(etcd_port + 1);
-    const std::uint16_t relay_port = static_cast<std::uint16_t>(43000 + seed * 3);
-    const std::uint16_t game1_port = static_cast<std::uint16_t>(relay_port + 1);
-    const std::uint16_t game2_port = static_cast<std::uint16_t>(relay_port + 2);
+    const std::uint16_t etcd_port = AllocateTcpPort();
+    const std::uint16_t peer_port = AllocateTcpPort();
+    const std::uint16_t relay_port = AllocateTcpPort();
+    const std::uint16_t game1_port = AllocateTcpPort();
+    const std::uint16_t game2_port = AllocateTcpPort();
 
     ScopedEtcd etcd(etcd_dir, etcd_port, peer_port);
     etcd.Start();
@@ -436,9 +520,12 @@ void TestRelayRestartReconnect()
     const auto game1_config = WriteGameConfig(temp_dir, "restart-game1.json", prefix, 1, game1_port, etcd_port);
     const auto game2_config = WriteGameConfig(temp_dir, "restart-game2.json", prefix, 2, game2_port, etcd_port);
 
-    ChildProcess game1("./game", game1_config);
-    ChildProcess game2("./game", game2_config);
-    ChildProcess relay("./relay", relay_config);
+    const std::string relay_executable = ResolveExecutablePath("relay");
+    const std::string game_executable = ResolveExecutablePath("game");
+
+    ChildProcess game1(game_executable, game1_config);
+    ChildProcess game2(game_executable, game2_config);
+    ChildProcess relay(relay_executable, relay_config);
 
     game1.Start();
     game2.Start();
@@ -455,7 +542,7 @@ void TestRelayRestartReconnect()
     relay.Stop();
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
-    ChildProcess restarted_relay("./relay", relay_config);
+    ChildProcess restarted_relay(relay_executable, relay_config);
     restarted_relay.Start();
     WaitOrThrow(restarted_relay, "> ", "restarted relay did not reach command prompt");
 
@@ -472,16 +559,100 @@ void TestRelayRestartReconnect()
     PollCommandUntil(game2, "ipc_status", "process_dispatch_count=1", "process dispatch after relay restart did not arrive");
 }
 
+void TestDiscoveryDegradedBehavior()
+{
+    const auto suffix = std::to_string(Clock::now().time_since_epoch().count());
+    const auto temp_dir = std::filesystem::temp_directory_path() / ("ipc_degraded_" + suffix);
+    std::filesystem::create_directories(temp_dir);
+    const auto etcd_dir = temp_dir / "etcd";
+    std::filesystem::create_directories(etcd_dir);
+
+    const std::uint16_t etcd_port = AllocateTcpPort();
+    const std::uint16_t peer_port = AllocateTcpPort();
+    const std::uint16_t relay_port = AllocateTcpPort();
+    const std::uint16_t game1_port = AllocateTcpPort();
+    const std::uint16_t game2_port = AllocateTcpPort();
+
+    ScopedEtcd etcd(etcd_dir, etcd_port, peer_port);
+    etcd.Start();
+
+    const std::string prefix = "/some_server/ipc/test/degraded/" + suffix;
+    const auto relay_config = WriteRelayConfig(temp_dir, prefix, etcd_port, relay_port);
+    const auto game1_config = WriteGameConfig(temp_dir, "degraded-game1.json", prefix, 1, game1_port, etcd_port);
+    const auto game2_config = WriteGameConfig(temp_dir, "degraded-game2.json", prefix, 2, game2_port, etcd_port);
+
+    const std::string relay_executable = ResolveExecutablePath("relay");
+    const std::string game_executable = ResolveExecutablePath("game");
+
+    ChildProcess relay(relay_executable, relay_config);
+    ChildProcess game1(game_executable, game1_config);
+    ChildProcess game2(game_executable, game2_config);
+
+    relay.Start();
+    game1.Start();
+    game2.Start();
+
+    WaitOrThrow(relay, "> ", "degraded relay did not reach command prompt");
+    WaitOrThrow(game1, "> ", "degraded game1 did not reach command prompt");
+    WaitOrThrow(game2, "> ", "degraded game2 did not reach command prompt");
+
+    PollCommandUntil(relay, "ipc_status", "watch_running=true members=3", "degraded relay watch did not converge");
+    PollCommandUntil(game1, "ipc_status", "watch_running=true members=3", "degraded game1 watch did not converge");
+    PollCommandUntil(game2, "ipc_status", "watch_running=true members=3", "degraded game2 watch did not converge");
+
+    PollCommandUntil(relay, "ipc_links", "relay ipc links: count=2", "degraded relay links not healthy");
+    PollCommandUntil(game1, "ipc_links", "game ipc links: count=1", "degraded game1 relay link not healthy");
+    PollCommandUntil(game2, "ipc_links", "game ipc links: count=1", "degraded game2 relay link not healthy");
+
+    etcd.Stop();
+
+    PollCommandUntilWithRetries(
+        relay,
+        "ipc_status",
+        "registered=false ipc_ready=false membership_degraded=true",
+        "relay did not enter degraded discovery state",
+        60,
+        std::chrono::milliseconds(500));
+    PollCommandUntilWithRetries(
+        game1,
+        "ipc_status",
+        "registered=false ipc_ready=false membership_degraded=true",
+        "game1 did not enter degraded discovery state",
+        60,
+        std::chrono::milliseconds(500));
+    PollCommandUntilWithRetries(
+        game2,
+        "ipc_status",
+        "registered=false ipc_ready=false membership_degraded=true",
+        "game2 did not enter degraded discovery state",
+        60,
+        std::chrono::milliseconds(500));
+
+    game1.Send("ipc_send_process 2 degraded-process-test");
+    WaitOrThrow(game1, "game ipc process send failed: ipc is not active", "process send should fail while degraded");
+
+    game1.Send("ipc_broadcast_service degraded-broadcast 1");
+    WaitOrThrow(
+        game1,
+        "game ipc broadcast service failed: ipc is not active",
+        "broadcast should fail while degraded");
+
+    game1.Send("ipc_send_player 1001 degraded-player-test");
+    WaitOrThrow(game1, "game ipc player send failed: ipc is not active", "player send should fail while degraded");
+}
+
 void TestRelayFirstMessaging()
 {
     RunRelayFirstMessagingScenario(true);
     RunRelayFirstMessagingScenario(false);
     TestRelayRestartReconnect();
+    TestDiscoveryDegradedBehavior();
 }
 } // namespace
 
 int main()
 {
+    std::signal(SIGPIPE, SIG_IGN);
     try
     {
         TestRelayFirstMessaging();

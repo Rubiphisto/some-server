@@ -236,8 +236,8 @@ RelayIpcStatus RelayIpcService::Snapshot() const
 
 ipc::Result RelayIpcService::RefreshDiscovery()
 {
-    std::scoped_lock lock(mMutex);
     const ipc::Result refresh_result = mDiscovery.RefreshSnapshot();
+    std::scoped_lock lock(mMutex);
     if (!refresh_result.ok)
     {
         mLastError = refresh_result.message;
@@ -250,8 +250,8 @@ ipc::Result RelayIpcService::RefreshDiscovery()
 
 ipc::Result RelayIpcService::KeepAliveOnce()
 {
-    std::scoped_lock lock(mMutex);
     const ipc::Result keepalive_result = mDiscovery.KeepAliveOnce();
+    std::scoped_lock lock(mMutex);
     if (!keepalive_result.ok)
     {
         mLastError = keepalive_result.message;
@@ -381,7 +381,9 @@ void RelayIpcService::KeepAliveLoop(const std::uint32_t interval_seconds)
             continue;
         }
 
+        lock.unlock();
         const ipc::Result keepalive_result = mDiscovery.KeepAliveOnce();
+        lock.lock();
         if (!keepalive_result.ok)
         {
             HandleDiscoveryFailureLocked(keepalive_result.message);

@@ -39,8 +39,11 @@ private:
     static std::uint64_t MakeKey(const ProcessId& id);
     static std::string SerializeDescriptor(const ProcessDescriptor& process);
     static Result DeserializeDescriptor(const std::string& json, ProcessDescriptor& process);
+    static Result ParseSnapshot(
+        const std::string& output,
+        std::unordered_map<std::uint64_t, ProcessDescriptor>& refreshed);
     Result GrantLease();
-    Result RefreshSnapshotUnlocked();
+    void ApplySnapshot(std::unordered_map<std::uint64_t, ProcessDescriptor> refreshed);
     void WatchLoop();
 
     std::string MemberKey(const ProcessId& id) const;

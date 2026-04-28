@@ -116,6 +116,16 @@ std::string LeaseIdArg(const std::uint64_t lease_id)
     stream << std::hex << std::nouppercase << lease_id;
     return stream.str();
 }
+
+std::string WrapWithTimeout(const std::string& command, const std::uint32_t timeout_seconds)
+{
+    if (timeout_seconds == 0)
+    {
+        return command;
+    }
+
+    return "timeout -k 1s " + std::to_string(timeout_seconds) + "s /bin/bash -lc " + ShellEscape(command);
+}
 } // namespace
 } // namespace ipc
 
@@ -323,7 +333,8 @@ private:
     Result RunCommand(const std::string& command, std::string& output) const
     {
         output.clear();
-        FILE* pipe = popen(command.c_str(), "r");
+        const std::string wrapped_command = WrapWithTimeout(command, mOptions.command_timeout_seconds);
+        FILE* pipe = popen(wrapped_command.c_str(), "r");
         if (pipe == nullptr)
         {
             return Result::Failure("failed to start command");
@@ -338,6 +349,10 @@ private:
         const int rc = pclose(pipe);
         if (rc != 0)
         {
+            if (WIFEXITED(rc) && WEXITSTATUS(rc) == 124)
+            {
+                return Result::Failure("command timed out: " + command);
+            }
             return Result::Failure("command failed: " + command + "\n" + output);
         }
         return Result::Success();
