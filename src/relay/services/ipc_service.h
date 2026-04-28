@@ -29,6 +29,7 @@ struct RelayIpcStatus
     bool registered = false;
     bool ipc_ready = false;
     bool keepalive_running = false;
+    bool watch_running = false;
     std::size_t member_count = 0;
     std::string last_error;
 };

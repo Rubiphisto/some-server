@@ -122,6 +122,11 @@ LifecycleTask RelayIpcService::Start()
         mLastError = refresh_result.message;
         spdlog::warn("relay ipc discovery refresh failed: {}", mLastError);
     }
+    if (const ipc::Result watch_result = mDiscovery.StartWatch(); !watch_result.ok)
+    {
+        mLastError = watch_result.message;
+        spdlog::warn("relay ipc discovery watch failed: {}", mLastError);
+    }
     StartKeepAliveLoop();
 
     return LifecycleTask::Completed();
@@ -129,6 +134,7 @@ LifecycleTask RelayIpcService::Start()
 
 LifecycleTask RelayIpcService::Stop()
 {
+    mDiscovery.StopWatch();
     StopKeepAliveLoop();
 
     std::scoped_lock lock(mMutex);
@@ -152,6 +158,7 @@ LifecycleTask RelayIpcService::Unload()
     std::scoped_lock lock(mMutex);
     mMessenger.reset();
     mTransportMessageSender.reset();
+    mDiscovery.StopWatch();
     mLinkManager.reset();
     mTransport.reset();
     mSelf.reset();
@@ -172,6 +179,7 @@ RelayIpcStatus RelayIpcService::Snapshot() const
     status.registered = mRegistered;
     status.ipc_ready = mIpcReady;
     status.keepalive_running = mKeepAliveRunning.load();
+    status.watch_running = mDiscovery.WatchRunning();
     status.member_count = mDiscovery.All().size();
     status.last_error = mLastError;
     return status;

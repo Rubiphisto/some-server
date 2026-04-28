@@ -4,8 +4,13 @@
 #include "membership_view.h"
 
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
+#include <sys/types.h>
 
 namespace ipc
 {
@@ -26,6 +31,9 @@ public:
     Result RegisterSelf(const ProcessDescriptor& self);
     Result KeepAliveOnce();
     Result RefreshSnapshot();
+    Result StartWatch();
+    void StopWatch();
+    bool WatchRunning() const;
     Result Remove(const ProcessId& id);
     std::vector<MembershipEvent> DrainEvents();
 
@@ -38,6 +46,10 @@ private:
     static std::string SerializeDescriptor(const ProcessDescriptor& process);
     static Result DeserializeDescriptor(const std::string& json, ProcessDescriptor& process);
     Result GrantLease();
+    Result RefreshSnapshotUnlocked();
+    Result StartWatchProcess();
+    void StopWatchProcess();
+    void WatchLoop();
 
     std::string EndpointsArg() const;
     std::string MemberKey(const ProcessId& id) const;
@@ -52,5 +64,12 @@ private:
     std::vector<MembershipEvent> mEvents;
     std::optional<ProcessDescriptor> mSelf;
     std::uint64_t mLeaseId = 0;
+    mutable std::mutex mMutex;
+    std::condition_variable mWatchWakeup;
+    std::thread mWatchThread;
+    bool mStopWatch = false;
+    int mWatchPipeFd = -1;
+    pid_t mWatchPid = -1;
+    std::atomic<bool> mWatchRunning = false;
 };
 } // namespace ipc

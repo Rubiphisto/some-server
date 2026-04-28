@@ -150,6 +150,11 @@ LifecycleTask GameIpcClientService::Start()
         mLastError = refresh_result.message;
         spdlog::warn("game ipc discovery refresh failed: {}", mLastError);
     }
+    if (const ipc::Result watch_result = mDiscovery.StartWatch(); !watch_result.ok)
+    {
+        mLastError = watch_result.message;
+        spdlog::warn("game ipc discovery watch failed: {}", mLastError);
+    }
     StartKeepAliveLoop();
 
     return LifecycleTask::Completed();
@@ -157,6 +162,7 @@ LifecycleTask GameIpcClientService::Start()
 
 LifecycleTask GameIpcClientService::Stop()
 {
+    mDiscovery.StopWatch();
     StopKeepAliveLoop();
 
     std::scoped_lock lock(mMutex);
@@ -178,6 +184,7 @@ LifecycleTask GameIpcClientService::Unload()
 {
     StopKeepAliveLoop();
     std::scoped_lock lock(mMutex);
+    mDiscovery.StopWatch();
     mLinkManager.reset();
     mTransport.reset();
     mTransportMessageSender.reset();
@@ -200,6 +207,7 @@ GameIpcClientStatus GameIpcClientService::Snapshot() const
     status.registered = mRegistered;
     status.ipc_ready = mIpcReady;
     status.keepalive_running = mKeepAliveRunning.load();
+    status.watch_running = mDiscovery.WatchRunning();
     status.member_count = mDiscovery.All().size();
     status.process_dispatch_count = mProcessReceiverHost ? mProcessReceiverHost->DispatchCount() : 0;
     status.last_process_payload_type =

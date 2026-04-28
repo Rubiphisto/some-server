@@ -29,8 +29,10 @@ void Require(bool condition, const std::string& message)
 class ScopedEtcd
 {
 public:
-    explicit ScopedEtcd(std::filesystem::path data_dir)
+    ScopedEtcd(std::filesystem::path data_dir, std::uint16_t client_port, std::uint16_t peer_port)
         : mDataDir(std::move(data_dir))
+        , mClientPort(client_port)
+        , mPeerPort(peer_port)
     {
     }
 
@@ -43,8 +45,9 @@ public:
 
     void Start()
     {
-        const std::string client_url = "http://127.0.0.1:32379";
-        const std::string peer_url = "http://127.0.0.1:32380";
+        const std::string client_url = "http://127.0.0.1:" + std::to_string(mClientPort);
+        const std::string peer_url = "http://127.0.0.1:" + std::to_string(mPeerPort);
+        const std::string initial_cluster = "ipc-test=" + peer_url;
 
         const pid_t pid = fork();
         if (pid == -1)
@@ -69,7 +72,7 @@ public:
                 "--initial-advertise-peer-urls",
                 peer_url.c_str(),
                 "--initial-cluster",
-                "ipc-test=http://127.0.0.1:32380",
+                initial_cluster.c_str(),
                 "--initial-cluster-state",
                 "new",
                 static_cast<char*>(nullptr));
@@ -80,7 +83,10 @@ public:
 
         for (int attempt = 0; attempt < 50; ++attempt)
         {
-            const int rc = std::system("etcdctl --endpoints=127.0.0.1:32379 endpoint health >/dev/null 2>&1");
+            const std::string health_command =
+                "etcdctl --endpoints=127.0.0.1:" + std::to_string(mClientPort) +
+                " endpoint health >/dev/null 2>&1";
+            const int rc = std::system(health_command.c_str());
             if (rc == 0)
             {
                 return;
@@ -104,6 +110,8 @@ public:
 private:
     pid_t mPid = -1;
     std::filesystem::path mDataDir;
+    std::uint16_t mClientPort = 0;
+    std::uint16_t mPeerPort = 0;
 };
 
 class ChildProcess
@@ -174,7 +182,24 @@ public:
             mStdinFd = -1;
         }
 
-        waitpid(mPid, nullptr, 0);
+        bool exited = false;
+        for (int attempt = 0; attempt < 20; ++attempt)
+        {
+            int status = 0;
+            const pid_t result = waitpid(mPid, &status, WNOHANG);
+            if (result == mPid)
+            {
+                exited = true;
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        if (!exited)
+        {
+            kill(mPid, SIGTERM);
+            waitpid(mPid, nullptr, 0);
+        }
+
         if (mStdoutFd >= 0)
         {
             close(mStdoutFd);
@@ -235,7 +260,9 @@ private:
 
 std::filesystem::path WriteRelayConfig(
     const std::filesystem::path& dir,
-    const std::string& prefix)
+    const std::string& prefix,
+    const std::uint16_t etcd_port,
+    const std::uint16_t listen_port)
 {
     const auto path = dir / "relay.json";
     std::ofstream out(path);
@@ -247,9 +274,9 @@ std::filesystem::path WriteRelayConfig(
            "  },\n"
            "  \"relay\": {\n"
            "    \"instance_id\": 1,\n"
-           "    \"listen\": { \"host\": \"127.0.0.1\", \"port\": 9200 },\n"
+           "    \"listen\": { \"host\": \"127.0.0.1\", \"port\": " << listen_port << " },\n"
            "    \"discovery\": {\n"
-           "      \"endpoints\": [\"127.0.0.1:32379\"],\n"
+           "      \"endpoints\": [\"127.0.0.1:" << etcd_port << "\"],\n"
            "      \"prefix\": \"" << prefix << "\",\n"
            "      \"lease_ttl_seconds\": 4\n"
            "    }\n"
@@ -263,7 +290,8 @@ std::filesystem::path WriteGameConfig(
     const std::string& file_name,
     const std::string& prefix,
     const std::uint32_t instance_id,
-    const std::uint16_t port)
+    const std::uint16_t port,
+    const std::uint16_t etcd_port)
 {
     const auto path = dir / file_name;
     std::ofstream out(path);
@@ -277,7 +305,7 @@ std::filesystem::path WriteGameConfig(
            "    \"instance_id\": " << instance_id << ",\n"
            "    \"listen\": { \"host\": \"127.0.0.1\", \"port\": " << port << " },\n"
            "    \"discovery\": {\n"
-           "      \"endpoints\": [\"127.0.0.1:32379\"],\n"
+           "      \"endpoints\": [\"127.0.0.1:" << etcd_port << "\"],\n"
            "      \"prefix\": \"" << prefix << "\",\n"
            "      \"lease_ttl_seconds\": 4\n"
            "    }\n"
@@ -321,13 +349,20 @@ void TestRelayFirstMessaging()
     const auto etcd_dir = temp_dir / "etcd";
     std::filesystem::create_directories(etcd_dir);
 
-    ScopedEtcd etcd(etcd_dir);
+    const auto seed = static_cast<std::uint16_t>(Clock::now().time_since_epoch().count() % 1000);
+    const std::uint16_t etcd_port = static_cast<std::uint16_t>(32379 + seed * 2);
+    const std::uint16_t peer_port = static_cast<std::uint16_t>(etcd_port + 1);
+    const std::uint16_t relay_port = static_cast<std::uint16_t>(40000 + seed * 3);
+    const std::uint16_t game1_port = static_cast<std::uint16_t>(relay_port + 1);
+    const std::uint16_t game2_port = static_cast<std::uint16_t>(relay_port + 2);
+
+    ScopedEtcd etcd(etcd_dir, etcd_port, peer_port);
     etcd.Start();
 
     const std::string prefix = "/some_server/ipc/test/multi/" + suffix;
-    const auto relay_config = WriteRelayConfig(temp_dir, prefix);
-    const auto game1_config = WriteGameConfig(temp_dir, "game1.json", prefix, 1, 9100);
-    const auto game2_config = WriteGameConfig(temp_dir, "game2.json", prefix, 2, 9101);
+    const auto relay_config = WriteRelayConfig(temp_dir, prefix, etcd_port, relay_port);
+    const auto game1_config = WriteGameConfig(temp_dir, "game1.json", prefix, 1, game1_port, etcd_port);
+    const auto game2_config = WriteGameConfig(temp_dir, "game2.json", prefix, 2, game2_port, etcd_port);
 
     ChildProcess relay("./relay", relay_config);
     ChildProcess game1("./game", game1_config);
@@ -341,12 +376,9 @@ void TestRelayFirstMessaging()
     WaitOrThrow(game1, "> ", "game1 did not reach command prompt");
     WaitOrThrow(game2, "> ", "game2 did not reach command prompt");
 
-    relay.Send("ipc_refresh");
-    game1.Send("ipc_refresh");
-    game2.Send("ipc_refresh");
-    WaitOrThrow(relay, "relay ipc refresh: members=3", "relay refresh failed");
-    WaitOrThrow(game1, "game ipc refresh: members=3", "game1 refresh failed");
-    WaitOrThrow(game2, "game ipc refresh: members=3", "game2 refresh failed");
+    PollCommandUntil(relay, "ipc_status", "watch_running=true members=3", "relay watch did not converge");
+    PollCommandUntil(game1, "ipc_status", "watch_running=true members=3", "game1 watch did not converge");
+    PollCommandUntil(game2, "ipc_status", "watch_running=true members=3", "game2 watch did not converge");
 
     relay.Send("ipc_connect 10 1");
     relay.Send("ipc_connect 10 2");

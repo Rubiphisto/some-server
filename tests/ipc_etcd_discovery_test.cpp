@@ -18,6 +18,8 @@ namespace
         pid_t pid = -1;
         std::filesystem::path data_dir;
         std::string client_endpoint;
+        std::uint16_t client_port = 0;
+        std::uint16_t peer_port = 0;
 
         ~ScopedEtcd()
         {
@@ -42,6 +44,21 @@ namespace
         }
     }
 
+    template <typename Predicate>
+    void WaitUntil(Predicate&& predicate, const std::string& message)
+    {
+        for (int attempt = 0; attempt < 30; ++attempt)
+        {
+            if (predicate())
+            {
+                return;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        throw std::runtime_error(message);
+    }
+
     ipc::ProcessDescriptor MakeProcess(ipc::ServiceType service_type, ipc::InstanceId instance_id, ipc::IncarnationId incarnation)
     {
         ipc::ProcessDescriptor descriptor;
@@ -62,9 +79,13 @@ namespace
         scoped.data_dir = std::filesystem::temp_directory_path() / ("ipc_etcd_" + suffix);
         std::filesystem::create_directories(scoped.data_dir);
 
-        const std::string client_url = "http://127.0.0.1:32379";
-        const std::string peer_url = "http://127.0.0.1:32380";
-        scoped.client_endpoint = "127.0.0.1:32379";
+        const auto seed = static_cast<std::uint16_t>(
+            std::chrono::steady_clock::now().time_since_epoch().count() % 1000);
+        scoped.client_port = static_cast<std::uint16_t>(32379 + seed * 2);
+        scoped.peer_port = static_cast<std::uint16_t>(scoped.client_port + 1);
+        const std::string client_url = "http://127.0.0.1:" + std::to_string(scoped.client_port);
+        const std::string peer_url = "http://127.0.0.1:" + std::to_string(scoped.peer_port);
+        scoped.client_endpoint = "127.0.0.1:" + std::to_string(scoped.client_port);
 
         const pid_t pid = fork();
         if (pid == -1)
@@ -89,7 +110,7 @@ namespace
                 "--initial-advertise-peer-urls",
                 peer_url.c_str(),
                 "--initial-cluster",
-                "ipc-test=http://127.0.0.1:32380",
+                ("ipc-test=" + peer_url).c_str(),
                 "--initial-cluster-state",
                 "new",
                 static_cast<char*>(nullptr));
@@ -100,8 +121,10 @@ namespace
 
         for (int attempt = 0; attempt < 50; ++attempt)
         {
-            const int rc = std::system(
-                "etcdctl --endpoints=127.0.0.1:32379 endpoint health >/dev/null 2>&1");
+            const std::string health_command =
+                "etcdctl --endpoints=127.0.0.1:" + std::to_string(scoped.client_port) +
+                " endpoint health >/dev/null 2>&1";
+            const int rc = std::system(health_command.c_str());
             if (rc == 0)
             {
                 return scoped;
@@ -206,6 +229,47 @@ namespace
         Require(events.size() == 1, "snapshot remove event count");
         Require(events.front().type == ipc::MembershipEventType::removed, "snapshot remove event type");
     }
+
+    void TestEtcdDiscoveryWatch()
+    {
+        const ScopedEtcd etcd = StartEtcd();
+
+        ipc::EtcdDiscovery writer({
+            .etcdctl_path = "etcdctl",
+            .endpoints = {etcd.client_endpoint},
+            .prefix = "/some_server/ipc/test/watch",
+            .lease_ttl_seconds = 0});
+        ipc::EtcdDiscovery observer({
+            .etcdctl_path = "etcdctl",
+            .endpoints = {etcd.client_endpoint},
+            .prefix = "/some_server/ipc/test/watch",
+            .lease_ttl_seconds = 0});
+
+        Require(observer.StartWatch().ok, "start discovery watch");
+        const ipc::ProcessDescriptor game = MakeProcess(10, 5, 105);
+        Require(writer.RegisterSelf(game).ok, "register watch member");
+
+        WaitUntil(
+            [&observer, &game] {
+                const auto found = observer.Find(game.process.process_id);
+                return found.has_value() && found->process == game.process;
+            },
+            "watch did not observe add");
+
+        auto events = observer.DrainEvents();
+        Require(events.size() == 1, "watch add event count");
+        Require(events.front().type == ipc::MembershipEventType::added, "watch add event type");
+
+        Require(writer.Remove(game.process.process_id).ok, "remove watch member");
+        WaitUntil(
+            [&observer, &game] { return !observer.Find(game.process.process_id).has_value(); },
+            "watch did not observe remove");
+
+        events = observer.DrainEvents();
+        Require(events.size() == 1, "watch remove event count");
+        Require(events.front().type == ipc::MembershipEventType::removed, "watch remove event type");
+        observer.StopWatch();
+    }
 } // namespace
 
 int main()
@@ -216,6 +280,7 @@ int main()
         TestEtcdDiscoveryLeaseExpiry();
         TestEtcdDiscoveryKeepAlive();
         TestEtcdDiscoverySnapshotEvents();
+        TestEtcdDiscoveryWatch();
         std::cout << "ipc_etcd_discovery_test: ok" << std::endl;
         return 0;
     }

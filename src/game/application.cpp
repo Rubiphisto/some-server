@@ -59,13 +59,14 @@ void Application::RegisterRuntimeCommands()
 
             const GameIpcClientStatus status = mIpcService->Snapshot();
             spdlog::info(
-                "game ipc status: service_type={} instance_id={} transport_ready={} registered={} ipc_ready={} keepalive_running={} members={} process_dispatch_count={} last_process_payload_type={} player_dispatch_count={} last_player_id={} last_player_payload_type={} local_service_dispatch_count={} last_payload_type={} last_error={}",
+                "game ipc status: service_type={} instance_id={} transport_ready={} registered={} ipc_ready={} keepalive_running={} watch_running={} members={} process_dispatch_count={} last_process_payload_type={} player_dispatch_count={} last_player_id={} last_player_payload_type={} local_service_dispatch_count={} last_payload_type={} last_error={}",
                 status.self.process.process_id.service_type,
                 status.self.process.process_id.instance_id,
                 status.transport_ready,
                 status.registered,
                 status.ipc_ready,
                 status.keepalive_running,
+                status.watch_running,
                 status.member_count,
                 status.process_dispatch_count,
                 status.last_process_payload_type.empty() ? "none" : status.last_process_payload_type,

@@ -33,6 +33,7 @@ struct GameIpcClientStatus
     bool registered = false;
     bool ipc_ready = false;
     bool keepalive_running = false;
+    bool watch_running = false;
     std::size_t member_count = 0;
     std::uint64_t process_dispatch_count = 0;
     std::string last_process_payload_type;
