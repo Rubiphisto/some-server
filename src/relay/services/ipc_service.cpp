@@ -1,5 +1,7 @@
 #include "ipc_service.h"
 
+#include "../../common/ipc/first_phase_topology_policy.h"
+
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
@@ -477,15 +479,11 @@ void RelayIpcService::TryAutoConnectMember(const ipc::ProcessDescriptor& member)
     {
         return;
     }
-    if (member.process == mSelf->process)
-    {
-        return;
-    }
-    if (member.process.process_id.service_type != kGameServiceType)
-    {
-        return;
-    }
-    if (mLinkManager->HasHealthyDirectLink(member.process))
+    if (!some_server::common::FirstPhaseIpcTopologyPolicy::ShouldRelayAutoConnectTarget(
+            mSelf->process,
+            member,
+            kGameServiceType,
+            mLinkManager->HasHealthyDirectLink(member.process)))
     {
         return;
     }

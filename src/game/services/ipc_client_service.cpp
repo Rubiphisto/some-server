@@ -1,5 +1,7 @@
 #include "ipc_client_service.h"
 
+#include "../../common/ipc/first_phase_topology_policy.h"
+
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
@@ -226,9 +228,14 @@ GameIpcClientStatus GameIpcClientService::Snapshot() const
     status.membership_degraded = mTransportReady && !mRegistered && !mIpcReady;
     status.keepalive_running = mKeepAliveRunning.load();
     status.watch_running = mDiscovery.WatchRunning();
-    status.member_count = mDiscovery.All().size();
-    status.relay_member_visible = HasRelayMemberInDiscoveryLocked();
-    status.healthy_relay_link = HasHealthyRelayLink();
+    const auto members = mDiscovery.All();
+    const auto healthy_links = mLinkManager ? mLinkManager->GetHealthyLinks() : std::vector<ipc::ProcessRef>{};
+    status.member_count = members.size();
+    status.relay_member_visible =
+        some_server::common::FirstPhaseIpcTopologyPolicy::HasMemberOfServiceType(members, kRelayServiceType);
+    status.healthy_relay_link = some_server::common::FirstPhaseIpcTopologyPolicy::HasHealthyLinkOfServiceType(
+        healthy_links,
+        kRelayServiceType);
     status.auto_connect_targets = mAutoConnectAttempts.size();
     status.auto_connect_success_count = mAutoConnectSuccessCount;
     status.auto_connect_failure_count = mAutoConnectFailureCount;
@@ -589,7 +596,13 @@ void GameIpcClientService::AutoConnectLoop()
             {
                 break;
             }
-            needs_reconcile = !HasHealthyRelayLink() || !HasRelayMemberInDiscoveryLocked();
+            const auto members = mDiscovery.All();
+            const auto healthy_links = mLinkManager ? mLinkManager->GetHealthyLinks() : std::vector<ipc::ProcessRef>{};
+            needs_reconcile = some_server::common::FirstPhaseIpcTopologyPolicy::ShouldGameReconcile(
+                some_server::common::FirstPhaseIpcTopologyPolicy::HasMemberOfServiceType(members, kRelayServiceType),
+                some_server::common::FirstPhaseIpcTopologyPolicy::HasHealthyLinkOfServiceType(
+                    healthy_links,
+                    kRelayServiceType));
         }
 
         const auto events = DrainMembershipEvents();
@@ -642,22 +655,20 @@ void GameIpcClientService::TryAutoConnectMember(const ipc::ProcessDescriptor& me
 {
     std::scoped_lock lock(mMutex);
     if (!mSelf.has_value() || !mTransport || !mLinkManager)
-        {
-            return;
-        }
-        if (!IsIpcActiveLocked())
-        {
-            return;
-        }
-        if (member.process == mSelf->process)
-        {
-            return;
-    }
-    if (member.process.process_id.service_type != kRelayServiceType)
     {
         return;
     }
-    if (HasHealthyRelayLink())
+    if (!IsIpcActiveLocked())
+    {
+        return;
+    }
+    if (!some_server::common::FirstPhaseIpcTopologyPolicy::ShouldGameAutoConnectTarget(
+            mSelf->process,
+            member,
+            kRelayServiceType,
+            some_server::common::FirstPhaseIpcTopologyPolicy::HasHealthyLinkOfServiceType(
+                mLinkManager->GetHealthyLinks(),
+                kRelayServiceType)))
     {
         return;
     }
@@ -703,26 +714,16 @@ bool GameIpcClientService::HasHealthyRelayLink() const
         return false;
     }
 
-    for (const auto& link : mLinkManager->GetHealthyLinks())
-    {
-        if (link.process_id.service_type == kRelayServiceType)
-        {
-            return true;
-        }
-    }
-    return false;
+    return some_server::common::FirstPhaseIpcTopologyPolicy::HasHealthyLinkOfServiceType(
+        mLinkManager->GetHealthyLinks(),
+        kRelayServiceType);
 }
 
 bool GameIpcClientService::HasRelayMemberInDiscoveryLocked() const
 {
-    for (const auto& member : mDiscovery.All())
-    {
-        if (member.process.process_id.service_type == kRelayServiceType)
-        {
-            return true;
-        }
-    }
-    return false;
+    return some_server::common::FirstPhaseIpcTopologyPolicy::HasMemberOfServiceType(
+        mDiscovery.All(),
+        kRelayServiceType);
 }
 
 bool GameIpcClientService::IsIpcActiveLocked() const
