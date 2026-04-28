@@ -4,13 +4,6 @@
 
 #include <array>
 #include <chrono>
-#include <cstdio>
-#include <iomanip>
-#include <sstream>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <csignal>
 #include <thread>
 
 namespace ipc
@@ -41,97 +34,6 @@ namespace detail
     {
         std::vector<JsonKv> kvs;
     };
-
-    struct JsonLeaseGrantResponse
-    {
-        std::uint64_t ID = 0;
-    };
-
-    bool ExtractNextJsonObject(std::string& buffer, std::string& object)
-    {
-        bool in_string = false;
-        bool escape = false;
-        int depth = 0;
-        std::size_t start = std::string::npos;
-
-        for (std::size_t index = 0; index < buffer.size(); ++index)
-        {
-            const char ch = buffer[index];
-            if (start == std::string::npos)
-            {
-                if (ch == '{')
-                {
-                    start = index;
-                    depth = 1;
-                }
-                continue;
-            }
-
-            if (in_string)
-            {
-                if (escape)
-                {
-                    escape = false;
-                    continue;
-                }
-                if (ch == '\\')
-                {
-                    escape = true;
-                    continue;
-                }
-                if (ch == '"')
-                {
-                    in_string = false;
-                }
-                continue;
-            }
-
-            if (ch == '"')
-            {
-                in_string = true;
-                continue;
-            }
-            if (ch == '{')
-            {
-                ++depth;
-                continue;
-            }
-            if (ch == '}')
-            {
-                --depth;
-                if (depth == 0)
-                {
-                    object = buffer.substr(start, index - start + 1);
-                    buffer.erase(0, index + 1);
-                    return true;
-                }
-            }
-        }
-
-        if (start == std::string::npos && buffer.size() > 4096)
-        {
-            buffer.clear();
-        }
-        return false;
-    }
-
-    std::string ShellEscape(const std::string& value)
-    {
-        std::string escaped = "'";
-        for (char ch : value)
-        {
-            if (ch == '\'')
-            {
-                escaped += "'\"'\"'";
-            }
-            else
-            {
-                escaped += ch;
-            }
-        }
-        escaped += "'";
-        return escaped;
-    }
 
     std::string Base64Decode(const std::string& encoded)
     {
@@ -178,13 +80,6 @@ namespace detail
             }
         }
         return decoded;
-    }
-
-    std::string LeaseIdArg(std::uint64_t lease_id)
-    {
-        std::ostringstream stream;
-        stream << std::hex << std::nouppercase << lease_id;
-        return stream.str();
     }
 
     void QueueDiffEvents(
@@ -265,17 +160,17 @@ struct glz::meta<ipc::detail::JsonGetResponse>
     static constexpr auto value = glz::object("kvs", &T::kvs);
 };
 
-template <>
-struct glz::meta<ipc::detail::JsonLeaseGrantResponse>
-{
-    using T = ipc::detail::JsonLeaseGrantResponse;
-    static constexpr auto value = glz::object("ID", &T::ID);
-};
-
 namespace ipc
 {
 EtcdDiscovery::EtcdDiscovery(EtcdDiscoveryOptions options)
     : mOptions(std::move(options))
+    , mBackend(CreateEtcdctlDiscoveryBackend(mOptions))
+{
+}
+
+EtcdDiscovery::EtcdDiscovery(EtcdDiscoveryOptions options, std::unique_ptr<IEtcdDiscoveryBackend> backend)
+    : mOptions(std::move(options))
+    , mBackend(std::move(backend))
 {
 }
 
@@ -300,7 +195,7 @@ Result EtcdDiscovery::RegisterSelf(const ProcessDescriptor& self)
         }
     }
 
-    const Result put = RunPut(MemberKey(self.process.process_id), SerializeDescriptor(self));
+    const Result put = mBackend->Put(MemberKey(self.process.process_id), SerializeDescriptor(self), mLeaseId);
     if (!put.ok)
     {
         return put;
@@ -319,7 +214,7 @@ Result EtcdDiscovery::KeepAliveOnce()
         return Result::Failure("lease not initialized");
     }
 
-    return RunLeaseKeepAliveOnce();
+    return mBackend->KeepAliveOnce(mLeaseId);
 }
 
 Result EtcdDiscovery::RefreshSnapshot()
@@ -357,7 +252,7 @@ void EtcdDiscovery::StopWatch()
     {
         std::scoped_lock lock(mMutex);
         mStopWatch = true;
-        StopWatchProcess();
+        mBackend->StopWatch();
     }
     mWatchWakeup.notify_all();
     if (mWatchThread.joinable())
@@ -368,13 +263,13 @@ void EtcdDiscovery::StopWatch()
 
 bool EtcdDiscovery::WatchRunning() const
 {
-    return mWatchRunning.load();
+    return mBackend->WatchRunning();
 }
 
 Result EtcdDiscovery::RefreshSnapshotUnlocked()
 {
     std::string output;
-    const Result get = RunGetPrefix(mOptions.prefix + "/members/", output);
+    const Result get = mBackend->GetPrefix(mOptions.prefix + "/members/", output);
     if (!get.ok)
     {
         return get;
@@ -406,7 +301,7 @@ Result EtcdDiscovery::RefreshSnapshotUnlocked()
 Result EtcdDiscovery::Remove(const ProcessId& id)
 {
     std::scoped_lock lock(mMutex);
-    const Result del = RunDelete(MemberKey(id));
+    const Result del = mBackend->Delete(MemberKey(id));
     if (!del.ok)
     {
         return del;
@@ -511,91 +406,7 @@ Result EtcdDiscovery::DeserializeDescriptor(const std::string& json, ProcessDesc
 
 Result EtcdDiscovery::GrantLease()
 {
-    std::string output;
-    const std::string command =
-        detail::ShellEscape(mOptions.etcdctl_path) + " --endpoints=" + detail::ShellEscape(EndpointsArg()) +
-        " lease grant " + std::to_string(mOptions.lease_ttl_seconds) + " -w json 2>/dev/null";
-    const Result run = RunCommand(command, output);
-    if (!run.ok)
-    {
-        return run;
-    }
-
-    detail::JsonLeaseGrantResponse response;
-    if (auto result = glz::read<glz::opts{.error_on_unknown_keys = false}>(response, output))
-    {
-        return Result::Failure(glz::format_error(result, output));
-    }
-    if (response.ID == 0)
-    {
-        return Result::Failure("etcd lease grant returned empty lease id");
-    }
-
-    mLeaseId = response.ID;
-    return Result::Success();
-}
-
-Result EtcdDiscovery::StartWatchProcess()
-{
-    if (mWatchPipeFd != -1 || mWatchPid > 0)
-    {
-        return Result::Success();
-    }
-
-    int fds[2];
-    if (pipe(fds) != 0)
-    {
-        return Result::Failure("failed to create watch pipe");
-    }
-
-    const pid_t pid = fork();
-    if (pid == -1)
-    {
-        close(fds[0]);
-        close(fds[1]);
-        return Result::Failure("failed to fork watch process");
-    }
-
-    if (pid == 0)
-    {
-        dup2(fds[1], STDOUT_FILENO);
-        dup2(fds[1], STDERR_FILENO);
-        close(fds[0]);
-        close(fds[1]);
-        const std::string endpoints_arg = "--endpoints=" + EndpointsArg();
-        const std::string watch_prefix = mOptions.prefix + "/members/";
-        std::vector<char*> argv;
-        argv.push_back(const_cast<char*>(mOptions.etcdctl_path.c_str()));
-        argv.push_back(const_cast<char*>(endpoints_arg.c_str()));
-        argv.push_back(const_cast<char*>("watch"));
-        argv.push_back(const_cast<char*>(watch_prefix.c_str()));
-        argv.push_back(const_cast<char*>("--prefix"));
-        argv.push_back(const_cast<char*>("-w"));
-        argv.push_back(const_cast<char*>("json"));
-        argv.push_back(nullptr);
-        execvp(mOptions.etcdctl_path.c_str(), argv.data());
-        _exit(127);
-    }
-
-    close(fds[1]);
-    mWatchPipeFd = fds[0];
-    mWatchPid = pid;
-    return Result::Success();
-}
-
-void EtcdDiscovery::StopWatchProcess()
-{
-    if (mWatchPid > 0)
-    {
-        kill(mWatchPid, SIGTERM);
-        waitpid(mWatchPid, nullptr, 0);
-        mWatchPid = -1;
-    }
-    if (mWatchPipeFd != -1)
-    {
-        close(mWatchPipeFd);
-        mWatchPipeFd = -1;
-    }
+    return mBackend->GrantLease(mOptions.lease_ttl_seconds, mLeaseId);
 }
 
 void EtcdDiscovery::WatchLoop()
@@ -603,7 +414,6 @@ void EtcdDiscovery::WatchLoop()
     mWatchRunning.store(true);
     while (true)
     {
-        int watch_pipe_fd = -1;
         Result start_result = Result::Success();
         {
             std::scoped_lock lock(mMutex);
@@ -612,11 +422,10 @@ void EtcdDiscovery::WatchLoop()
                 break;
             }
 
-            start_result = StartWatchProcess();
-            watch_pipe_fd = mWatchPipeFd;
+            start_result = mBackend->StartWatchPrefix(mOptions.prefix + "/members/");
         }
 
-        if (!start_result.ok || watch_pipe_fd == -1)
+        if (!start_result.ok)
         {
             mWatchRunning.store(false);
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -624,33 +433,35 @@ void EtcdDiscovery::WatchLoop()
         }
         mWatchRunning.store(true);
 
-        std::string buffer;
-        char chunk[256];
         while (true)
         {
-            const ssize_t read_count = read(watch_pipe_fd, chunk, sizeof(chunk));
-            if (read_count <= 0)
+            const WatchPollResult poll_result = mBackend->WaitForWatchEvent();
+            if (poll_result.kind == WatchPollKind::event)
             {
                 std::scoped_lock lock(mMutex);
-                StopWatchProcess();
                 (void)RefreshSnapshotUnlocked();
-                break;
+                continue;
             }
 
-            buffer.append(chunk, static_cast<std::size_t>(read_count));
+            if (poll_result.kind == WatchPollKind::stopped)
+            {
+                std::scoped_lock lock(mMutex);
+                mWatchRunning.store(false);
+                return;
+            }
 
-            std::string object;
-            while (detail::ExtractNextJsonObject(buffer, object))
             {
                 std::scoped_lock lock(mMutex);
                 if (mStopWatch)
                 {
-                    StopWatchProcess();
+                    mBackend->StopWatch();
                     mWatchRunning.store(false);
                     return;
                 }
                 (void)RefreshSnapshotUnlocked();
             }
+            mBackend->StopWatch();
+            break;
         }
 
         std::unique_lock lock(mMutex);
@@ -662,22 +473,8 @@ void EtcdDiscovery::WatchLoop()
     }
 
     std::scoped_lock lock(mMutex);
-    StopWatchProcess();
+    mBackend->StopWatch();
     mWatchRunning.store(false);
-}
-
-std::string EtcdDiscovery::EndpointsArg() const
-{
-    std::ostringstream stream;
-    for (std::size_t index = 0; index < mOptions.endpoints.size(); ++index)
-    {
-        if (index > 0)
-        {
-            stream << ",";
-        }
-        stream << mOptions.endpoints[index];
-    }
-    return stream.str();
 }
 
 std::string EtcdDiscovery::MemberKey(const ProcessId& id) const
@@ -685,66 +482,4 @@ std::string EtcdDiscovery::MemberKey(const ProcessId& id) const
     return mOptions.prefix + "/members/" + std::to_string(id.service_type) + "/" + std::to_string(id.instance_id);
 }
 
-Result EtcdDiscovery::RunCommand(const std::string& command, std::string& output) const
-{
-    output.clear();
-    FILE* pipe = popen(command.c_str(), "r");
-    if (pipe == nullptr)
-    {
-        return Result::Failure("failed to start command");
-    }
-
-    char buffer[256];
-    while (fgets(buffer, sizeof(buffer), pipe) != nullptr)
-    {
-        output.append(buffer);
-    }
-
-    const int rc = pclose(pipe);
-    if (rc != 0)
-    {
-        return Result::Failure("command failed: " + command + "\n" + output);
-    }
-    return Result::Success();
-}
-
-Result EtcdDiscovery::RunPut(const std::string& key, const std::string& value) const
-{
-    std::string output;
-    std::string command =
-        detail::ShellEscape(mOptions.etcdctl_path) + " --endpoints=" + detail::ShellEscape(EndpointsArg()) +
-        " put " + detail::ShellEscape(key) + " " + detail::ShellEscape(value);
-    if (mLeaseId != 0)
-    {
-        command += " --lease=" + detail::LeaseIdArg(mLeaseId);
-    }
-    command += " -w json 2>/dev/null";
-    return RunCommand(command, output);
-}
-
-Result EtcdDiscovery::RunLeaseKeepAliveOnce() const
-{
-    std::string output;
-    const std::string command =
-        detail::ShellEscape(mOptions.etcdctl_path) + " --endpoints=" + detail::ShellEscape(EndpointsArg()) +
-        " lease keep-alive " + detail::LeaseIdArg(mLeaseId) + " --once -w json 2>/dev/null";
-    return RunCommand(command, output);
-}
-
-Result EtcdDiscovery::RunDelete(const std::string& key) const
-{
-    std::string output;
-    const std::string command =
-        detail::ShellEscape(mOptions.etcdctl_path) + " --endpoints=" + detail::ShellEscape(EndpointsArg()) +
-        " del " + detail::ShellEscape(key) + " -w json 2>/dev/null";
-    return RunCommand(command, output);
-}
-
-Result EtcdDiscovery::RunGetPrefix(const std::string& key_prefix, std::string& output) const
-{
-    const std::string command =
-        detail::ShellEscape(mOptions.etcdctl_path) + " --endpoints=" + detail::ShellEscape(EndpointsArg()) +
-        " get " + detail::ShellEscape(key_prefix) + " --prefix -w json 2>/dev/null";
-    return RunCommand(command, output);
-}
 } // namespace ipc
