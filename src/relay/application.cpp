@@ -46,15 +46,21 @@ void Application::RegisterRuntimeCommands()
 
             const RelayIpcStatus status = mIpcService->Snapshot();
             spdlog::info(
-                "relay ipc status: service_type={} instance_id={} transport_ready={} registered={} ipc_ready={} keepalive_running={} watch_running={} members={} last_error={}",
+                "relay ipc status: service_type={} instance_id={} transport_ready={} registered={} ipc_ready={} membership_degraded={} keepalive_running={} watch_running={} members={} auto_connect_targets={} auto_connect_success_count={} last_auto_connect_target={}:{} forwarded_data_frame_count={} last_error={}",
                 status.self.process.process_id.service_type,
                 status.self.process.process_id.instance_id,
                 status.transport_ready,
                 status.registered,
                 status.ipc_ready,
+                status.membership_degraded,
                 status.keepalive_running,
                 status.watch_running,
                 status.member_count,
+                status.auto_connect_targets,
+                status.auto_connect_success_count,
+                status.has_last_auto_connect_target ? status.last_auto_connect_target.process_id.service_type : 0,
+                status.has_last_auto_connect_target ? status.last_auto_connect_target.process_id.instance_id : 0,
+                status.forwarded_data_frame_count,
                 status.last_error.empty() ? "none" : status.last_error);
             return CommandExecutionStatus::handled;
         });

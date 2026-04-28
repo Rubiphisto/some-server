@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <shared_mutex>
 #include <string>
+#include <vector>
 #include <unordered_set>
 
 class PlayerReceiverHost final : public ipc::IReceiverHost
@@ -17,6 +18,7 @@ public:
     bool Bind(std::uint64_t player_id);
     bool Unbind(std::uint64_t player_id);
     bool IsBound(std::uint64_t player_id) const;
+    std::vector<std::uint64_t> BoundPlayers() const;
 
     std::uint64_t DispatchCount() const;
     std::uint64_t LastPlayerId() const;

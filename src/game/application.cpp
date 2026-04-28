@@ -59,15 +59,20 @@ void Application::RegisterRuntimeCommands()
 
             const GameIpcClientStatus status = mIpcService->Snapshot();
             spdlog::info(
-                "game ipc status: service_type={} instance_id={} transport_ready={} registered={} ipc_ready={} keepalive_running={} watch_running={} members={} process_dispatch_count={} last_process_payload_type={} player_dispatch_count={} last_player_id={} last_player_payload_type={} local_service_dispatch_count={} last_payload_type={} last_error={}",
+                "game ipc status: service_type={} instance_id={} transport_ready={} registered={} ipc_ready={} membership_degraded={} keepalive_running={} watch_running={} members={} auto_connect_targets={} auto_connect_success_count={} last_auto_connect_target={}:{} process_dispatch_count={} last_process_payload_type={} player_dispatch_count={} last_player_id={} last_player_payload_type={} local_service_dispatch_count={} last_payload_type={} last_error={}",
                 status.self.process.process_id.service_type,
                 status.self.process.process_id.instance_id,
                 status.transport_ready,
                 status.registered,
                 status.ipc_ready,
+                status.membership_degraded,
                 status.keepalive_running,
                 status.watch_running,
                 status.member_count,
+                status.auto_connect_targets,
+                status.auto_connect_success_count,
+                status.has_last_auto_connect_target ? status.last_auto_connect_target.process_id.service_type : 0,
+                status.has_last_auto_connect_target ? status.last_auto_connect_target.process_id.instance_id : 0,
                 status.process_dispatch_count,
                 status.last_process_payload_type.empty() ? "none" : status.last_process_payload_type,
                 status.player_dispatch_count,
@@ -174,6 +179,38 @@ void Application::RegisterRuntimeCommands()
     if (!members_registered)
     {
         throw std::runtime_error("failed to register game ipc members command");
+    }
+
+    const bool receivers_registered = Runtime().RegisterCommand(
+        "ipc_receivers",
+        "List game local IPC receivers",
+        [this](const CommandArguments&) {
+            if (mIpcService == nullptr)
+            {
+                spdlog::warn("game ipc receivers: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+
+            const auto receivers = mIpcService->LocalReceivers();
+            spdlog::info(
+                "game ipc receiver: type=process service_type={} instance_id={}",
+                receivers.process_receiver.process_id.service_type,
+                receivers.process_receiver.process_id.instance_id);
+            spdlog::info(
+                "game ipc receiver: type=service service_type={} key_lo={}",
+                receivers.service_receiver.key_hi,
+                receivers.service_receiver.key_lo);
+            spdlog::info("game ipc receivers: local_players={}", receivers.local_player_ids.size());
+            for (const auto player_id : receivers.local_player_ids)
+            {
+                spdlog::info("game ipc receiver: type=player player_id={}", player_id);
+            }
+            return CommandExecutionStatus::handled;
+        });
+
+    if (!receivers_registered)
+    {
+        throw std::runtime_error("failed to register game ipc receivers command");
     }
 
     const bool links_registered = Runtime().RegisterCommand(

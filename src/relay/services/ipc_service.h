@@ -29,9 +29,15 @@ struct RelayIpcStatus
     bool transport_ready = false;
     bool registered = false;
     bool ipc_ready = false;
+    bool membership_degraded = false;
     bool keepalive_running = false;
     bool watch_running = false;
     std::size_t member_count = 0;
+    std::size_t auto_connect_targets = 0;
+    std::uint64_t auto_connect_success_count = 0;
+    bool has_last_auto_connect_target = false;
+    ipc::ProcessRef last_auto_connect_target;
+    std::uint64_t forwarded_data_frame_count = 0;
     std::string last_error;
 };
 
@@ -95,4 +101,7 @@ private:
     std::thread mAutoConnectThread;
     bool mStopAutoConnect = false;
     std::unordered_set<std::uint64_t> mAutoConnectAttempts;
+    std::uint64_t mAutoConnectSuccessCount = 0;
+    std::optional<ipc::ProcessRef> mLastAutoConnectTarget;
+    std::atomic<std::uint64_t> mForwardedDataFrameCount = 0;
 };

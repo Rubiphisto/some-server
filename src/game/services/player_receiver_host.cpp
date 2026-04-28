@@ -47,6 +47,18 @@ bool PlayerReceiverHost::IsBound(const std::uint64_t player_id) const
     return mPlayers.contains(player_id);
 }
 
+std::vector<std::uint64_t> PlayerReceiverHost::BoundPlayers() const
+{
+    std::shared_lock lock(mMutex);
+    std::vector<std::uint64_t> players;
+    players.reserve(mPlayers.size());
+    for (const auto player_id : mPlayers)
+    {
+        players.push_back(player_id);
+    }
+    return players;
+}
+
 std::uint64_t PlayerReceiverHost::DispatchCount() const
 {
     return mDispatchCount.load();

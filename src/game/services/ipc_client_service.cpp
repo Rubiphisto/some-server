@@ -62,6 +62,12 @@ LifecycleTask GameIpcClientService::Load()
                     return;
                 }
                 (void)mMessenger->HandleIncomingFrame(frame);
+                return;
+            }
+
+            if (mLinkManager)
+            {
+                (void)mLinkManager->OnFrame(frame);
             }
         });
     mProcessReceiverHost = std::make_unique<ProcessReceiverHost>(mSelf->process);
@@ -217,9 +223,17 @@ GameIpcClientStatus GameIpcClientService::Snapshot() const
     status.transport_ready = mTransportReady;
     status.registered = mRegistered;
     status.ipc_ready = mIpcReady;
+    status.membership_degraded = mTransportReady && !mRegistered && !mIpcReady;
     status.keepalive_running = mKeepAliveRunning.load();
     status.watch_running = mDiscovery.WatchRunning();
     status.member_count = mDiscovery.All().size();
+    status.auto_connect_targets = mAutoConnectAttempts.size();
+    status.auto_connect_success_count = mAutoConnectSuccessCount;
+    if (mLastAutoConnectTarget.has_value())
+    {
+        status.has_last_auto_connect_target = true;
+        status.last_auto_connect_target = *mLastAutoConnectTarget;
+    }
     status.process_dispatch_count = mProcessReceiverHost ? mProcessReceiverHost->DispatchCount() : 0;
     status.last_process_payload_type =
         mProcessReceiverHost ? mProcessReceiverHost->LastPayloadType() : std::string{};
@@ -230,6 +244,20 @@ GameIpcClientStatus GameIpcClientService::Snapshot() const
     status.last_payload_type = mServiceReceiverHost.LastPayloadType();
     status.last_error = mLastError;
     return status;
+}
+
+GameLocalReceiverSnapshot GameIpcClientService::LocalReceivers() const
+{
+    std::scoped_lock lock(mMutex);
+    GameLocalReceiverSnapshot snapshot;
+    if (mSelf.has_value())
+    {
+        snapshot.process_receiver = mSelf->process;
+    }
+    snapshot.service_receiver = LocalServiceReceiverAddress();
+    snapshot.local_player_ids = mPlayerReceiverHost.BoundPlayers();
+    std::sort(snapshot.local_player_ids.begin(), snapshot.local_player_ids.end());
+    return snapshot;
 }
 
 ipc::Result GameIpcClientService::RefreshDiscovery()
@@ -644,6 +672,8 @@ void GameIpcClientService::TryAutoConnectMember(const ipc::ProcessDescriptor& me
     }
 
     mAutoConnectAttempts.insert(key);
+    ++mAutoConnectSuccessCount;
+    mLastAutoConnectTarget = member.process;
     spdlog::info(
         "game ipc auto-connect: service_type={} instance_id={} host={} port={}",
         member.process.process_id.service_type,
