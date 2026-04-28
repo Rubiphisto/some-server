@@ -1761,6 +1761,9 @@ Current first-phase behavior:
   depend only on future watch events
 - if no healthy relay link exists, `game` may perform a bounded
   refresh-and-reconcile step before retrying auto-connect
+- the current implementation centralizes these rules in a shared
+  `FirstPhaseIpcTopologyPolicy`, while still executing them inside
+  thin application IPC services
 
 Rules:
 
@@ -1772,6 +1775,17 @@ Rules:
 
 This keeps the relay-first topology practical without introducing a separate
 topology-management subsystem too early.
+
+Current first-phase observability around this policy should make the runtime
+state easy to inspect:
+
+- `ipc_status` exposes `membership_degraded`
+- `ipc_status` exposes auto-connect success and failure counters
+- `ipc_status` exposes the most recent auto-connect success and failure target
+- `ipc_topology` summarizes current convergence and healthy links
+- `ipc_links` shows direct healthy links
+- `ipc_members` shows discovery membership
+- `ipc_receivers` shows local receiver ownership on business processes
 
 ## Route Resolution Order
 
@@ -2578,12 +2592,22 @@ These rules should remain stable.
 
 If a layer starts absorbing another layer's role, the architecture will become harder to evolve.
 
-## Recommended Next Step
+## First-Phase Closure
 
-Step 7 should define the first implementation slice and module layout:
+The current first-phase implementation has reached the intended baseline:
 
-- concrete first-phase module boundaries in this repository
-- proto file layout
-- framework service breakdown
-- startup order
-- first executable path for relay and one business service
+- relay-first process delivery works
+- `PlayerReceiver` ownership and delivery work
+- `BroadcastToService` works for the first-phase scope
+- discovery `watch` and application-level auto-connect are in place
+- degraded membership handling is explicit
+- first-phase topology glue is centralized in a thin shared policy object
+- runtime commands expose membership, links, receivers, topology, and counters
+
+The first phase should now be treated as a stable baseline rather than a
+placeholder. Later phases may extend capability, but should preserve:
+
+- receiver-first messaging APIs
+- relay-first default topology
+- thin application-level topology glue unless there is a strong reason to move it
+- compensating eventual consistency semantics for first-phase discovery

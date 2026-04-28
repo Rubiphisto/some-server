@@ -604,6 +604,18 @@ Validate:
 - relay assists delivery
 - `PlayerManager` receives and dispatches correctly
 
+### Integration 4: Service Broadcast
+
+- `BroadcastToService` reaches the expected service receivers
+- local inclusion remains controlled by broadcast scope
+
+### Integration 5: Topology Convergence
+
+- startup order `relay -> game` converges automatically
+- startup order `game -> relay` converges automatically
+- relay restart reconverges automatically
+- snapshot + watch convergence does not require manual refresh
+
 ## Failure Cases To Validate Early
 
 - protocol version mismatch
@@ -669,6 +681,10 @@ Current state:
 - `BroadcastToService` works for the first-phase scope
 - discovery watch and application-level auto-connect are in place
 - multi-process integration tests cover the main relay-first paths
+- first-phase auto-connect rules are centralized behind a shared topology
+  policy object
+- runtime commands expose membership, links, receivers, topology, degraded
+  state, forwarding counters, and auto-connect success/failure counters
 
 Recommended next work should focus on:
 
