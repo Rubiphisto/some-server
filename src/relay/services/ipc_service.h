@@ -62,6 +62,7 @@ private:
     void StartAutoConnectLoop();
     void StopAutoConnectLoop();
     void AutoConnectLoop();
+    void ReconcileAutoConnectMembers();
     void HandleMembershipEvent(const ipc::MembershipEvent& event);
     void TryAutoConnectMember(const ipc::ProcessDescriptor& member);
     static std::uint64_t MakeProcessKey(const ipc::ProcessId& id);

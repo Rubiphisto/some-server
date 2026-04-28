@@ -341,7 +341,7 @@ void PollCommandUntil(
     throw std::runtime_error(message + "\noutput:\n" + process.Output());
 }
 
-void TestRelayFirstMessaging()
+void RunRelayFirstMessagingScenario(const bool relay_first)
 {
     const auto suffix = std::to_string(Clock::now().time_since_epoch().count());
     const auto temp_dir = std::filesystem::temp_directory_path() / ("ipc_multi_" + suffix);
@@ -368,9 +368,18 @@ void TestRelayFirstMessaging()
     ChildProcess game1("./game", game1_config);
     ChildProcess game2("./game", game2_config);
 
-    relay.Start();
-    game1.Start();
-    game2.Start();
+    if (relay_first)
+    {
+        relay.Start();
+        game1.Start();
+        game2.Start();
+    }
+    else
+    {
+        game1.Start();
+        game2.Start();
+        relay.Start();
+    }
 
     WaitOrThrow(relay, "> ", "relay did not reach command prompt");
     WaitOrThrow(game1, "> ", "game1 did not reach command prompt");
@@ -402,6 +411,12 @@ void TestRelayFirstMessaging()
     WaitOrThrow(game1, "game ipc broadcast service: ok", "service broadcast failed");
     PollCommandUntil(game1, "ipc_status", "local_service_dispatch_count=1", "game1 service broadcast local dispatch missing");
     PollCommandUntil(game2, "ipc_status", "local_service_dispatch_count=1", "game2 service broadcast dispatch missing");
+}
+
+void TestRelayFirstMessaging()
+{
+    RunRelayFirstMessagingScenario(true);
+    RunRelayFirstMessagingScenario(false);
 }
 } // namespace
 

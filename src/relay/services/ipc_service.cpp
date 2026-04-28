@@ -86,49 +86,53 @@ LifecycleTask RelayIpcService::Load()
 
 LifecycleTask RelayIpcService::Start()
 {
-    std::scoped_lock lock(mMutex);
-    if (!mSelf.has_value())
     {
-        mLastError = "self descriptor is not initialized";
-        return LifecycleTask::Completed();
-    }
-    if (!mTransport || !mLinkManager)
-    {
-        mLastError = "transport/link are not initialized";
-        return LifecycleTask::Completed();
-    }
-    if (const ipc::Result listen_result = mTransport->Listen(mSelf->listen_endpoint); !listen_result.ok)
-    {
-        mLastError = listen_result.message;
-        spdlog::warn("relay ipc transport listen failed: {}", mLastError);
-        return LifecycleTask::Completed();
-    }
-    mTransportReady = true;
+        std::scoped_lock lock(mMutex);
+        if (!mSelf.has_value())
+        {
+            mLastError = "self descriptor is not initialized";
+            return LifecycleTask::Completed();
+        }
+        if (!mTransport || !mLinkManager)
+        {
+            mLastError = "transport/link are not initialized";
+            return LifecycleTask::Completed();
+        }
+        if (const ipc::Result listen_result = mTransport->Listen(mSelf->listen_endpoint); !listen_result.ok)
+        {
+            mLastError = listen_result.message;
+            spdlog::warn("relay ipc transport listen failed: {}", mLastError);
+            return LifecycleTask::Completed();
+        }
+        mTransportReady = true;
 
-    if (const ipc::Result register_result = mDiscovery.RegisterSelf(*mSelf); !register_result.ok)
-    {
-        mRegistered = false;
-        mIpcReady = false;
-        mLastError = register_result.message;
-        spdlog::warn("relay ipc discovery register failed: {}", mLastError);
-        return LifecycleTask::Completed();
+        if (const ipc::Result register_result = mDiscovery.RegisterSelf(*mSelf); !register_result.ok)
+        {
+            mRegistered = false;
+            mIpcReady = false;
+            mLastError = register_result.message;
+            spdlog::warn("relay ipc discovery register failed: {}", mLastError);
+            return LifecycleTask::Completed();
+        }
+
+        mRegistered = true;
+        mIpcReady = true;
+        mLastError.clear();
+
+        if (const ipc::Result refresh_result = mDiscovery.RefreshSnapshot(); !refresh_result.ok)
+        {
+            mLastError = refresh_result.message;
+            spdlog::warn("relay ipc discovery refresh failed: {}", mLastError);
+        }
+        if (const ipc::Result watch_result = mDiscovery.StartWatch(); !watch_result.ok)
+        {
+            mLastError = watch_result.message;
+            spdlog::warn("relay ipc discovery watch failed: {}", mLastError);
+        }
     }
 
-    mRegistered = true;
-    mIpcReady = true;
-    mLastError.clear();
-
-    if (const ipc::Result refresh_result = mDiscovery.RefreshSnapshot(); !refresh_result.ok)
-    {
-        mLastError = refresh_result.message;
-        spdlog::warn("relay ipc discovery refresh failed: {}", mLastError);
-    }
-    if (const ipc::Result watch_result = mDiscovery.StartWatch(); !watch_result.ok)
-    {
-        mLastError = watch_result.message;
-        spdlog::warn("relay ipc discovery watch failed: {}", mLastError);
-    }
     StartKeepAliveLoop();
+    ReconcileAutoConnectMembers();
     StartAutoConnectLoop();
 
     return LifecycleTask::Completed();
@@ -395,6 +399,19 @@ void RelayIpcService::AutoConnectLoop()
         {
             HandleMembershipEvent(event);
         }
+    }
+}
+
+void RelayIpcService::ReconcileAutoConnectMembers()
+{
+    std::vector<ipc::ProcessDescriptor> members;
+    {
+        std::scoped_lock lock(mMutex);
+        members = mDiscovery.All();
+    }
+    for (const auto& member : members)
+    {
+        TryAutoConnectMember(member);
     }
 }
 
