@@ -145,7 +145,7 @@ namespace
         {
             keepalive_calls++;
             last_keepalive_lease_id = lease_id;
-            return ipc::Result::Success();
+            return keepalive_result;
         }
 
         ipc::Result Delete(const std::string& key) override
@@ -167,6 +167,16 @@ namespace
         {
             std::scoped_lock lock(mMutex);
             watch_start_calls++;
+            if (!start_watch_results.empty())
+            {
+                const ipc::Result result = start_watch_results.front();
+                start_watch_results.erase(start_watch_results.begin());
+                if (!result.ok)
+                {
+                    running = false;
+                    return result;
+                }
+            }
             stopped = false;
             running = true;
             return ipc::Result::Success();
@@ -189,6 +199,7 @@ namespace
         {
             {
                 std::scoped_lock lock(mMutex);
+                stop_watch_calls++;
                 stopped = true;
                 running = false;
             }
@@ -218,14 +229,17 @@ namespace
         std::uint64_t granted_lease_id = 0xabc;
         std::uint64_t last_put_lease_id = 0;
         std::uint64_t last_keepalive_lease_id = 0;
+        ipc::Result keepalive_result = ipc::Result::Success();
         int grant_lease_calls = 0;
         int put_calls = 0;
         int keepalive_calls = 0;
         int delete_calls = 0;
         int get_prefix_calls = 0;
         int watch_start_calls = 0;
+        int stop_watch_calls = 0;
         std::string last_put_key;
         std::string last_delete_key;
+        std::vector<ipc::Result> start_watch_results;
 
     private:
         mutable std::mutex mMutex;
@@ -368,6 +382,55 @@ namespace
         Require(events.back().type == ipc::MembershipEventType::removed, "watch remove event type");
         discovery.StopWatch();
     }
+
+    void TestEtcdDiscoveryWatchStartRetryWithFakeBackend()
+    {
+        auto backend = std::make_unique<FakeEtcdBackend>();
+        auto* backend_ptr = backend.get();
+        backend_ptr->start_watch_results.push_back(ipc::Result::Failure("transient watch start failure"));
+        backend_ptr->start_watch_results.push_back(ipc::Result::Success());
+
+        ipc::EtcdDiscovery discovery(
+            {.prefix = "/some_server/ipc/test/watch_retry", .lease_ttl_seconds = 0},
+            std::move(backend));
+
+        Require(discovery.StartWatch().ok, "start retry watch thread");
+        for (int attempt = 0; attempt < 30; ++attempt)
+        {
+            if (backend_ptr->watch_start_calls >= 2 && discovery.WatchRunning())
+            {
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        }
+
+        Require(backend_ptr->watch_start_calls >= 2, "watch start retried");
+        Require(discovery.WatchRunning(), "watch running after retry");
+        discovery.StopWatch();
+    }
+
+    void TestEtcdDiscoveryStopWatchWithFakeBackend()
+    {
+        auto backend = std::make_unique<FakeEtcdBackend>();
+        auto* backend_ptr = backend.get();
+        ipc::EtcdDiscovery discovery(
+            {.prefix = "/some_server/ipc/test/watch_stop", .lease_ttl_seconds = 0},
+            std::move(backend));
+
+        Require(discovery.StartWatch().ok, "start watch for stop");
+        for (int attempt = 0; attempt < 20; ++attempt)
+        {
+            if (backend_ptr->watch_start_calls >= 1)
+            {
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        }
+
+        discovery.StopWatch();
+        Require(!discovery.WatchRunning(), "watch stopped");
+        Require(backend_ptr->stop_watch_calls >= 1, "backend stop called");
+    }
 } // namespace
 
 template <>
@@ -405,6 +468,8 @@ int main()
         TestRelayFirstRoute();
         TestEtcdDiscoveryBackendDelegation();
         TestEtcdDiscoveryWatchRecoveryWithFakeBackend();
+        TestEtcdDiscoveryWatchStartRetryWithFakeBackend();
+        TestEtcdDiscoveryStopWatchWithFakeBackend();
         std::cout << "ipc_discovery_routing_test: ok" << std::endl;
         return 0;
     }
