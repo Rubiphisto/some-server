@@ -658,10 +658,21 @@ Phase 1 is complete when all of the following are true:
 
 ## Recommended Next Step
 
-After this plan is accepted, the next step is implementation:
+The implementation described in this plan has now reached the first-phase
+exit criteria in code.
 
-- scaffold repository layout
-- add proto files
-- create the IPC framework library skeleton
-- add the `relay` application skeleton
-- begin milestone 1
+Current state:
+
+- `relay` and `game` join discovery through etcd-backed registration
+- relay-first process messaging works
+- `PlayerReceiver` ownership and delivery work
+- `BroadcastToService` works for the first-phase scope
+- discovery watch and application-level auto-connect are in place
+- multi-process integration tests cover the main relay-first paths
+
+Recommended next work should focus on:
+
+- consistency review between design and implementation
+- documenting first-phase topology glue such as auto-connect
+- tightening observability and operational tooling
+- only then deciding whether to deepen watch semantics or broaden feature scope

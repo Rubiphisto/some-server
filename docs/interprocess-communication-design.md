@@ -1559,6 +1559,16 @@ If lease ownership is lost:
 - emit local fatal membership loss
 - upper layers should stop routing outbound inter-process traffic
 
+Current first-phase implementation may satisfy this by entering a local
+degraded membership state instead of immediately terminating the process.
+
+Required degraded-state behavior:
+
+- `registered` becomes false
+- `ipc_ready` becomes false
+- business-facing IPC send paths reject new sends
+- forwarding and auto-connect stop participating in inter-process messaging
+
 ### Watch Failure
 
 If watch stream breaks:
@@ -1727,6 +1737,31 @@ The first implementation should use these rules:
 5. If no relay path exists, the route is unreachable.
 
 This gives a predictable baseline without forcing full mesh complexity.
+
+### First-Phase Auto-Connect Behavior
+
+The first phase may use a small amount of application-level topology glue to
+reduce manual runtime operations.
+
+Current first-phase behavior:
+
+- `relay` automatically connects to discovered `game` members
+- `game` automatically connects to discovered `relay` members
+- startup includes a snapshot-based reconcile pass so convergence does not
+  depend only on future watch events
+- if no healthy relay link exists, `game` may perform a bounded
+  refresh-and-reconcile step before retrying auto-connect
+
+Rules:
+
+- this logic lives in thin application IPC services, not in the routing API
+- discovery still only answers membership
+- routing still only answers next-hop selection
+- link still only manages connection and handshake state
+- first-phase auto-connect is policy glue, not a general cluster-autonomy system
+
+This keeps the relay-first topology practical without introducing a separate
+topology-management subsystem too early.
 
 ## Route Resolution Order
 
