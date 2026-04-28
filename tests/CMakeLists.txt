@@ -107,3 +107,20 @@ add_test(NAME ipc_receiver_messaging_test COMMAND $<TARGET_FILE:ipc_receiver_mes
 set_tests_properties(ipc_receiver_messaging_test PROPERTIES
         WORKING_DIRECTORY ${SERVER_BINARY_FOLDER}/bin
 )
+
+add_executable(ipc_multi_process_integration_test
+        ipc_multi_process_integration_test.cpp
+)
+
+target_include_directories(ipc_multi_process_integration_test PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(ipc_multi_process_integration_test PRIVATE
+        framework
+)
+
+add_test(NAME ipc_multi_process_integration_test COMMAND $<TARGET_FILE:ipc_multi_process_integration_test>)
+set_tests_properties(ipc_multi_process_integration_test PROPERTIES
+        WORKING_DIRECTORY ${SERVER_BINARY_FOLDER}/bin
+)
