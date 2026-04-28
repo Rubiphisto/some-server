@@ -113,55 +113,60 @@ LifecycleTask GameIpcClientService::Load()
 
 LifecycleTask GameIpcClientService::Start()
 {
-    std::scoped_lock lock(mMutex);
-    if (!mSelf.has_value())
     {
-        mLastError = "self descriptor is not initialized";
-        return LifecycleTask::Completed();
-    }
-    if (!mTransport || !mLinkManager)
-    {
-        mLastError = "transport/link are not initialized";
-        return LifecycleTask::Completed();
-    }
-    if (const ipc::Result listen_result = mTransport->Listen(mSelf->listen_endpoint); !listen_result.ok)
-    {
-        mLastError = listen_result.message;
-        spdlog::warn("game ipc transport listen failed: {}", mLastError);
-        return LifecycleTask::Completed();
-    }
-    mTransportReady = true;
+        std::scoped_lock lock(mMutex);
+        if (!mSelf.has_value())
+        {
+            mLastError = "self descriptor is not initialized";
+            return LifecycleTask::Completed();
+        }
+        if (!mTransport || !mLinkManager)
+        {
+            mLastError = "transport/link are not initialized";
+            return LifecycleTask::Completed();
+        }
+        if (const ipc::Result listen_result = mTransport->Listen(mSelf->listen_endpoint); !listen_result.ok)
+        {
+            mLastError = listen_result.message;
+            spdlog::warn("game ipc transport listen failed: {}", mLastError);
+            return LifecycleTask::Completed();
+        }
+        mTransportReady = true;
 
-    if (const ipc::Result register_result = mDiscovery.RegisterSelf(*mSelf); !register_result.ok)
-    {
-        mRegistered = false;
-        mIpcReady = false;
-        mLastError = register_result.message;
-        spdlog::warn("game ipc discovery register failed: {}", mLastError);
-        return LifecycleTask::Completed();
-    }
+        if (const ipc::Result register_result = mDiscovery.RegisterSelf(*mSelf); !register_result.ok)
+        {
+            mRegistered = false;
+            mIpcReady = false;
+            mLastError = register_result.message;
+            spdlog::warn("game ipc discovery register failed: {}", mLastError);
+            return LifecycleTask::Completed();
+        }
 
-    mRegistered = true;
-    mIpcReady = true;
-    mLastError.clear();
+        mRegistered = true;
+        mIpcReady = true;
+        mLastError.clear();
 
-    if (const ipc::Result refresh_result = mDiscovery.RefreshSnapshot(); !refresh_result.ok)
-    {
-        mLastError = refresh_result.message;
-        spdlog::warn("game ipc discovery refresh failed: {}", mLastError);
-    }
-    if (const ipc::Result watch_result = mDiscovery.StartWatch(); !watch_result.ok)
-    {
-        mLastError = watch_result.message;
-        spdlog::warn("game ipc discovery watch failed: {}", mLastError);
+        if (const ipc::Result refresh_result = mDiscovery.RefreshSnapshot(); !refresh_result.ok)
+        {
+            mLastError = refresh_result.message;
+            spdlog::warn("game ipc discovery refresh failed: {}", mLastError);
+        }
+        if (const ipc::Result watch_result = mDiscovery.StartWatch(); !watch_result.ok)
+        {
+            mLastError = watch_result.message;
+            spdlog::warn("game ipc discovery watch failed: {}", mLastError);
+        }
     }
     StartKeepAliveLoop();
+    ReconcileAutoConnectMembers();
+    StartAutoConnectLoop();
 
     return LifecycleTask::Completed();
 }
 
 LifecycleTask GameIpcClientService::Stop()
 {
+    StopAutoConnectLoop();
     mDiscovery.StopWatch();
     StopKeepAliveLoop();
 
@@ -182,6 +187,7 @@ LifecycleTask GameIpcClientService::Stop()
 
 LifecycleTask GameIpcClientService::Unload()
 {
+    StopAutoConnectLoop();
     StopKeepAliveLoop();
     std::scoped_lock lock(mMutex);
     mDiscovery.StopWatch();
@@ -481,4 +487,164 @@ void GameIpcClientService::KeepAliveLoop(const std::uint32_t interval_seconds)
     }
 
     mKeepAliveRunning.store(false);
+}
+
+void GameIpcClientService::StartAutoConnectLoop()
+{
+    if (mAutoConnectThread.joinable())
+    {
+        return;
+    }
+
+    mStopAutoConnect = false;
+    mAutoConnectThread = std::thread(&GameIpcClientService::AutoConnectLoop, this);
+}
+
+void GameIpcClientService::StopAutoConnectLoop()
+{
+    {
+        std::scoped_lock lock(mMutex);
+        mStopAutoConnect = true;
+    }
+    mAutoConnectWakeup.notify_all();
+    if (mAutoConnectThread.joinable())
+    {
+        mAutoConnectThread.join();
+    }
+}
+
+void GameIpcClientService::AutoConnectLoop()
+{
+    while (true)
+    {
+        bool needs_reconcile = false;
+        {
+            std::unique_lock lock(mMutex);
+            if (mStopAutoConnect)
+            {
+                break;
+            }
+            mAutoConnectWakeup.wait_for(lock, std::chrono::milliseconds(200), [this] {
+                return mStopAutoConnect;
+            });
+            if (mStopAutoConnect)
+            {
+                break;
+            }
+            needs_reconcile = !HasHealthyRelayLink();
+        }
+
+        const auto events = DrainMembershipEvents();
+        for (const auto& event : events)
+        {
+            HandleMembershipEvent(event);
+        }
+
+        if (!needs_reconcile)
+        {
+            continue;
+        }
+
+        if (const ipc::Result refresh_result = RefreshDiscovery(); !refresh_result.ok)
+        {
+            spdlog::warn("game ipc auto-connect refresh failed: {}", refresh_result.message);
+            continue;
+        }
+
+        ReconcileAutoConnectMembers();
+    }
+}
+
+void GameIpcClientService::ReconcileAutoConnectMembers()
+{
+    std::vector<ipc::ProcessDescriptor> members;
+    {
+        std::scoped_lock lock(mMutex);
+        members = mDiscovery.All();
+    }
+    for (const auto& member : members)
+    {
+        TryAutoConnectMember(member);
+    }
+}
+
+void GameIpcClientService::HandleMembershipEvent(const ipc::MembershipEvent& event)
+{
+    if (event.type == ipc::MembershipEventType::removed)
+    {
+        std::scoped_lock lock(mMutex);
+        mAutoConnectAttempts.erase(MakeProcessKey(event.process.process.process_id));
+        return;
+    }
+
+    TryAutoConnectMember(event.process);
+}
+
+void GameIpcClientService::TryAutoConnectMember(const ipc::ProcessDescriptor& member)
+{
+    std::scoped_lock lock(mMutex);
+    if (!mSelf.has_value() || !mTransport || !mLinkManager)
+    {
+        return;
+    }
+    if (member.process == mSelf->process)
+    {
+        return;
+    }
+    if (member.process.process_id.service_type != kRelayServiceType)
+    {
+        return;
+    }
+    if (HasHealthyRelayLink())
+    {
+        return;
+    }
+
+    const std::uint64_t key = MakeProcessKey(member.process.process_id);
+    if (mAutoConnectAttempts.contains(key))
+    {
+        return;
+    }
+
+    const ipc::Result connect_result = mTransport->Connect(member.listen_endpoint);
+    if (!connect_result.ok)
+    {
+        mLastError = connect_result.message;
+        spdlog::warn(
+            "game ipc auto-connect failed: service_type={} instance_id={} error={}",
+            member.process.process_id.service_type,
+            member.process.process_id.instance_id,
+            connect_result.message);
+        return;
+    }
+
+    mAutoConnectAttempts.insert(key);
+    spdlog::info(
+        "game ipc auto-connect: service_type={} instance_id={} host={} port={}",
+        member.process.process_id.service_type,
+        member.process.process_id.instance_id,
+        member.listen_endpoint.host,
+        member.listen_endpoint.port);
+}
+
+bool GameIpcClientService::HasHealthyRelayLink() const
+{
+    if (!mLinkManager)
+    {
+        return false;
+    }
+
+    for (const auto& link : mLinkManager->GetHealthyLinks())
+    {
+        if (link.process_id.service_type == kRelayServiceType)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+std::uint64_t GameIpcClientService::MakeProcessKey(const ipc::ProcessId& id)
+{
+    return (static_cast<std::uint64_t>(id.service_type) << 32) | id.instance_id;
 }

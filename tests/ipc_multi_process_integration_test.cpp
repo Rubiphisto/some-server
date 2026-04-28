@@ -413,10 +413,70 @@ void RunRelayFirstMessagingScenario(const bool relay_first)
     PollCommandUntil(game2, "ipc_status", "local_service_dispatch_count=1", "game2 service broadcast dispatch missing");
 }
 
+void TestRelayRestartReconnect()
+{
+    const auto suffix = std::to_string(Clock::now().time_since_epoch().count());
+    const auto temp_dir = std::filesystem::temp_directory_path() / ("ipc_restart_" + suffix);
+    std::filesystem::create_directories(temp_dir);
+    const auto etcd_dir = temp_dir / "etcd";
+    std::filesystem::create_directories(etcd_dir);
+
+    const auto seed = static_cast<std::uint16_t>(Clock::now().time_since_epoch().count() % 1000);
+    const std::uint16_t etcd_port = static_cast<std::uint16_t>(34379 + seed * 2);
+    const std::uint16_t peer_port = static_cast<std::uint16_t>(etcd_port + 1);
+    const std::uint16_t relay_port = static_cast<std::uint16_t>(43000 + seed * 3);
+    const std::uint16_t game1_port = static_cast<std::uint16_t>(relay_port + 1);
+    const std::uint16_t game2_port = static_cast<std::uint16_t>(relay_port + 2);
+
+    ScopedEtcd etcd(etcd_dir, etcd_port, peer_port);
+    etcd.Start();
+
+    const std::string prefix = "/some_server/ipc/test/restart/" + suffix;
+    const auto relay_config = WriteRelayConfig(temp_dir, prefix, etcd_port, relay_port);
+    const auto game1_config = WriteGameConfig(temp_dir, "restart-game1.json", prefix, 1, game1_port, etcd_port);
+    const auto game2_config = WriteGameConfig(temp_dir, "restart-game2.json", prefix, 2, game2_port, etcd_port);
+
+    ChildProcess game1("./game", game1_config);
+    ChildProcess game2("./game", game2_config);
+    ChildProcess relay("./relay", relay_config);
+
+    game1.Start();
+    game2.Start();
+    relay.Start();
+
+    WaitOrThrow(relay, "> ", "relay did not reach command prompt");
+    WaitOrThrow(game1, "> ", "restart game1 did not reach command prompt");
+    WaitOrThrow(game2, "> ", "restart game2 did not reach command prompt");
+
+    PollCommandUntil(relay, "ipc_links", "relay ipc links: count=2", "initial relay links not healthy");
+    PollCommandUntil(game1, "ipc_links", "game ipc links: count=1", "initial game1 relay link not healthy");
+    PollCommandUntil(game2, "ipc_links", "game ipc links: count=1", "initial game2 relay link not healthy");
+
+    relay.Stop();
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    ChildProcess restarted_relay("./relay", relay_config);
+    restarted_relay.Start();
+    WaitOrThrow(restarted_relay, "> ", "restarted relay did not reach command prompt");
+
+    PollCommandUntil(restarted_relay, "ipc_status", "watch_running=true members=3", "restarted relay watch did not converge");
+    PollCommandUntil(game1, "ipc_status", "watch_running=true members=3", "game1 watch did not reconverge after relay restart");
+    PollCommandUntil(game2, "ipc_status", "watch_running=true members=3", "game2 watch did not reconverge after relay restart");
+
+    PollCommandUntil(restarted_relay, "ipc_links", "relay ipc links: count=2", "restarted relay links not healthy");
+    PollCommandUntil(game1, "ipc_links", "game ipc links: count=1", "game1 did not reconnect to relay");
+    PollCommandUntil(game2, "ipc_links", "game ipc links: count=1", "game2 did not reconnect to relay");
+
+    game1.Send("ipc_send_process 2 restart-process-test");
+    WaitOrThrow(game1, "game ipc process send: ok", "process send after relay restart failed");
+    PollCommandUntil(game2, "ipc_status", "process_dispatch_count=1", "process dispatch after relay restart did not arrive");
+}
+
 void TestRelayFirstMessaging()
 {
     RunRelayFirstMessagingScenario(true);
     RunRelayFirstMessagingScenario(false);
+    TestRelayRestartReconnect();
 }
 } // namespace
 
