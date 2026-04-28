@@ -83,8 +83,11 @@ private:
     void AutoConnectLoop();
     void ReconcileAutoConnectMembers();
     void HandleMembershipEvent(const ipc::MembershipEvent& event);
+    void HandleDiscoveryFailureLocked(const std::string& message);
     void TryAutoConnectMember(const ipc::ProcessDescriptor& member);
+    bool HasRelayMemberInDiscoveryLocked() const;
     bool HasHealthyRelayLink() const;
+    bool IsIpcActiveLocked() const;
     static std::uint64_t MakeProcessKey(const ipc::ProcessId& id);
 
     GameConfiguration mConfiguration;

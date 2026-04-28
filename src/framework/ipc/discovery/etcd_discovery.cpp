@@ -633,6 +633,7 @@ void EtcdDiscovery::WatchLoop()
             {
                 std::scoped_lock lock(mMutex);
                 StopWatchProcess();
+                (void)RefreshSnapshotUnlocked();
                 break;
             }
 

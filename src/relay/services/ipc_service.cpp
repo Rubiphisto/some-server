@@ -56,6 +56,11 @@ LifecycleTask RelayIpcService::Load()
 
             if (frame.header.kind == ipc::FrameKind::data && mMessenger)
             {
+                std::scoped_lock lock(mMutex);
+                if (!IsIpcActiveLocked())
+                {
+                    return;
+                }
                 (void)mMessenger->HandleIncomingFrame(frame);
                 return;
             }
@@ -343,7 +348,7 @@ void RelayIpcService::KeepAliveLoop(const std::uint32_t interval_seconds)
         const ipc::Result keepalive_result = mDiscovery.KeepAliveOnce();
         if (!keepalive_result.ok)
         {
-            mLastError = keepalive_result.message;
+            HandleDiscoveryFailureLocked(keepalive_result.message);
             spdlog::warn("relay ipc discovery keepalive failed: {}", mLastError);
         }
     }
@@ -434,6 +439,10 @@ void RelayIpcService::TryAutoConnectMember(const ipc::ProcessDescriptor& member)
     {
         return;
     }
+    if (!IsIpcActiveLocked())
+    {
+        return;
+    }
     if (member.process == mSelf->process)
     {
         return;
@@ -472,4 +481,17 @@ void RelayIpcService::TryAutoConnectMember(const ipc::ProcessDescriptor& member)
         member.process.process_id.instance_id,
         member.listen_endpoint.host,
         member.listen_endpoint.port);
+}
+
+bool RelayIpcService::IsIpcActiveLocked() const
+{
+    return mRegistered && mIpcReady;
+}
+
+void RelayIpcService::HandleDiscoveryFailureLocked(const std::string& message)
+{
+    mRegistered = false;
+    mIpcReady = false;
+    mLastError = message;
+    mAutoConnectAttempts.clear();
 }

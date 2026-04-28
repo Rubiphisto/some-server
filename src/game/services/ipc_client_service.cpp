@@ -56,6 +56,11 @@ LifecycleTask GameIpcClientService::Load()
 
             if (frame.header.kind == ipc::FrameKind::data && mMessenger)
             {
+                std::scoped_lock lock(mMutex);
+                if (!IsIpcActiveLocked())
+                {
+                    return;
+                }
                 (void)mMessenger->HandleIncomingFrame(frame);
             }
         });
@@ -344,6 +349,10 @@ ipc::SendResult GameIpcClientService::SendLocalServiceMessage(const std::string&
     {
         return ipc::SendResult::Failure("messenger is not initialized");
     }
+    if (!IsIpcActiveLocked())
+    {
+        return ipc::SendResult::Failure("ipc is not active");
+    }
 
     google::protobuf::StringValue payload;
     payload.set_value(value);
@@ -356,6 +365,10 @@ ipc::SendResult GameIpcClientService::SendProcessMessage(const ipc::InstanceId i
     if (!mMessenger)
     {
         return ipc::SendResult::Failure("messenger is not initialized");
+    }
+    if (!IsIpcActiveLocked())
+    {
+        return ipc::SendResult::Failure("ipc is not active");
     }
 
     google::protobuf::StringValue payload;
@@ -370,6 +383,10 @@ ipc::SendResult GameIpcClientService::SendPlayerMessage(const std::uint64_t play
     {
         return ipc::SendResult::Failure("messenger is not initialized");
     }
+    if (!IsIpcActiveLocked())
+    {
+        return ipc::SendResult::Failure("ipc is not active");
+    }
 
     google::protobuf::StringValue payload;
     payload.set_value(value);
@@ -382,6 +399,10 @@ ipc::SendResult GameIpcClientService::BroadcastServiceMessage(const std::string&
     if (!mMessenger)
     {
         return ipc::SendResult::Failure("messenger is not initialized");
+    }
+    if (!IsIpcActiveLocked())
+    {
+        return ipc::SendResult::Failure("ipc is not active");
     }
 
     google::protobuf::StringValue payload;
@@ -481,7 +502,7 @@ void GameIpcClientService::KeepAliveLoop(const std::uint32_t interval_seconds)
         const ipc::Result keepalive_result = mDiscovery.KeepAliveOnce();
         if (!keepalive_result.ok)
         {
-            mLastError = keepalive_result.message;
+            HandleDiscoveryFailureLocked(keepalive_result.message);
             spdlog::warn("game ipc discovery keepalive failed: {}", mLastError);
         }
     }
@@ -531,7 +552,7 @@ void GameIpcClientService::AutoConnectLoop()
             {
                 break;
             }
-            needs_reconcile = !HasHealthyRelayLink();
+            needs_reconcile = !HasHealthyRelayLink() || !HasRelayMemberInDiscoveryLocked();
         }
 
         const auto events = DrainMembershipEvents();
@@ -584,12 +605,16 @@ void GameIpcClientService::TryAutoConnectMember(const ipc::ProcessDescriptor& me
 {
     std::scoped_lock lock(mMutex);
     if (!mSelf.has_value() || !mTransport || !mLinkManager)
-    {
-        return;
-    }
-    if (member.process == mSelf->process)
-    {
-        return;
+        {
+            return;
+        }
+        if (!IsIpcActiveLocked())
+        {
+            return;
+        }
+        if (member.process == mSelf->process)
+        {
+            return;
     }
     if (member.process.process_id.service_type != kRelayServiceType)
     {
@@ -642,6 +667,31 @@ bool GameIpcClientService::HasHealthyRelayLink() const
         }
     }
     return false;
+}
+
+bool GameIpcClientService::HasRelayMemberInDiscoveryLocked() const
+{
+    for (const auto& member : mDiscovery.All())
+    {
+        if (member.process.process_id.service_type == kRelayServiceType)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool GameIpcClientService::IsIpcActiveLocked() const
+{
+    return mRegistered && mIpcReady;
+}
+
+void GameIpcClientService::HandleDiscoveryFailureLocked(const std::string& message)
+{
+    mRegistered = false;
+    mIpcReady = false;
+    mLastError = message;
+    mAutoConnectAttempts.clear();
 }
 
 std::uint64_t GameIpcClientService::MakeProcessKey(const ipc::ProcessId& id)

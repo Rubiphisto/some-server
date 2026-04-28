@@ -540,7 +540,7 @@ These rules are critical and should remain stable.
 
 ### Broadcast To All Game Processes
 
-1. Application calls `Broadcast(scope=service_type: game, protobuf message)`.
+1. Application calls `BroadcastToService(service_type: game, scope, protobuf message)`.
 2. Routing expands the scope using membership and topology policy.
 3. Messaging layer performs fanout.
 
