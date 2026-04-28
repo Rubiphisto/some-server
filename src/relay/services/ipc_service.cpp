@@ -198,14 +198,35 @@ RelayIpcStatus RelayIpcService::Snapshot() const
     status.membership_degraded = mTransportReady && !mRegistered && !mIpcReady;
     status.keepalive_running = mKeepAliveRunning.load();
     status.watch_running = mDiscovery.WatchRunning();
-    status.member_count = mDiscovery.All().size();
+    const auto members = mDiscovery.All();
+    status.member_count = members.size();
+    status.visible_game_members = static_cast<std::size_t>(std::count_if(
+        members.begin(),
+        members.end(),
+        [](const ipc::ProcessDescriptor& member) {
+            return member.process.process_id.service_type == kGameServiceType;
+        }));
+    const auto healthy_links = mLinkManager ? mLinkManager->GetHealthyLinks() : std::vector<ipc::ProcessRef>{};
+    status.healthy_game_links = static_cast<std::size_t>(std::count_if(
+        healthy_links.begin(),
+        healthy_links.end(),
+        [](const ipc::ProcessRef& link) {
+            return link.process_id.service_type == kGameServiceType;
+        }));
     status.auto_connect_targets = mAutoConnectAttempts.size();
     status.auto_connect_success_count = mAutoConnectSuccessCount;
+    status.auto_connect_failure_count = mAutoConnectFailureCount;
     if (mLastAutoConnectTarget.has_value())
     {
         status.has_last_auto_connect_target = true;
         status.last_auto_connect_target = *mLastAutoConnectTarget;
     }
+    if (mLastAutoConnectFailureTarget.has_value())
+    {
+        status.has_last_auto_connect_failure_target = true;
+        status.last_auto_connect_failure_target = *mLastAutoConnectFailureTarget;
+    }
+    status.last_auto_connect_failure_reason = mLastAutoConnectFailureReason;
     status.forwarded_data_frame_count = mForwardedDataFrameCount.load();
     status.last_error = mLastError;
     return status;
@@ -478,6 +499,9 @@ void RelayIpcService::TryAutoConnectMember(const ipc::ProcessDescriptor& member)
     const ipc::Result connect_result = mTransport->Connect(member.listen_endpoint);
     if (!connect_result.ok)
     {
+        ++mAutoConnectFailureCount;
+        mLastAutoConnectFailureTarget = member.process;
+        mLastAutoConnectFailureReason = connect_result.message;
         mLastError = connect_result.message;
         spdlog::warn(
             "relay ipc auto-connect failed: service_type={} instance_id={} error={}",
@@ -490,6 +514,8 @@ void RelayIpcService::TryAutoConnectMember(const ipc::ProcessDescriptor& member)
     mAutoConnectAttempts.insert(key);
     ++mAutoConnectSuccessCount;
     mLastAutoConnectTarget = member.process;
+    mLastAutoConnectFailureTarget.reset();
+    mLastAutoConnectFailureReason.clear();
     spdlog::info(
         "relay ipc auto-connect: service_type={} instance_id={} host={} port={}",
         member.process.process_id.service_type,

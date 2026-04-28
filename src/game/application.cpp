@@ -59,7 +59,7 @@ void Application::RegisterRuntimeCommands()
 
             const GameIpcClientStatus status = mIpcService->Snapshot();
             spdlog::info(
-                "game ipc status: service_type={} instance_id={} transport_ready={} registered={} ipc_ready={} membership_degraded={} keepalive_running={} watch_running={} members={} auto_connect_targets={} auto_connect_success_count={} last_auto_connect_target={}:{} process_dispatch_count={} last_process_payload_type={} player_dispatch_count={} last_player_id={} last_player_payload_type={} local_service_dispatch_count={} last_payload_type={} last_error={}",
+                "game ipc status: service_type={} instance_id={} transport_ready={} registered={} ipc_ready={} membership_degraded={} keepalive_running={} watch_running={} members={} relay_member_visible={} healthy_relay_link={} auto_connect_targets={} auto_connect_success_count={} auto_connect_failure_count={} last_auto_connect_target={}:{} last_auto_connect_failure_target={}:{} last_auto_connect_failure_reason={} process_dispatch_count={} last_process_payload_type={} player_dispatch_count={} last_player_id={} last_player_payload_type={} local_service_dispatch_count={} last_payload_type={} last_error={}",
                 status.self.process.process_id.service_type,
                 status.self.process.process_id.instance_id,
                 status.transport_ready,
@@ -69,10 +69,20 @@ void Application::RegisterRuntimeCommands()
                 status.keepalive_running,
                 status.watch_running,
                 status.member_count,
+                status.relay_member_visible,
+                status.healthy_relay_link,
                 status.auto_connect_targets,
                 status.auto_connect_success_count,
+                status.auto_connect_failure_count,
                 status.has_last_auto_connect_target ? status.last_auto_connect_target.process_id.service_type : 0,
                 status.has_last_auto_connect_target ? status.last_auto_connect_target.process_id.instance_id : 0,
+                status.has_last_auto_connect_failure_target
+                    ? status.last_auto_connect_failure_target.process_id.service_type
+                    : 0,
+                status.has_last_auto_connect_failure_target
+                    ? status.last_auto_connect_failure_target.process_id.instance_id
+                    : 0,
+                status.last_auto_connect_failure_reason.empty() ? "none" : status.last_auto_connect_failure_reason,
                 status.process_dispatch_count,
                 status.last_process_payload_type.empty() ? "none" : status.last_process_payload_type,
                 status.player_dispatch_count,
@@ -211,6 +221,52 @@ void Application::RegisterRuntimeCommands()
     if (!receivers_registered)
     {
         throw std::runtime_error("failed to register game ipc receivers command");
+    }
+
+    const bool topology_registered = Runtime().RegisterCommand(
+        "ipc_topology",
+        "Show game IPC topology and auto-connect state",
+        [this](const CommandArguments&) {
+            if (mIpcService == nullptr)
+            {
+                spdlog::warn("game ipc topology: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+
+            const auto status = mIpcService->Snapshot();
+            const auto links = mIpcService->HealthyLinks();
+            spdlog::info(
+                "game ipc topology: relay_member_visible={} healthy_relay_link={} healthy_links={} auto_connect_targets={} auto_connect_success_count={} auto_connect_failure_count={} last_auto_connect_target={}:{} last_auto_connect_failure_target={}:{} last_auto_connect_failure_reason={}",
+                status.relay_member_visible,
+                status.healthy_relay_link,
+                links.size(),
+                status.auto_connect_targets,
+                status.auto_connect_success_count,
+                status.auto_connect_failure_count,
+                status.has_last_auto_connect_target ? status.last_auto_connect_target.process_id.service_type : 0,
+                status.has_last_auto_connect_target ? status.last_auto_connect_target.process_id.instance_id : 0,
+                status.has_last_auto_connect_failure_target
+                    ? status.last_auto_connect_failure_target.process_id.service_type
+                    : 0,
+                status.has_last_auto_connect_failure_target
+                    ? status.last_auto_connect_failure_target.process_id.instance_id
+                    : 0,
+                status.last_auto_connect_failure_reason.empty() ? "none" : status.last_auto_connect_failure_reason);
+            for (const auto& link : links)
+            {
+                spdlog::info(
+                    "game ipc topology link: service_type={} instance_id={} incarnation={} role={}",
+                    link.process_id.service_type,
+                    link.process_id.instance_id,
+                    link.incarnation_id,
+                    link.process_id.service_type == kGameServiceType ? "game" : "relay");
+            }
+            return CommandExecutionStatus::handled;
+        });
+
+    if (!topology_registered)
+    {
+        throw std::runtime_error("failed to register game ipc topology command");
     }
 
     const bool links_registered = Runtime().RegisterCommand(

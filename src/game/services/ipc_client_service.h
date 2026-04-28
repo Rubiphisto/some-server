@@ -37,10 +37,16 @@ struct GameIpcClientStatus
     bool keepalive_running = false;
     bool watch_running = false;
     std::size_t member_count = 0;
+    bool relay_member_visible = false;
+    bool healthy_relay_link = false;
     std::size_t auto_connect_targets = 0;
     std::uint64_t auto_connect_success_count = 0;
+    std::uint64_t auto_connect_failure_count = 0;
     bool has_last_auto_connect_target = false;
     ipc::ProcessRef last_auto_connect_target;
+    bool has_last_auto_connect_failure_target = false;
+    ipc::ProcessRef last_auto_connect_failure_target;
+    std::string last_auto_connect_failure_reason;
     std::uint64_t process_dispatch_count = 0;
     std::string last_process_payload_type;
     std::uint64_t player_dispatch_count = 0;
@@ -133,5 +139,8 @@ private:
     bool mStopAutoConnect = false;
     std::unordered_set<std::uint64_t> mAutoConnectAttempts;
     std::uint64_t mAutoConnectSuccessCount = 0;
+    std::uint64_t mAutoConnectFailureCount = 0;
     std::optional<ipc::ProcessRef> mLastAutoConnectTarget;
+    std::optional<ipc::ProcessRef> mLastAutoConnectFailureTarget;
+    std::string mLastAutoConnectFailureReason;
 };

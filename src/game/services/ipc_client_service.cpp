@@ -227,13 +227,22 @@ GameIpcClientStatus GameIpcClientService::Snapshot() const
     status.keepalive_running = mKeepAliveRunning.load();
     status.watch_running = mDiscovery.WatchRunning();
     status.member_count = mDiscovery.All().size();
+    status.relay_member_visible = HasRelayMemberInDiscoveryLocked();
+    status.healthy_relay_link = HasHealthyRelayLink();
     status.auto_connect_targets = mAutoConnectAttempts.size();
     status.auto_connect_success_count = mAutoConnectSuccessCount;
+    status.auto_connect_failure_count = mAutoConnectFailureCount;
     if (mLastAutoConnectTarget.has_value())
     {
         status.has_last_auto_connect_target = true;
         status.last_auto_connect_target = *mLastAutoConnectTarget;
     }
+    if (mLastAutoConnectFailureTarget.has_value())
+    {
+        status.has_last_auto_connect_failure_target = true;
+        status.last_auto_connect_failure_target = *mLastAutoConnectFailureTarget;
+    }
+    status.last_auto_connect_failure_reason = mLastAutoConnectFailureReason;
     status.process_dispatch_count = mProcessReceiverHost ? mProcessReceiverHost->DispatchCount() : 0;
     status.last_process_payload_type =
         mProcessReceiverHost ? mProcessReceiverHost->LastPayloadType() : std::string{};
@@ -594,10 +603,10 @@ void GameIpcClientService::AutoConnectLoop()
             continue;
         }
 
-        if (const ipc::Result refresh_result = RefreshDiscovery(); !refresh_result.ok)
-        {
-            spdlog::warn("game ipc auto-connect refresh failed: {}", refresh_result.message);
-            continue;
+    if (const ipc::Result refresh_result = RefreshDiscovery(); !refresh_result.ok)
+    {
+        spdlog::warn("game ipc auto-connect refresh failed: {}", refresh_result.message);
+        continue;
         }
 
         ReconcileAutoConnectMembers();
@@ -662,6 +671,9 @@ void GameIpcClientService::TryAutoConnectMember(const ipc::ProcessDescriptor& me
     const ipc::Result connect_result = mTransport->Connect(member.listen_endpoint);
     if (!connect_result.ok)
     {
+        ++mAutoConnectFailureCount;
+        mLastAutoConnectFailureTarget = member.process;
+        mLastAutoConnectFailureReason = connect_result.message;
         mLastError = connect_result.message;
         spdlog::warn(
             "game ipc auto-connect failed: service_type={} instance_id={} error={}",
@@ -674,6 +686,8 @@ void GameIpcClientService::TryAutoConnectMember(const ipc::ProcessDescriptor& me
     mAutoConnectAttempts.insert(key);
     ++mAutoConnectSuccessCount;
     mLastAutoConnectTarget = member.process;
+    mLastAutoConnectFailureTarget.reset();
+    mLastAutoConnectFailureReason.clear();
     spdlog::info(
         "game ipc auto-connect: service_type={} instance_id={} host={} port={}",
         member.process.process_id.service_type,
