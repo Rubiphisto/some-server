@@ -1322,7 +1322,8 @@ Consumers:
 Rules:
 
 - snapshot is used for initialization
-- snapshot must be logically consistent with the watch start point
+- first-phase correctness may rely on a fresh-snapshot reconciliation model
+  instead of strict revision-coupled watch startup
 - snapshot must contain `ProcessRef`, not only `ProcessId`
 
 ### Watch
@@ -1352,14 +1353,23 @@ Interpretation:
 
 ### Snapshot + Watch Contract
 
-Discovery consumers should initialize as:
+First-phase discovery consumers should initialize as:
+
+1. obtain a fresh snapshot
+2. apply the snapshot locally
+3. start a cluster-wide watch loop
+4. reconcile membership again after watch startup if needed
+5. apply incremental changes by refreshing from watch-triggered events
+
+This gives a compensating eventually consistent model that is simpler than
+full revision-coupled startup and is acceptable for the first phase.
+
+Later phases may strengthen this to a strict revision-based contract:
 
 1. obtain snapshot at revision `R`
 2. apply snapshot
 3. start watch from revision `R + 1`
 4. apply incremental events
-
-This avoids missed changes during startup.
 
 ## Membership Change Semantics
 
@@ -1573,8 +1583,8 @@ Required degraded-state behavior:
 
 If watch stream breaks:
 
-- re-establish watch from a safe revision if possible
-- otherwise rebuild from a fresh snapshot and restart watch
+- first-phase implementation may rebuild from a fresh snapshot and restart watch
+- later phases may re-establish watch from a safe revision when backend support is added
 
 Correctness is more important than event continuity elegance in the first phase.
 

@@ -556,7 +556,7 @@ Validate:
 
 - registration visibility
 - lease expiry removes member
-- snapshot + watch does not miss events
+- snapshot + watch converges without requiring manual refresh
 - new `IncarnationId` is treated as a new process instance
 
 ### Routing
