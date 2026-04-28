@@ -21,6 +21,7 @@
 #include <optional>
 #include <string>
 #include <thread>
+#include <unordered_set>
 
 struct RelayIpcStatus
 {
@@ -58,6 +59,12 @@ private:
     void StartKeepAliveLoop();
     void StopKeepAliveLoop();
     void KeepAliveLoop(std::uint32_t interval_seconds);
+    void StartAutoConnectLoop();
+    void StopAutoConnectLoop();
+    void AutoConnectLoop();
+    void HandleMembershipEvent(const ipc::MembershipEvent& event);
+    void TryAutoConnectMember(const ipc::ProcessDescriptor& member);
+    static std::uint64_t MakeProcessKey(const ipc::ProcessId& id);
 
     RelayConfiguration mConfiguration;
     ipc::ServiceType mRelayServiceType = 0;
@@ -81,4 +88,8 @@ private:
     std::thread mKeepAliveThread;
     bool mStopKeepAlive = false;
     std::atomic<bool> mKeepAliveRunning = false;
+    std::condition_variable mAutoConnectWakeup;
+    std::thread mAutoConnectThread;
+    bool mStopAutoConnect = false;
+    std::unordered_set<std::uint64_t> mAutoConnectAttempts;
 };

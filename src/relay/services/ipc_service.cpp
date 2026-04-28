@@ -9,6 +9,7 @@ namespace
 {
 constexpr std::int32_t kRelayIpcBatch = 100;
 constexpr ipc::ServiceType kRelayServiceType = 99;
+constexpr ipc::ServiceType kGameServiceType = 10;
 }
 
 RelayIpcService::RelayIpcService(const RelayConfiguration& configuration, ipc::ServiceType relay_service_type)
@@ -128,12 +129,14 @@ LifecycleTask RelayIpcService::Start()
         spdlog::warn("relay ipc discovery watch failed: {}", mLastError);
     }
     StartKeepAliveLoop();
+    StartAutoConnectLoop();
 
     return LifecycleTask::Completed();
 }
 
 LifecycleTask RelayIpcService::Stop()
 {
+    StopAutoConnectLoop();
     mDiscovery.StopWatch();
     StopKeepAliveLoop();
 
@@ -154,6 +157,7 @@ LifecycleTask RelayIpcService::Stop()
 
 LifecycleTask RelayIpcService::Unload()
 {
+    StopAutoConnectLoop();
     StopKeepAliveLoop();
     std::scoped_lock lock(mMutex);
     mMessenger.reset();
@@ -256,6 +260,11 @@ ipc::Result RelayIpcService::ConnectToMember(const ipc::ServiceType service_type
     return ipc::Result::Failure("target member not found in discovery snapshot");
 }
 
+std::uint64_t RelayIpcService::MakeProcessKey(const ipc::ProcessId& id)
+{
+    return (static_cast<std::uint64_t>(id.service_type) << 32) | id.instance_id;
+}
+
 ipc::ProcessDescriptor RelayIpcService::BuildSelfDescriptor() const
 {
     ipc::ProcessDescriptor self;
@@ -336,4 +345,114 @@ void RelayIpcService::KeepAliveLoop(const std::uint32_t interval_seconds)
     }
 
     mKeepAliveRunning.store(false);
+}
+
+void RelayIpcService::StartAutoConnectLoop()
+{
+    if (mAutoConnectThread.joinable())
+    {
+        return;
+    }
+
+    mStopAutoConnect = false;
+    mAutoConnectThread = std::thread(&RelayIpcService::AutoConnectLoop, this);
+}
+
+void RelayIpcService::StopAutoConnectLoop()
+{
+    {
+        std::scoped_lock lock(mMutex);
+        mStopAutoConnect = true;
+    }
+    mAutoConnectWakeup.notify_all();
+    if (mAutoConnectThread.joinable())
+    {
+        mAutoConnectThread.join();
+    }
+}
+
+void RelayIpcService::AutoConnectLoop()
+{
+    while (true)
+    {
+        {
+            std::unique_lock lock(mMutex);
+            if (mStopAutoConnect)
+            {
+                break;
+            }
+            mAutoConnectWakeup.wait_for(lock, std::chrono::milliseconds(200), [this] {
+                return mStopAutoConnect;
+            });
+            if (mStopAutoConnect)
+            {
+                break;
+            }
+        }
+
+        const auto events = DrainMembershipEvents();
+        for (const auto& event : events)
+        {
+            HandleMembershipEvent(event);
+        }
+    }
+}
+
+void RelayIpcService::HandleMembershipEvent(const ipc::MembershipEvent& event)
+{
+    if (event.type == ipc::MembershipEventType::removed)
+    {
+        std::scoped_lock lock(mMutex);
+        mAutoConnectAttempts.erase(MakeProcessKey(event.process.process.process_id));
+        return;
+    }
+
+    TryAutoConnectMember(event.process);
+}
+
+void RelayIpcService::TryAutoConnectMember(const ipc::ProcessDescriptor& member)
+{
+    std::scoped_lock lock(mMutex);
+    if (!mSelf.has_value() || !mTransport || !mLinkManager)
+    {
+        return;
+    }
+    if (member.process == mSelf->process)
+    {
+        return;
+    }
+    if (member.process.process_id.service_type != kGameServiceType)
+    {
+        return;
+    }
+    if (mLinkManager->HasHealthyDirectLink(member.process))
+    {
+        return;
+    }
+
+    const std::uint64_t key = MakeProcessKey(member.process.process_id);
+    if (mAutoConnectAttempts.contains(key))
+    {
+        return;
+    }
+
+    const ipc::Result connect_result = mTransport->Connect(member.listen_endpoint);
+    if (!connect_result.ok)
+    {
+        mLastError = connect_result.message;
+        spdlog::warn(
+            "relay ipc auto-connect failed: service_type={} instance_id={} error={}",
+            member.process.process_id.service_type,
+            member.process.process_id.instance_id,
+            connect_result.message);
+        return;
+    }
+
+    mAutoConnectAttempts.insert(key);
+    spdlog::info(
+        "relay ipc auto-connect: service_type={} instance_id={} host={} port={}",
+        member.process.process_id.service_type,
+        member.process.process_id.instance_id,
+        member.listen_endpoint.host,
+        member.listen_endpoint.port);
 }

@@ -380,11 +380,6 @@ void TestRelayFirstMessaging()
     PollCommandUntil(game1, "ipc_status", "watch_running=true members=3", "game1 watch did not converge");
     PollCommandUntil(game2, "ipc_status", "watch_running=true members=3", "game2 watch did not converge");
 
-    relay.Send("ipc_connect 10 1");
-    relay.Send("ipc_connect 10 2");
-    WaitOrThrow(relay, "relay ipc connect: ok", "relay connect failed");
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-
     PollCommandUntil(relay, "ipc_links", "relay ipc links: count=2", "relay links not healthy");
     PollCommandUntil(game1, "ipc_links", "game ipc links: count=1", "game1 relay link not healthy");
     PollCommandUntil(game2, "ipc_links", "game ipc links: count=1", "game2 relay link not healthy");
