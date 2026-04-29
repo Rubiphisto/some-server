@@ -1579,6 +1579,30 @@ Required degraded-state behavior:
 - business-facing IPC send paths reject new sends
 - forwarding and auto-connect stop participating in inter-process messaging
 
+### First-Phase Transient Backend Recovery
+
+The first-phase implementation also supports a minimal recovery path for
+transient backend outages.
+
+If the discovery backend becomes unavailable long enough to trigger degraded
+membership state, but later becomes reachable again:
+
+- the process may attempt a fresh `RegisterSelf`
+- the process may rebuild its snapshot view
+- the process may restart watch
+- the process may re-enter `registered=true` and `ipc_ready=true`
+- application-level topology reconcile may run again to restore relay-first
+  connectivity
+
+This recovery model is intentionally narrow:
+
+- it does not guarantee continuity of the old lease
+- it does not preserve event-stream continuity
+- it does not introduce a richer discovery ownership state machine
+
+The goal is only to restore valid cluster participation after a transient outage
+while keeping first-phase logic simple.
+
 ### Watch Failure
 
 If watch stream breaks:
@@ -2601,6 +2625,7 @@ The current first-phase implementation has reached the intended baseline:
 - `BroadcastToService` works for the first-phase scope
 - discovery `watch` and application-level auto-connect are in place
 - degraded membership handling is explicit
+- transient discovery outage recovery is explicit
 - first-phase topology glue is centralized in a thin shared policy object
 - runtime commands expose membership, links, receivers, topology, and counters
 

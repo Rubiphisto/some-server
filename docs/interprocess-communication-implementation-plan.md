@@ -616,6 +616,15 @@ Validate:
 - relay restart reconverges automatically
 - snapshot + watch convergence does not require manual refresh
 
+### Integration 6: Discovery Degraded And Recovery
+
+- backend loss drives `relay` and `game` into degraded membership state
+- outbound IPC send paths reject while degraded
+- auto-connect and forwarding stop participating while degraded
+- transient backend recovery re-registers discovery membership automatically
+- snapshot, watch, and relay-first topology reconverge automatically after
+  backend recovery
+
 ## Failure Cases To Validate Early
 
 - protocol version mismatch
@@ -681,6 +690,8 @@ Current state:
 - `BroadcastToService` works for the first-phase scope
 - discovery watch and application-level auto-connect are in place
 - multi-process integration tests cover the main relay-first paths
+- multi-process integration tests cover degraded discovery and transient backend
+  recovery
 - first-phase auto-connect rules are centralized behind a shared topology
   policy object
 - runtime commands expose membership, links, receivers, topology, degraded
