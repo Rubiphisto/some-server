@@ -164,7 +164,7 @@ namespace ipc
 {
 EtcdDiscovery::EtcdDiscovery(EtcdDiscoveryOptions options)
     : mOptions(std::move(options))
-    , mBackend(CreateEtcdDiscoveryBackend(mOptions))
+    , mBackend(CreateEtcdSdkDiscoveryBackend(mOptions))
 {
 }
 

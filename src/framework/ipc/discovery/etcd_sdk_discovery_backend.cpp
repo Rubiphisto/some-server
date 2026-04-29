@@ -482,14 +482,4 @@ std::unique_ptr<IEtcdDiscoveryBackend> CreateEtcdSdkDiscoveryBackend(const EtcdD
 {
     return std::make_unique<EtcdSdkDiscoveryBackend>(options);
 }
-
-std::unique_ptr<IEtcdDiscoveryBackend> CreateEtcdDiscoveryBackend(const EtcdDiscoveryOptions& options)
-{
-    if (options.backend == "sdk")
-    {
-        return CreateEtcdSdkDiscoveryBackend(options);
-    }
-
-    return CreateEtcdctlDiscoveryBackend(options);
-}
 } // namespace ipc

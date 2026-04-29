@@ -12,8 +12,6 @@ namespace ipc
 {
 struct EtcdDiscoveryOptions
 {
-    std::string backend = "sdk";
-    std::string etcdctl_path = "etcdctl";
     std::vector<std::string> endpoints{"127.0.0.1:2379"};
     std::string prefix = "/some_server/ipc/dev/local";
     std::uint32_t lease_ttl_seconds = 5;
@@ -50,7 +48,5 @@ public:
     virtual bool WatchRunning() const = 0;
 };
 
-std::unique_ptr<IEtcdDiscoveryBackend> CreateEtcdctlDiscoveryBackend(const EtcdDiscoveryOptions& options);
 std::unique_ptr<IEtcdDiscoveryBackend> CreateEtcdSdkDiscoveryBackend(const EtcdDiscoveryOptions& options);
-std::unique_ptr<IEtcdDiscoveryBackend> CreateEtcdDiscoveryBackend(const EtcdDiscoveryOptions& options);
 } // namespace ipc

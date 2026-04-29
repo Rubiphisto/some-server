@@ -245,10 +245,7 @@ namespace
     {
         const ScopedEtcd etcd = StartEtcd();
 
-        ipc::EtcdDiscovery discovery({
-            .etcdctl_path = "etcdctl",
-            .endpoints = {etcd.client_endpoint},
-            .prefix = "/some_server/ipc/test/local"});
+        ipc::EtcdDiscovery discovery({.endpoints = {etcd.client_endpoint}, .prefix = "/some_server/ipc/test/local"});
 
         const ipc::ProcessDescriptor game = MakeProcess(10, 1, 101);
         Require(discovery.RegisterSelf(game).ok, "register self");
@@ -267,11 +264,8 @@ namespace
     {
         const ScopedEtcd etcd = StartEtcd();
 
-        ipc::EtcdDiscovery discovery({
-            .etcdctl_path = "etcdctl",
-            .endpoints = {etcd.client_endpoint},
-            .prefix = "/some_server/ipc/test/lease_expiry",
-            .lease_ttl_seconds = 2});
+        ipc::EtcdDiscovery discovery(
+            {.endpoints = {etcd.client_endpoint}, .prefix = "/some_server/ipc/test/lease_expiry", .lease_ttl_seconds = 2});
 
         const ipc::ProcessDescriptor game = MakeProcess(10, 2, 102);
         Require(discovery.RegisterSelf(game).ok, "register leased process");
@@ -288,11 +282,8 @@ namespace
     {
         const ScopedEtcd etcd = StartEtcd();
 
-        ipc::EtcdDiscovery discovery({
-            .etcdctl_path = "etcdctl",
-            .endpoints = {etcd.client_endpoint},
-            .prefix = "/some_server/ipc/test/keep_alive",
-            .lease_ttl_seconds = 2});
+        ipc::EtcdDiscovery discovery(
+            {.endpoints = {etcd.client_endpoint}, .prefix = "/some_server/ipc/test/keep_alive", .lease_ttl_seconds = 2});
 
         const ipc::ProcessDescriptor game = MakeProcess(10, 3, 103);
         Require(discovery.RegisterSelf(game).ok, "register keepalive process");
@@ -309,16 +300,10 @@ namespace
     {
         const ScopedEtcd etcd = StartEtcd();
 
-        ipc::EtcdDiscovery writer({
-            .etcdctl_path = "etcdctl",
-            .endpoints = {etcd.client_endpoint},
-            .prefix = "/some_server/ipc/test/events",
-            .lease_ttl_seconds = 0});
-        ipc::EtcdDiscovery observer({
-            .etcdctl_path = "etcdctl",
-            .endpoints = {etcd.client_endpoint},
-            .prefix = "/some_server/ipc/test/events",
-            .lease_ttl_seconds = 0});
+        ipc::EtcdDiscovery writer(
+            {.endpoints = {etcd.client_endpoint}, .prefix = "/some_server/ipc/test/events", .lease_ttl_seconds = 0});
+        ipc::EtcdDiscovery observer(
+            {.endpoints = {etcd.client_endpoint}, .prefix = "/some_server/ipc/test/events", .lease_ttl_seconds = 0});
 
         const ipc::ProcessDescriptor game = MakeProcess(10, 4, 104);
         Require(writer.RegisterSelf(game).ok, "register event member");
@@ -340,16 +325,10 @@ namespace
     {
         const ScopedEtcd etcd = StartEtcd();
 
-        ipc::EtcdDiscovery writer({
-            .etcdctl_path = "etcdctl",
-            .endpoints = {etcd.client_endpoint},
-            .prefix = "/some_server/ipc/test/watch",
-            .lease_ttl_seconds = 0});
-        ipc::EtcdDiscovery observer({
-            .etcdctl_path = "etcdctl",
-            .endpoints = {etcd.client_endpoint},
-            .prefix = "/some_server/ipc/test/watch",
-            .lease_ttl_seconds = 0});
+        ipc::EtcdDiscovery writer(
+            {.endpoints = {etcd.client_endpoint}, .prefix = "/some_server/ipc/test/watch", .lease_ttl_seconds = 0});
+        ipc::EtcdDiscovery observer(
+            {.endpoints = {etcd.client_endpoint}, .prefix = "/some_server/ipc/test/watch", .lease_ttl_seconds = 0});
 
         Require(observer.StartWatch().ok, "start discovery watch");
         const ipc::ProcessDescriptor game = MakeProcess(10, 5, 105);
@@ -382,7 +361,6 @@ namespace
         const ScopedEtcd etcd = StartEtcd();
 
         ipc::EtcdDiscoveryOptions options{
-            .etcdctl_path = "etcdctl",
             .endpoints = {etcd.client_endpoint},
             .prefix = "/some_server/ipc/test/sdk_unary",
             .lease_ttl_seconds = 2};
@@ -412,15 +390,11 @@ namespace
         const ScopedEtcd etcd = StartEtcd();
 
         ipc::EtcdDiscoveryOptions options{
-            .etcdctl_path = "etcdctl",
             .endpoints = {etcd.client_endpoint},
             .prefix = "/some_server/ipc/test/sdk_watch",
             .lease_ttl_seconds = 0};
-        ipc::EtcdDiscovery writer({
-            .etcdctl_path = "etcdctl",
-            .endpoints = {etcd.client_endpoint},
-            .prefix = "/some_server/ipc/test/sdk_watch",
-            .lease_ttl_seconds = 0});
+        ipc::EtcdDiscovery writer(
+            {.endpoints = {etcd.client_endpoint}, .prefix = "/some_server/ipc/test/sdk_watch", .lease_ttl_seconds = 0});
         ipc::EtcdDiscovery observer(options, ipc::CreateEtcdSdkDiscoveryBackend(options));
 
         Require(observer.StartWatch().ok, "start sdk discovery watch");
@@ -454,7 +428,6 @@ namespace
         ScopedEtcd etcd = StartEtcdWithReuseableDataDir();
 
         ipc::EtcdDiscoveryOptions options{
-            .etcdctl_path = "etcdctl",
             .endpoints = {etcd.client_endpoint},
             .prefix = "/some_server/ipc/test/sdk_restart",
             .lease_ttl_seconds = 2};

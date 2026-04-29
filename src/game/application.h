@@ -8,7 +8,6 @@
 
 struct GameDiscoveryConfiguration
 {
-    std::string backend = "sdk";
     std::vector<std::string> endpoints{"127.0.0.1:2379"};
     std::string prefix = "/some_server/ipc/dev/local";
     std::uint32_t lease_ttl_seconds = 5;
@@ -51,8 +50,6 @@ struct glz::meta<GameDiscoveryConfiguration>
 {
     using T = GameDiscoveryConfiguration;
     static constexpr auto value = glz::object(
-        "backend",
-        &T::backend,
         "endpoints",
         &T::endpoints,
         "prefix",

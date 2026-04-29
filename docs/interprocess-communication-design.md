@@ -1683,28 +1683,25 @@ Required invariants above the backend:
 - application services only consume discovery state and degraded/recovery
   signals, never backend records directly
 
-### Transitional `etcdctl` Backend Limits
+### SDK Backend Baseline
 
 The current default first-phase backend is the SDK-backed discovery transport.
-The older `etcdctl` subprocess backend remains only as a transitional fallback.
 
-Current acceptable limits:
+Current accepted limits:
 
-- synchronous operations are process-spawn based rather than long-lived RPCs
-- command timeout is the bounded-failure mechanism
 - watch recovery uses fresh snapshot plus watch restart
 - watch consistency is compensating eventual consistency, not revision-based
-- error classification is coarser than a future SDK-backed transport can provide
+- discovery remains tied to the etcd v3 `KV / Lease / Watch` capability set
 
 These limits are acceptable only because:
 
 - the backend is isolated behind `IEtcdDiscoveryBackend`
 - degraded and recovery semantics are already covered by automated tests
-- upper-layer APIs do not depend on `etcdctl` behavior directly
+- upper-layer APIs do not depend on SDK-specific etcd client types directly
 
-### Future SDK Backend Readiness
+### Future Backend Evolution
 
-Before removing the transitional `etcdctl` backend, confirm:
+Before replacing or extending the current SDK-backed backend, confirm:
 
 - the SDK can provide bounded synchronous failure behavior comparable to the
   current timeout-based contract
