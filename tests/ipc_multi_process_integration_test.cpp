@@ -307,6 +307,36 @@ public:
         return mOutput.find(needle) != std::string::npos;
     }
 
+    bool WaitForAfter(const std::size_t offset, std::string_view needle, const std::chrono::milliseconds timeout)
+    {
+        const auto deadline = Clock::now() + timeout;
+        while (Clock::now() < deadline)
+        {
+            if (mOutput.size() >= offset &&
+                std::string_view(mOutput.data() + offset, mOutput.size() - offset).find(needle) !=
+                    std::string_view::npos)
+            {
+                return true;
+            }
+
+            pollfd fd{mStdoutFd, POLLIN, 0};
+            const int rc = poll(&fd, 1, 100);
+            if (rc > 0 && (fd.revents & POLLIN))
+            {
+                char buffer[4096];
+                const ssize_t bytes = read(mStdoutFd, buffer, sizeof(buffer));
+                if (bytes > 0)
+                {
+                    mOutput.append(buffer, static_cast<std::size_t>(bytes));
+                    continue;
+                }
+            }
+        }
+
+        return mOutput.size() >= offset &&
+            std::string_view(mOutput.data() + offset, mOutput.size() - offset).find(needle) != std::string_view::npos;
+    }
+
     const std::string& Output() const
     {
         return mOutput;
@@ -339,6 +369,7 @@ std::filesystem::path WriteRelayConfig(
            "    \"instance_id\": 1,\n"
            "    \"listen\": { \"host\": \"127.0.0.1\", \"port\": " << listen_port << " },\n"
            "    \"discovery\": {\n"
+           "      \"backend\": \"sdk\",\n"
            "      \"endpoints\": [\"127.0.0.1:" << etcd_port << "\"],\n"
            "      \"prefix\": \"" << prefix << "\",\n"
            "      \"lease_ttl_seconds\": 4\n"
@@ -368,6 +399,7 @@ std::filesystem::path WriteGameConfig(
            "    \"instance_id\": " << instance_id << ",\n"
            "    \"listen\": { \"host\": \"127.0.0.1\", \"port\": " << port << " },\n"
            "    \"discovery\": {\n"
+           "      \"backend\": \"sdk\",\n"
            "      \"endpoints\": [\"127.0.0.1:" << etcd_port << "\"],\n"
            "      \"prefix\": \"" << prefix << "\",\n"
            "      \"lease_ttl_seconds\": 4\n"
@@ -393,8 +425,9 @@ void PollCommandUntil(
 {
     for (int attempt = 0; attempt < 20; ++attempt)
     {
+        const std::size_t previous_size = process.Output().size();
         process.Send(command);
-        if (process.WaitFor(needle, std::chrono::milliseconds(500)))
+        if (process.WaitForAfter(previous_size, needle, std::chrono::milliseconds(500)))
         {
             return;
         }
@@ -414,8 +447,9 @@ void PollCommandUntilWithRetries(
 {
     for (int attempt = 0; attempt < attempts; ++attempt)
     {
+        const std::size_t previous_size = process.Output().size();
         process.Send(command);
-        if (process.WaitFor(needle, wait_per_attempt))
+        if (process.WaitForAfter(previous_size, needle, wait_per_attempt))
         {
             return;
         }
@@ -433,24 +467,36 @@ std::string RunCommandAndCaptureLine(
 {
     const std::size_t previous_size = process.Output().size();
     process.Send(command);
-    if (!process.WaitFor(prefix, std::chrono::milliseconds(500)))
+
+    const auto deadline = Clock::now() + std::chrono::milliseconds(1000);
+    while (Clock::now() < deadline)
     {
-        throw std::runtime_error(message + "\noutput:\n" + process.Output());
+        if (!process.WaitForAfter(previous_size, prefix, std::chrono::milliseconds(50)))
+        {
+            continue;
+        }
+
+        const std::string_view appended(process.Output().data() + previous_size, process.Output().size() - previous_size);
+        const std::size_t offset = appended.rfind(prefix);
+        if (offset == std::string_view::npos)
+        {
+            continue;
+        }
+
+        const std::size_t line_end = appended.find('\n', offset);
+        if (line_end == std::string_view::npos)
+        {
+            if (Clock::now() < deadline)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                continue;
+            }
+            return std::string(appended.substr(offset));
+        }
+        return std::string(appended.substr(offset, line_end - offset));
     }
 
-    const std::string_view appended(process.Output().data() + previous_size, process.Output().size() - previous_size);
-    const std::size_t offset = appended.rfind(prefix);
-    if (offset == std::string_view::npos)
-    {
-        throw std::runtime_error(message + "\noutput:\n" + process.Output());
-    }
-
-    const std::size_t line_end = appended.find('\n', offset);
-    if (line_end == std::string_view::npos)
-    {
-        return std::string(appended.substr(offset));
-    }
-    return std::string(appended.substr(offset, line_end - offset));
+    throw std::runtime_error(message + "\noutput:\n" + process.Output());
 }
 
 std::uint64_t ExtractUintMetric(const std::string& line, const std::string& key)
@@ -484,14 +530,31 @@ void RequireMetricAtLeast(
     const std::uint64_t minimum,
     const std::string& message)
 {
-    const std::string line = RunCommandAndCaptureLine(process, command, prefix, message);
-    const std::uint64_t value = ExtractUintMetric(line, key);
-    if (value < minimum)
+    std::string last_line;
+    std::string last_error;
+    for (int attempt = 0; attempt < 20; ++attempt)
     {
-        throw std::runtime_error(
-            message + ": expected " + key + ">=" + std::to_string(minimum) + ", got " + std::to_string(value) +
-            "\nline:\n" + line);
+        try
+        {
+            last_line = RunCommandAndCaptureLine(process, command, prefix, message);
+            const std::uint64_t value = ExtractUintMetric(last_line, key);
+            if (value >= minimum)
+            {
+                return;
+            }
+
+            last_error = message + ": expected " + key + ">=" + std::to_string(minimum) + ", got " +
+                std::to_string(value);
+        }
+        catch (const std::exception& ex)
+        {
+            last_error = ex.what();
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
+
+    throw std::runtime_error(last_error + "\nline:\n" + last_line);
 }
 
 void RunRelayFirstMessagingScenario(const bool relay_first)

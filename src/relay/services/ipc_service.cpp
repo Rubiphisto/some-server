@@ -21,6 +21,7 @@ RelayIpcService::RelayIpcService(const RelayConfiguration& configuration, ipc::S
     , mRoutingPolicy(kRelayServiceType)
     , mRouter(mRoutingPolicy)
     , mDiscovery(ipc::EtcdDiscoveryOptions{
+          .backend = configuration.discovery.backend,
           .etcdctl_path = "etcdctl",
           .endpoints = configuration.discovery.endpoints,
           .prefix = configuration.discovery.prefix,

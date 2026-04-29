@@ -1,4 +1,5 @@
 #include "framework/ipc/discovery/etcd_discovery.h"
+#include "framework/ipc/discovery/etcd_discovery_backend.h"
 
 #include <chrono>
 #include <csignal>
@@ -35,6 +36,18 @@ namespace
             }
         }
     };
+
+    void StopEtcdProcess(ScopedEtcd& scoped)
+    {
+        if (scoped.pid > 0)
+        {
+            kill(scoped.pid, SIGTERM);
+            waitpid(scoped.pid, nullptr, 0);
+            scoped.pid = -1;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
 
     void Require(bool condition, const std::string& message)
     {
@@ -133,6 +146,99 @@ namespace
         }
 
         throw std::runtime_error("etcd did not become healthy");
+    }
+
+    void StartEtcdProcess(ScopedEtcd& scoped, const bool initial_cluster)
+    {
+        const std::string client_url = "http://127.0.0.1:" + std::to_string(scoped.client_port);
+        const std::string peer_url = "http://127.0.0.1:" + std::to_string(scoped.peer_port);
+
+        const pid_t pid = fork();
+        if (pid == -1)
+        {
+            throw std::runtime_error("fork failed");
+        }
+        if (pid == 0)
+        {
+            if (initial_cluster)
+            {
+                execl(
+                    "/usr/local/bin/etcd",
+                    "etcd",
+                    "--name",
+                    "ipc-test",
+                    "--data-dir",
+                    scoped.data_dir.c_str(),
+                    "--listen-client-urls",
+                    client_url.c_str(),
+                    "--advertise-client-urls",
+                    client_url.c_str(),
+                    "--listen-peer-urls",
+                    peer_url.c_str(),
+                    "--initial-advertise-peer-urls",
+                    peer_url.c_str(),
+                    "--initial-cluster",
+                    ("ipc-test=" + peer_url).c_str(),
+                    "--initial-cluster-state",
+                    "new",
+                    static_cast<char*>(nullptr));
+            }
+            else
+            {
+                execl(
+                    "/usr/local/bin/etcd",
+                    "etcd",
+                    "--name",
+                    "ipc-test",
+                    "--data-dir",
+                    scoped.data_dir.c_str(),
+                    "--listen-client-urls",
+                    client_url.c_str(),
+                    "--advertise-client-urls",
+                    client_url.c_str(),
+                    "--listen-peer-urls",
+                    peer_url.c_str(),
+                    "--initial-advertise-peer-urls",
+                    peer_url.c_str(),
+                    static_cast<char*>(nullptr));
+            }
+            _exit(127);
+        }
+
+        scoped.pid = pid;
+
+        for (int attempt = 0; attempt < 50; ++attempt)
+        {
+            const std::string health_command =
+                "etcdctl --endpoints=127.0.0.1:" + std::to_string(scoped.client_port) +
+                " endpoint health >/dev/null 2>&1";
+            const int rc = std::system(health_command.c_str());
+            if (rc == 0)
+            {
+                return;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        throw std::runtime_error("etcd did not become healthy");
+    }
+
+    ScopedEtcd StartEtcdWithReuseableDataDir()
+    {
+        ScopedEtcd scoped;
+        const auto suffix = std::to_string(
+            std::chrono::steady_clock::now().time_since_epoch().count());
+        scoped.data_dir = std::filesystem::temp_directory_path() / ("ipc_etcd_reuse_" + suffix);
+        std::filesystem::create_directories(scoped.data_dir);
+
+        const auto seed = static_cast<std::uint16_t>(
+            std::chrono::steady_clock::now().time_since_epoch().count() % 1000);
+        scoped.client_port = static_cast<std::uint16_t>(33379 + seed * 2);
+        scoped.peer_port = static_cast<std::uint16_t>(scoped.client_port + 1);
+        scoped.client_endpoint = "127.0.0.1:" + std::to_string(scoped.client_port);
+
+        StartEtcdProcess(scoped, true);
+        return scoped;
     }
 
     void TestEtcdDiscoveryLifecycle()
@@ -270,6 +376,112 @@ namespace
         Require(events.front().type == ipc::MembershipEventType::removed, "watch remove event type");
         observer.StopWatch();
     }
+
+    void TestEtcdSdkDiscoveryUnaryLifecycle()
+    {
+        const ScopedEtcd etcd = StartEtcd();
+
+        ipc::EtcdDiscoveryOptions options{
+            .etcdctl_path = "etcdctl",
+            .endpoints = {etcd.client_endpoint},
+            .prefix = "/some_server/ipc/test/sdk_unary",
+            .lease_ttl_seconds = 2};
+        ipc::EtcdDiscovery discovery(options, ipc::CreateEtcdSdkDiscoveryBackend(options));
+
+        const ipc::ProcessDescriptor game = MakeProcess(10, 6, 106);
+        Require(discovery.RegisterSelf(game).ok, "sdk register self");
+        Require(discovery.RefreshSnapshot().ok, "sdk refresh snapshot");
+
+        const auto found = discovery.Find(game.process.process_id);
+        Require(found.has_value(), "sdk find registered process");
+        Require(found->process == game.process, "sdk registered process ref");
+
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        Require(discovery.KeepAliveOnce().ok, "sdk keepalive once");
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        Require(discovery.RefreshSnapshot().ok, "sdk refresh after keepalive");
+        Require(discovery.Find(game.process.process_id).has_value(), "sdk keepalive should retain member");
+
+        Require(discovery.Remove(game.process.process_id).ok, "sdk remove process");
+        Require(discovery.RefreshSnapshot().ok, "sdk refresh after remove");
+        Require(!discovery.Find(game.process.process_id).has_value(), "sdk removed process should disappear");
+    }
+
+    void TestEtcdSdkDiscoveryWatch()
+    {
+        const ScopedEtcd etcd = StartEtcd();
+
+        ipc::EtcdDiscoveryOptions options{
+            .etcdctl_path = "etcdctl",
+            .endpoints = {etcd.client_endpoint},
+            .prefix = "/some_server/ipc/test/sdk_watch",
+            .lease_ttl_seconds = 0};
+        ipc::EtcdDiscovery writer({
+            .etcdctl_path = "etcdctl",
+            .endpoints = {etcd.client_endpoint},
+            .prefix = "/some_server/ipc/test/sdk_watch",
+            .lease_ttl_seconds = 0});
+        ipc::EtcdDiscovery observer(options, ipc::CreateEtcdSdkDiscoveryBackend(options));
+
+        Require(observer.StartWatch().ok, "start sdk discovery watch");
+        const ipc::ProcessDescriptor game = MakeProcess(10, 7, 107);
+        Require(writer.RegisterSelf(game).ok, "register sdk watch member");
+
+        WaitUntil(
+            [&observer, &game] {
+                const auto found = observer.Find(game.process.process_id);
+                return found.has_value() && found->process == game.process;
+            },
+            "sdk watch did not observe add");
+
+        auto events = observer.DrainEvents();
+        Require(events.size() == 1, "sdk watch add event count");
+        Require(events.front().type == ipc::MembershipEventType::added, "sdk watch add event type");
+
+        Require(writer.Remove(game.process.process_id).ok, "remove sdk watch member");
+        WaitUntil(
+            [&observer, &game] { return !observer.Find(game.process.process_id).has_value(); },
+            "sdk watch did not observe remove");
+
+        events = observer.DrainEvents();
+        Require(events.size() == 1, "sdk watch remove event count");
+        Require(events.front().type == ipc::MembershipEventType::removed, "sdk watch remove event type");
+        observer.StopWatch();
+    }
+
+    void TestEtcdSdkDiscoveryRecoveryAfterRestart()
+    {
+        ScopedEtcd etcd = StartEtcdWithReuseableDataDir();
+
+        ipc::EtcdDiscoveryOptions options{
+            .etcdctl_path = "etcdctl",
+            .endpoints = {etcd.client_endpoint},
+            .prefix = "/some_server/ipc/test/sdk_restart",
+            .lease_ttl_seconds = 2};
+        ipc::EtcdDiscovery discovery(options, ipc::CreateEtcdSdkDiscoveryBackend(options));
+
+        const ipc::ProcessDescriptor game = MakeProcess(10, 8, 108);
+        Require(discovery.RegisterSelf(game).ok, "sdk restart register self");
+        Require(discovery.KeepAliveOnce().ok, "sdk restart initial keepalive");
+
+        StopEtcdProcess(etcd);
+        Require(!discovery.KeepAliveOnce().ok, "sdk restart keepalive should fail after outage");
+
+        StartEtcdProcess(etcd, false);
+        {
+            auto backend = ipc::CreateEtcdSdkDiscoveryBackend(options);
+            std::uint64_t lease_id = 0;
+            const auto lease = backend->GrantLease(options.lease_ttl_seconds, lease_id);
+            Require(lease.ok, "sdk restart direct grant lease after outage");
+            const auto put = backend->Put(options.prefix + "/backend_probe", "probe", lease_id);
+            Require(put.ok, "sdk restart direct backend put after outage");
+            const auto del = backend->Delete(options.prefix + "/backend_probe");
+            Require(del.ok, "sdk restart direct backend delete after outage");
+        }
+        Require(discovery.RegisterSelf(game).ok, "sdk restart register self after outage");
+        Require(discovery.RefreshSnapshot().ok, "sdk restart refresh snapshot after outage");
+        Require(discovery.Find(game.process.process_id).has_value(), "sdk restart find recovered process");
+    }
 } // namespace
 
 int main()
@@ -281,6 +493,9 @@ int main()
         TestEtcdDiscoveryKeepAlive();
         TestEtcdDiscoverySnapshotEvents();
         TestEtcdDiscoveryWatch();
+        TestEtcdSdkDiscoveryUnaryLifecycle();
+        TestEtcdSdkDiscoveryWatch();
+        TestEtcdSdkDiscoveryRecoveryAfterRestart();
         std::cout << "ipc_etcd_discovery_test: ok" << std::endl;
         return 0;
     }

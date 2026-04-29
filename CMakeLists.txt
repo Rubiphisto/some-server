@@ -60,6 +60,8 @@ else ()
     FetchContent_MakeAvailable(protobuf_proj)
 endif ()
 
+find_package(gRPC CONFIG REQUIRED)
+
 set(CMAKE_MODULE_PATH
         "${server_SOURCE_DIR}/cmake"
 )

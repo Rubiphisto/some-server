@@ -164,7 +164,7 @@ namespace ipc
 {
 EtcdDiscovery::EtcdDiscovery(EtcdDiscoveryOptions options)
     : mOptions(std::move(options))
-    , mBackend(CreateEtcdctlDiscoveryBackend(mOptions))
+    , mBackend(CreateEtcdDiscoveryBackend(mOptions))
 {
 }
 
@@ -195,7 +195,21 @@ Result EtcdDiscovery::RegisterSelf(const ProcessDescriptor& self)
         }
     }
 
-    const Result put = mBackend->Put(MemberKey(self.process.process_id), SerializeDescriptor(self), mLeaseId);
+    Result put = mBackend->Put(MemberKey(self.process.process_id), SerializeDescriptor(self), mLeaseId);
+    if (!put.ok && mOptions.lease_ttl_seconds > 0)
+    {
+        // A transient outage can leave the local process holding a lease id
+        // that no longer exists in the rebuilt etcd member. Re-grant once and
+        // retry the registration before surfacing the failure.
+        mLeaseId = 0;
+        const Result lease = GrantLease();
+        if (!lease.ok)
+        {
+            return lease;
+        }
+
+        put = mBackend->Put(MemberKey(self.process.process_id), SerializeDescriptor(self), mLeaseId);
+    }
     if (!put.ok)
     {
         return put;
@@ -219,7 +233,17 @@ Result EtcdDiscovery::KeepAliveOnce()
         return Result::Failure("lease not initialized");
     }
 
-    return mBackend->KeepAliveOnce(lease_id);
+    const Result keepalive = mBackend->KeepAliveOnce(lease_id);
+    if (!keepalive.ok)
+    {
+        std::scoped_lock lock(mMutex);
+        // Once keepalive fails, the local process can no longer trust that the
+        // previously granted lease still exists on the etcd side. Clear it so
+        // the next registration attempt always re-grants a fresh lease instead
+        // of retrying Put with a stale lease id.
+        mLeaseId = 0;
+    }
+    return keepalive;
 }
 
 Result EtcdDiscovery::RefreshSnapshot()
