@@ -1642,6 +1642,82 @@ The first implementation should not require:
 - separate receiver discovery records
 - multi-backend federation
 
+## Discovery Backend Capability Checklist
+
+The discovery layer must remain backend-adaptable.
+
+Any future backend implementation, including a native SDK-backed etcd client,
+must preserve the upper-layer contract already exercised by the current
+first-phase system.
+
+Required backend capabilities:
+
+- lease creation for local process membership
+- one-shot lease keepalive
+- put member record with optional lease binding
+- delete member record
+- full-prefix snapshot query
+- long-running prefix watch stream
+- explicit watch stop / shutdown behavior
+- bounded failure behavior for synchronous operations
+
+Required semantics:
+
+- `GrantLease` either returns a usable lease id or a structured failure
+- `Put` and `Delete` failures are surfaced synchronously
+- `KeepAliveOnce` must fail in bounded time when backend connectivity is lost
+- `GetPrefix` must fail in bounded time when backend connectivity is lost
+- `StartWatchPrefix` must either start a watch stream or return a structured failure
+- `WaitForWatchEvent` must distinguish:
+  - normal event delivery
+  - stream closure
+  - explicit stop
+  - backend/runtime error
+- `StopWatch` must be safe to call during shutdown even if no watch is active
+- backend shutdown must not leak watch worker state into upper layers
+
+Required invariants above the backend:
+
+- discovery owns snapshot refresh, diffing, and membership event queuing
+- routing and messaging remain unaware of backend-specific protocol details
+- application services only consume discovery state and degraded/recovery
+  signals, never backend records directly
+
+### First-Phase `etcdctl` Backend Limits
+
+The current first-phase backend uses `etcdctl` subprocesses plus JSON output.
+
+This is an accepted staging choice, not the long-term preferred shape.
+
+Current acceptable limits:
+
+- synchronous operations are process-spawn based rather than long-lived RPCs
+- command timeout is the bounded-failure mechanism
+- watch recovery uses fresh snapshot plus watch restart
+- watch consistency is compensating eventual consistency, not revision-based
+- error classification is coarser than a future SDK-backed transport can provide
+
+These limits are acceptable only because:
+
+- the backend is isolated behind `IEtcdDiscoveryBackend`
+- degraded and recovery semantics are already covered by automated tests
+- upper-layer APIs do not depend on `etcdctl` behavior directly
+
+### Future SDK Backend Readiness
+
+Before replacing the current backend with an SDK-backed implementation, confirm:
+
+- the SDK can provide bounded synchronous failure behavior comparable to the
+  current timeout-based contract
+- watch stop and stream teardown semantics can map cleanly to
+  `WaitForWatchEvent` and `StopWatch`
+- lease keepalive behavior can drive the same degraded and recovery semantics
+- no upper-layer discovery, routing, messaging, or application API changes are
+  required
+
+If those conditions are not met, the backend interface should be tightened
+first rather than leaking SDK-specific behavior upward.
+
 ## Topology And Route Resolution
 
 This section is the main output of step 5.

@@ -707,4 +707,5 @@ Recommended next work should focus on:
 - consistency review between design and implementation
 - documenting first-phase topology glue such as auto-connect
 - tightening observability and operational tooling
+- defining discovery backend replacement capabilities before any SDK migration
 - only then deciding whether to deepen watch semantics or broaden feature scope
