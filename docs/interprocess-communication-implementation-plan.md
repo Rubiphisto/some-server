@@ -466,6 +466,8 @@ Suggested commands:
 - `ipc_status`
 - `ipc_members`
 - `ipc_links`
+- `ipc_topology`
+- `ipc_metrics`
 - `ipc_receivers` (optional in the first slice)
 
 ### Minimum Value
@@ -477,6 +479,8 @@ The most important early commands are:
 - `ipc_links`
 
 These are enough to inspect liveness, membership, and direct-link health during integration.
+As first-phase recovery and auto-connect behavior harden, `ipc_topology` and
+`ipc_metrics` become part of the practical baseline as well.
 
 ## Implementation Milestones
 
@@ -695,7 +699,8 @@ Current state:
 - first-phase auto-connect rules are centralized behind a shared topology
   policy object
 - runtime commands expose membership, links, receivers, topology, degraded
-  state, forwarding counters, and auto-connect success/failure counters
+  state, forwarding counters, keepalive/recovery counters, watch restart
+  counters, and auto-connect success/failure counters
 
 Recommended next work should focus on:
 

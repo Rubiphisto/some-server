@@ -1807,6 +1807,8 @@ state easy to inspect:
 - `ipc_status` exposes auto-connect success and failure counters
 - `ipc_status` exposes the most recent auto-connect success and failure target
 - `ipc_topology` summarizes current convergence and healthy links
+- `ipc_metrics` exposes discovery keepalive, discovery recovery, watch restart,
+  send-reject, and forwarding counters
 - `ipc_links` shows direct healthy links
 - `ipc_members` shows discovery membership
 - `ipc_receivers` shows local receiver ownership on business processes
@@ -2627,7 +2629,8 @@ The current first-phase implementation has reached the intended baseline:
 - degraded membership handling is explicit
 - transient discovery outage recovery is explicit
 - first-phase topology glue is centralized in a thin shared policy object
-- runtime commands expose membership, links, receivers, topology, and counters
+- runtime commands expose membership, links, receivers, topology, metrics, and
+  failure/recovery counters
 
 The first phase should now be treated as a stable baseline rather than a
 placeholder. Later phases may extend capability, but should preserve:
