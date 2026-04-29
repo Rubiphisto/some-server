@@ -639,6 +639,42 @@ void TestDiscoveryDegradedBehavior()
 
     game1.Send("ipc_send_player 1001 degraded-player-test");
     WaitOrThrow(game1, "game ipc player send failed: ipc is not active", "player send should fail while degraded");
+
+    etcd.Start();
+
+    PollCommandUntilWithRetries(
+        relay,
+        "ipc_status",
+        "registered=true ipc_ready=true membership_degraded=false",
+        "relay did not recover from degraded discovery state",
+        60,
+        std::chrono::milliseconds(500));
+    PollCommandUntilWithRetries(
+        game1,
+        "ipc_status",
+        "registered=true ipc_ready=true membership_degraded=false",
+        "game1 did not recover from degraded discovery state",
+        60,
+        std::chrono::milliseconds(500));
+    PollCommandUntilWithRetries(
+        game2,
+        "ipc_status",
+        "registered=true ipc_ready=true membership_degraded=false",
+        "game2 did not recover from degraded discovery state",
+        60,
+        std::chrono::milliseconds(500));
+
+    PollCommandUntil(relay, "ipc_status", "watch_running=true members=3", "relay watch did not recover");
+    PollCommandUntil(game1, "ipc_status", "watch_running=true members=3", "game1 watch did not recover");
+    PollCommandUntil(game2, "ipc_status", "watch_running=true members=3", "game2 watch did not recover");
+
+    PollCommandUntil(relay, "ipc_links", "relay ipc links: count=2", "relay links did not recover");
+    PollCommandUntil(game1, "ipc_links", "game ipc links: count=1", "game1 relay link did not recover");
+    PollCommandUntil(game2, "ipc_links", "game ipc links: count=1", "game2 relay link did not recover");
+
+    game1.Send("ipc_send_process 2 recovered-process-test");
+    WaitOrThrow(game1, "game ipc process send: ok", "process send should recover after etcd returns");
+    PollCommandUntil(game2, "ipc_status", "process_dispatch_count=1", "process dispatch did not recover after etcd restart");
 }
 
 void TestRelayFirstMessaging()

@@ -103,6 +103,7 @@ private:
     void ReconcileAutoConnectMembers();
     void HandleMembershipEvent(const ipc::MembershipEvent& event);
     void HandleDiscoveryFailureLocked(const std::string& message);
+    ipc::Result TryRecoverDiscovery();
     void TryAutoConnectMember(const ipc::ProcessDescriptor& member);
     bool HasRelayMemberInDiscoveryLocked() const;
     bool HasHealthyRelayLink() const;

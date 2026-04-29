@@ -540,6 +540,17 @@ void GameIpcClientService::KeepAliveLoop(const std::uint32_t interval_seconds)
 
         if (!mRegistered)
         {
+            lock.unlock();
+            const ipc::Result recover_result = TryRecoverDiscovery();
+            lock.lock();
+            if (recover_result.ok)
+            {
+                spdlog::info("game ipc discovery recovered");
+                continue;
+            }
+
+            mLastError = recover_result.message;
+            spdlog::warn("game ipc discovery recovery failed: {}", mLastError);
             continue;
         }
 
@@ -554,6 +565,42 @@ void GameIpcClientService::KeepAliveLoop(const std::uint32_t interval_seconds)
     }
 
     mKeepAliveRunning.store(false);
+}
+
+ipc::Result GameIpcClientService::TryRecoverDiscovery()
+{
+    std::optional<ipc::ProcessDescriptor> self;
+    {
+        std::scoped_lock lock(mMutex);
+        if (!mTransportReady || !mSelf.has_value())
+        {
+            return ipc::Result::Failure("transport/self are not ready for discovery recovery");
+        }
+        self = mSelf;
+    }
+
+    if (const ipc::Result register_result = mDiscovery.RegisterSelf(*self); !register_result.ok)
+    {
+        return register_result;
+    }
+    if (const ipc::Result refresh_result = mDiscovery.RefreshSnapshot(); !refresh_result.ok)
+    {
+        return refresh_result;
+    }
+    if (const ipc::Result watch_result = mDiscovery.StartWatch(); !watch_result.ok)
+    {
+        return watch_result;
+    }
+
+    {
+        std::scoped_lock lock(mMutex);
+        mRegistered = true;
+        mIpcReady = true;
+        mLastError.clear();
+    }
+
+    ReconcileAutoConnectMembers();
+    return ipc::Result::Success();
 }
 
 void GameIpcClientService::StartAutoConnectLoop()
