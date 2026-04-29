@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <cctype>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <thread>
@@ -424,6 +425,75 @@ void PollCommandUntilWithRetries(
     throw std::runtime_error(message + "\noutput:\n" + process.Output());
 }
 
+std::string RunCommandAndCaptureLine(
+    ChildProcess& process,
+    const std::string& command,
+    std::string_view prefix,
+    const std::string& message)
+{
+    const std::size_t previous_size = process.Output().size();
+    process.Send(command);
+    if (!process.WaitFor(prefix, std::chrono::milliseconds(500)))
+    {
+        throw std::runtime_error(message + "\noutput:\n" + process.Output());
+    }
+
+    const std::string_view appended(process.Output().data() + previous_size, process.Output().size() - previous_size);
+    const std::size_t offset = appended.rfind(prefix);
+    if (offset == std::string_view::npos)
+    {
+        throw std::runtime_error(message + "\noutput:\n" + process.Output());
+    }
+
+    const std::size_t line_end = appended.find('\n', offset);
+    if (line_end == std::string_view::npos)
+    {
+        return std::string(appended.substr(offset));
+    }
+    return std::string(appended.substr(offset, line_end - offset));
+}
+
+std::uint64_t ExtractUintMetric(const std::string& line, const std::string& key)
+{
+    const std::string needle = key + "=";
+    const std::size_t start = line.find(needle);
+    if (start == std::string::npos)
+    {
+        throw std::runtime_error("metric not found: " + key + "\nline:\n" + line);
+    }
+
+    std::size_t pos = start + needle.size();
+    std::size_t end = pos;
+    while (end < line.size() && std::isdigit(static_cast<unsigned char>(line[end])))
+    {
+        ++end;
+    }
+    if (end == pos)
+    {
+        throw std::runtime_error("metric value is not numeric: " + key + "\nline:\n" + line);
+    }
+
+    return std::stoull(line.substr(pos, end - pos));
+}
+
+void RequireMetricAtLeast(
+    ChildProcess& process,
+    const std::string& command,
+    std::string_view prefix,
+    const std::string& key,
+    const std::uint64_t minimum,
+    const std::string& message)
+{
+    const std::string line = RunCommandAndCaptureLine(process, command, prefix, message);
+    const std::uint64_t value = ExtractUintMetric(line, key);
+    if (value < minimum)
+    {
+        throw std::runtime_error(
+            message + ": expected " + key + ">=" + std::to_string(minimum) + ", got " + std::to_string(value) +
+            "\nline:\n" + line);
+    }
+}
+
 void RunRelayFirstMessagingScenario(const bool relay_first)
 {
     const auto suffix = std::to_string(Clock::now().time_since_epoch().count());
@@ -640,6 +710,28 @@ void TestDiscoveryDegradedBehavior()
     game1.Send("ipc_send_player 1001 degraded-player-test");
     WaitOrThrow(game1, "game ipc player send failed: ipc is not active", "player send should fail while degraded");
 
+    RequireMetricAtLeast(
+        relay,
+        "ipc_metrics",
+        "relay ipc metrics:",
+        "keepalive_failure_count",
+        1,
+        "relay keepalive failures did not increment");
+    RequireMetricAtLeast(
+        game1,
+        "ipc_metrics",
+        "game ipc metrics:",
+        "keepalive_failure_count",
+        1,
+        "game1 keepalive failures did not increment");
+    RequireMetricAtLeast(
+        game1,
+        "ipc_metrics",
+        "game ipc metrics:",
+        "send_reject_count",
+        3,
+        "game1 send reject count did not reflect degraded sends");
+
     etcd.Start();
 
     PollCommandUntilWithRetries(
@@ -672,9 +764,31 @@ void TestDiscoveryDegradedBehavior()
     PollCommandUntil(game1, "ipc_links", "game ipc links: count=1", "game1 relay link did not recover");
     PollCommandUntil(game2, "ipc_links", "game ipc links: count=1", "game2 relay link did not recover");
 
+    RequireMetricAtLeast(
+        relay,
+        "ipc_metrics",
+        "relay ipc metrics:",
+        "discovery_recovery_success_count",
+        1,
+        "relay recovery success count did not increment");
+    RequireMetricAtLeast(
+        game1,
+        "ipc_metrics",
+        "game ipc metrics:",
+        "discovery_recovery_success_count",
+        1,
+        "game1 recovery success count did not increment");
+
     game1.Send("ipc_send_process 2 recovered-process-test");
     WaitOrThrow(game1, "game ipc process send: ok", "process send should recover after etcd returns");
     PollCommandUntil(game2, "ipc_status", "process_dispatch_count=1", "process dispatch did not recover after etcd restart");
+    RequireMetricAtLeast(
+        relay,
+        "ipc_metrics",
+        "relay ipc metrics:",
+        "forwarded_data_frame_count",
+        1,
+        "relay forwarded data frame count did not increment after recovered send");
 }
 
 void TestRelayFirstMessaging()
