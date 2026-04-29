@@ -12,7 +12,7 @@ namespace ipc
 {
 struct EtcdDiscoveryOptions
 {
-    std::string backend = "etcdctl";
+    std::string backend = "sdk";
     std::string etcdctl_path = "etcdctl";
     std::vector<std::string> endpoints{"127.0.0.1:2379"};
     std::string prefix = "/some_server/ipc/dev/local";

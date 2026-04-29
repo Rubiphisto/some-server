@@ -1683,11 +1683,10 @@ Required invariants above the backend:
 - application services only consume discovery state and degraded/recovery
   signals, never backend records directly
 
-### First-Phase `etcdctl` Backend Limits
+### Transitional `etcdctl` Backend Limits
 
-The current first-phase backend uses `etcdctl` subprocesses plus JSON output.
-
-This is an accepted staging choice, not the long-term preferred shape.
+The current default first-phase backend is the SDK-backed discovery transport.
+The older `etcdctl` subprocess backend remains only as a transitional fallback.
 
 Current acceptable limits:
 
@@ -1705,7 +1704,7 @@ These limits are acceptable only because:
 
 ### Future SDK Backend Readiness
 
-Before replacing the current backend with an SDK-backed implementation, confirm:
+Before removing the transitional `etcdctl` backend, confirm:
 
 - the SDK can provide bounded synchronous failure behavior comparable to the
   current timeout-based contract
