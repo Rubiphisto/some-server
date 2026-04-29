@@ -269,6 +269,36 @@ void Application::RegisterRuntimeCommands()
         throw std::runtime_error("failed to register game ipc topology command");
     }
 
+    const bool metrics_registered = Runtime().RegisterCommand(
+        "ipc_metrics",
+        "Show game IPC runtime metrics",
+        [this](const CommandArguments&) {
+            if (mIpcService == nullptr)
+            {
+                spdlog::warn("game ipc metrics: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+
+            const auto status = mIpcService->Snapshot();
+            spdlog::info(
+                "game ipc metrics: keepalive_failure_count={} discovery_recovery_success_count={} discovery_recovery_failure_count={} send_reject_count={} last_send_reject_reason={} watch_restart_count={} watch_start_failure_count={} watch_stream_closed_count={} snapshot_refresh_failure_count={}",
+                status.keepalive_failure_count,
+                status.discovery_recovery_success_count,
+                status.discovery_recovery_failure_count,
+                status.send_reject_count,
+                status.last_send_reject_reason.empty() ? "none" : status.last_send_reject_reason,
+                status.discovery_runtime.watch_restart_count,
+                status.discovery_runtime.watch_start_failure_count,
+                status.discovery_runtime.watch_stream_closed_count,
+                status.discovery_runtime.snapshot_refresh_failure_count);
+            return CommandExecutionStatus::handled;
+        });
+
+    if (!metrics_registered)
+    {
+        throw std::runtime_error("failed to register game ipc metrics command");
+    }
+
     const bool links_registered = Runtime().RegisterCommand(
         "ipc_links",
         "List game IPC healthy direct links",

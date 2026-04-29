@@ -36,6 +36,12 @@ struct GameIpcClientStatus
     bool membership_degraded = false;
     bool keepalive_running = false;
     bool watch_running = false;
+    std::uint64_t keepalive_failure_count = 0;
+    std::uint64_t discovery_recovery_success_count = 0;
+    std::uint64_t discovery_recovery_failure_count = 0;
+    std::uint64_t send_reject_count = 0;
+    std::string last_send_reject_reason;
+    ipc::EtcdDiscoveryRuntimeStats discovery_runtime;
     std::size_t member_count = 0;
     bool relay_member_visible = false;
     bool healthy_relay_link = false;
@@ -104,6 +110,7 @@ private:
     void HandleMembershipEvent(const ipc::MembershipEvent& event);
     void HandleDiscoveryFailureLocked(const std::string& message);
     ipc::Result TryRecoverDiscovery();
+    void RecordSendRejectLocked(const std::string& reason);
     void TryAutoConnectMember(const ipc::ProcessDescriptor& member);
     bool HasRelayMemberInDiscoveryLocked() const;
     bool HasHealthyRelayLink() const;
@@ -141,6 +148,11 @@ private:
     std::unordered_set<std::uint64_t> mAutoConnectAttempts;
     std::uint64_t mAutoConnectSuccessCount = 0;
     std::uint64_t mAutoConnectFailureCount = 0;
+    std::uint64_t mKeepAliveFailureCount = 0;
+    std::uint64_t mDiscoveryRecoverySuccessCount = 0;
+    std::uint64_t mDiscoveryRecoveryFailureCount = 0;
+    std::uint64_t mSendRejectCount = 0;
+    std::string mLastSendRejectReason;
     std::optional<ipc::ProcessRef> mLastAutoConnectTarget;
     std::optional<ipc::ProcessRef> mLastAutoConnectFailureTarget;
     std::string mLastAutoConnectFailureReason;

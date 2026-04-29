@@ -228,6 +228,12 @@ GameIpcClientStatus GameIpcClientService::Snapshot() const
     status.membership_degraded = mTransportReady && !mRegistered && !mIpcReady;
     status.keepalive_running = mKeepAliveRunning.load();
     status.watch_running = mDiscovery.WatchRunning();
+    status.keepalive_failure_count = mKeepAliveFailureCount;
+    status.discovery_recovery_success_count = mDiscoveryRecoverySuccessCount;
+    status.discovery_recovery_failure_count = mDiscoveryRecoveryFailureCount;
+    status.send_reject_count = mSendRejectCount;
+    status.last_send_reject_reason = mLastSendRejectReason;
+    status.discovery_runtime = mDiscovery.RuntimeStats();
     const auto members = mDiscovery.All();
     const auto healthy_links = mLinkManager ? mLinkManager->GetHealthyLinks() : std::vector<ipc::ProcessRef>{};
     status.member_count = members.size();
@@ -391,16 +397,25 @@ ipc::SendResult GameIpcClientService::SendLocalServiceMessage(const std::string&
     std::scoped_lock lock(mMutex);
     if (!mMessenger)
     {
-        return ipc::SendResult::Failure("messenger is not initialized");
+        const auto result = ipc::SendResult::Failure("messenger is not initialized");
+        RecordSendRejectLocked(result.message);
+        return result;
     }
     if (!IsIpcActiveLocked())
     {
-        return ipc::SendResult::Failure("ipc is not active");
+        const auto result = ipc::SendResult::Failure("ipc is not active");
+        RecordSendRejectLocked(result.message);
+        return result;
     }
 
     google::protobuf::StringValue payload;
     payload.set_value(value);
-    return mMessenger->SendToReceiver(LocalServiceReceiverAddress(), payload);
+    const ipc::SendResult result = mMessenger->SendToReceiver(LocalServiceReceiverAddress(), payload);
+    if (!result.ok)
+    {
+        RecordSendRejectLocked(result.message);
+    }
+    return result;
 }
 
 ipc::SendResult GameIpcClientService::SendProcessMessage(const ipc::InstanceId instance_id, const std::string& value)
@@ -408,16 +423,25 @@ ipc::SendResult GameIpcClientService::SendProcessMessage(const ipc::InstanceId i
     std::scoped_lock lock(mMutex);
     if (!mMessenger)
     {
-        return ipc::SendResult::Failure("messenger is not initialized");
+        const auto result = ipc::SendResult::Failure("messenger is not initialized");
+        RecordSendRejectLocked(result.message);
+        return result;
     }
     if (!IsIpcActiveLocked())
     {
-        return ipc::SendResult::Failure("ipc is not active");
+        const auto result = ipc::SendResult::Failure("ipc is not active");
+        RecordSendRejectLocked(result.message);
+        return result;
     }
 
     google::protobuf::StringValue payload;
     payload.set_value(value);
-    return mMessenger->SendToProcess({mGameServiceType, instance_id}, payload);
+    const ipc::SendResult result = mMessenger->SendToProcess({mGameServiceType, instance_id}, payload);
+    if (!result.ok)
+    {
+        RecordSendRejectLocked(result.message);
+    }
+    return result;
 }
 
 ipc::SendResult GameIpcClientService::SendPlayerMessage(const std::uint64_t player_id, const std::string& value)
@@ -425,16 +449,25 @@ ipc::SendResult GameIpcClientService::SendPlayerMessage(const std::uint64_t play
     std::scoped_lock lock(mMutex);
     if (!mMessenger)
     {
-        return ipc::SendResult::Failure("messenger is not initialized");
+        const auto result = ipc::SendResult::Failure("messenger is not initialized");
+        RecordSendRejectLocked(result.message);
+        return result;
     }
     if (!IsIpcActiveLocked())
     {
-        return ipc::SendResult::Failure("ipc is not active");
+        const auto result = ipc::SendResult::Failure("ipc is not active");
+        RecordSendRejectLocked(result.message);
+        return result;
     }
 
     google::protobuf::StringValue payload;
     payload.set_value(value);
-    return mMessenger->SendToReceiver(PlayerReceiverAddress(player_id), payload);
+    const ipc::SendResult result = mMessenger->SendToReceiver(PlayerReceiverAddress(player_id), payload);
+    if (!result.ok)
+    {
+        RecordSendRejectLocked(result.message);
+    }
+    return result;
 }
 
 ipc::SendResult GameIpcClientService::BroadcastServiceMessage(const std::string& value, const bool include_local)
@@ -442,11 +475,15 @@ ipc::SendResult GameIpcClientService::BroadcastServiceMessage(const std::string&
     std::scoped_lock lock(mMutex);
     if (!mMessenger)
     {
-        return ipc::SendResult::Failure("messenger is not initialized");
+        const auto result = ipc::SendResult::Failure("messenger is not initialized");
+        RecordSendRejectLocked(result.message);
+        return result;
     }
     if (!IsIpcActiveLocked())
     {
-        return ipc::SendResult::Failure("ipc is not active");
+        const auto result = ipc::SendResult::Failure("ipc is not active");
+        RecordSendRejectLocked(result.message);
+        return result;
     }
 
     google::protobuf::StringValue payload;
@@ -454,7 +491,12 @@ ipc::SendResult GameIpcClientService::BroadcastServiceMessage(const std::string&
     ipc::BroadcastScope scope;
     scope.service_type = mGameServiceType;
     scope.include_local = include_local;
-    return mMessenger->BroadcastToService(mGameServiceType, scope, payload);
+    const ipc::SendResult result = mMessenger->BroadcastToService(mGameServiceType, scope, payload);
+    if (!result.ok)
+    {
+        RecordSendRejectLocked(result.message);
+    }
+    return result;
 }
 
 ipc::ProcessDescriptor GameIpcClientService::BuildSelfDescriptor() const
@@ -545,10 +587,12 @@ void GameIpcClientService::KeepAliveLoop(const std::uint32_t interval_seconds)
             lock.lock();
             if (recover_result.ok)
             {
+                ++mDiscoveryRecoverySuccessCount;
                 spdlog::info("game ipc discovery recovered");
                 continue;
             }
 
+            ++mDiscoveryRecoveryFailureCount;
             mLastError = recover_result.message;
             spdlog::warn("game ipc discovery recovery failed: {}", mLastError);
             continue;
@@ -559,6 +603,7 @@ void GameIpcClientService::KeepAliveLoop(const std::uint32_t interval_seconds)
         lock.lock();
         if (!keepalive_result.ok)
         {
+            ++mKeepAliveFailureCount;
             HandleDiscoveryFailureLocked(keepalive_result.message);
             spdlog::warn("game ipc discovery keepalive failed: {}", mLastError);
         }
@@ -786,6 +831,13 @@ void GameIpcClientService::HandleDiscoveryFailureLocked(const std::string& messa
     mIpcReady = false;
     mLastError = message;
     mAutoConnectAttempts.clear();
+}
+
+void GameIpcClientService::RecordSendRejectLocked(const std::string& reason)
+{
+    ++mSendRejectCount;
+    mLastSendRejectReason = reason;
+    mLastError = reason;
 }
 
 std::uint64_t GameIpcClientService::MakeProcessKey(const ipc::ProcessId& id)

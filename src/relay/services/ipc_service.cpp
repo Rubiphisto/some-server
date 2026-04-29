@@ -61,12 +61,17 @@ LifecycleTask RelayIpcService::Load()
                 std::scoped_lock lock(mMutex);
                 if (!IsIpcActiveLocked())
                 {
+                    RecordForwardFailureLocked("ipc is not active");
                     return;
                 }
                 const ipc::Result handle_result = mMessenger->HandleIncomingFrame(frame);
                 if (handle_result.ok)
                 {
                     ++mForwardedDataFrameCount;
+                }
+                else
+                {
+                    RecordForwardFailureLocked(handle_result.message);
                 }
                 return;
             }
@@ -200,6 +205,12 @@ RelayIpcStatus RelayIpcService::Snapshot() const
     status.membership_degraded = mTransportReady && !mRegistered && !mIpcReady;
     status.keepalive_running = mKeepAliveRunning.load();
     status.watch_running = mDiscovery.WatchRunning();
+    status.keepalive_failure_count = mKeepAliveFailureCount;
+    status.discovery_recovery_success_count = mDiscoveryRecoverySuccessCount;
+    status.discovery_recovery_failure_count = mDiscoveryRecoveryFailureCount;
+    status.forward_failure_count = mForwardFailureCount;
+    status.last_forward_failure_reason = mLastForwardFailureReason;
+    status.discovery_runtime = mDiscovery.RuntimeStats();
     const auto members = mDiscovery.All();
     status.member_count = members.size();
     status.visible_game_members = static_cast<std::size_t>(std::count_if(
@@ -383,10 +394,12 @@ void RelayIpcService::KeepAliveLoop(const std::uint32_t interval_seconds)
             lock.lock();
             if (recover_result.ok)
             {
+                ++mDiscoveryRecoverySuccessCount;
                 spdlog::info("relay ipc discovery recovered");
                 continue;
             }
 
+            ++mDiscoveryRecoveryFailureCount;
             mLastError = recover_result.message;
             spdlog::warn("relay ipc discovery recovery failed: {}", mLastError);
             continue;
@@ -397,6 +410,7 @@ void RelayIpcService::KeepAliveLoop(const std::uint32_t interval_seconds)
         lock.lock();
         if (!keepalive_result.ok)
         {
+            ++mKeepAliveFailureCount;
             HandleDiscoveryFailureLocked(keepalive_result.message);
             spdlog::warn("relay ipc discovery keepalive failed: {}", mLastError);
         }
@@ -582,4 +596,11 @@ void RelayIpcService::HandleDiscoveryFailureLocked(const std::string& message)
     mIpcReady = false;
     mLastError = message;
     mAutoConnectAttempts.clear();
+}
+
+void RelayIpcService::RecordForwardFailureLocked(const std::string& reason)
+{
+    ++mForwardFailureCount;
+    mLastForwardFailureReason = reason;
+    mLastError = reason;
 }

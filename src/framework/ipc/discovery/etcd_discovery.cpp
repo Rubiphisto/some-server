@@ -228,6 +228,8 @@ Result EtcdDiscovery::RefreshSnapshot()
     const Result get = mBackend->GetPrefix(mOptions.prefix + "/members/", output);
     if (!get.ok)
     {
+        std::scoped_lock lock(mMutex);
+        ++mRuntimeStats.snapshot_refresh_failure_count;
         return get;
     }
 
@@ -235,6 +237,8 @@ Result EtcdDiscovery::RefreshSnapshot()
     const Result parsed = ParseSnapshot(output, refreshed);
     if (!parsed.ok)
     {
+        std::scoped_lock lock(mMutex);
+        ++mRuntimeStats.snapshot_refresh_failure_count;
         return parsed;
     }
 
@@ -282,6 +286,12 @@ void EtcdDiscovery::StopWatch()
 bool EtcdDiscovery::WatchRunning() const
 {
     return mBackend->WatchRunning();
+}
+
+EtcdDiscoveryRuntimeStats EtcdDiscovery::RuntimeStats() const
+{
+    std::scoped_lock lock(mMutex);
+    return mRuntimeStats;
 }
 
 Result EtcdDiscovery::ParseSnapshot(
@@ -445,6 +455,10 @@ void EtcdDiscovery::WatchLoop()
 
         if (!start_result.ok)
         {
+            {
+                std::scoped_lock lock(mMutex);
+                ++mRuntimeStats.watch_start_failure_count;
+            }
             mWatchRunning.store(false);
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
             continue;
@@ -475,6 +489,8 @@ void EtcdDiscovery::WatchLoop()
                     mWatchRunning.store(false);
                     return;
                 }
+                ++mRuntimeStats.watch_stream_closed_count;
+                ++mRuntimeStats.watch_restart_count;
             }
             (void)RefreshSnapshot();
             mBackend->StopWatch();

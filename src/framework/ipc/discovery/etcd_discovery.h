@@ -15,6 +15,14 @@
 
 namespace ipc
 {
+struct EtcdDiscoveryRuntimeStats
+{
+    std::uint64_t watch_restart_count = 0;
+    std::uint64_t watch_start_failure_count = 0;
+    std::uint64_t watch_stream_closed_count = 0;
+    std::uint64_t snapshot_refresh_failure_count = 0;
+};
+
 class EtcdDiscovery final : public IMembershipView
 {
 public:
@@ -28,6 +36,7 @@ public:
     Result StartWatch();
     void StopWatch();
     bool WatchRunning() const;
+    EtcdDiscoveryRuntimeStats RuntimeStats() const;
     Result Remove(const ProcessId& id);
     std::vector<MembershipEvent> DrainEvents();
 
@@ -59,5 +68,6 @@ private:
     std::thread mWatchThread;
     bool mStopWatch = false;
     std::atomic<bool> mWatchRunning = false;
+    EtcdDiscoveryRuntimeStats mRuntimeStats;
 };
 } // namespace ipc
