@@ -707,6 +707,7 @@ Current state:
 Recommended next work should focus on:
 
 - holding the current first-phase plus engineering-hardening baseline stable
-- defining discovery backend replacement capabilities before any SDK migration
-- only then deciding whether to continue with backend engineering or broaden
-  feature scope
+- using the completed discovery backend capability checklist to guide any
+  further backend engineering work
+- deciding whether to continue with backend engineering or broaden feature
+  scope
