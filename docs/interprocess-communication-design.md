@@ -2707,6 +2707,8 @@ The current first-phase implementation has reached the intended baseline:
 - first-phase topology glue is centralized in a thin shared policy object
 - runtime commands expose membership, links, receivers, topology, metrics, and
   failure/recovery counters
+- runtime metrics are exercised by multi-process integration coverage for
+  degraded, recovery, and recovered forwarding paths
 
 The first phase should now be treated as a stable baseline rather than a
 placeholder. Later phases may extend capability, but should preserve:

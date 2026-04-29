@@ -696,6 +696,8 @@ Current state:
 - multi-process integration tests cover the main relay-first paths
 - multi-process integration tests cover degraded discovery and transient backend
   recovery
+- multi-process integration tests validate runtime metrics growth for degraded,
+  recovery, and recovered forwarding scenarios
 - first-phase auto-connect rules are centralized behind a shared topology
   policy object
 - runtime commands expose membership, links, receivers, topology, degraded
@@ -704,8 +706,7 @@ Current state:
 
 Recommended next work should focus on:
 
-- consistency review between design and implementation
-- documenting first-phase topology glue such as auto-connect
-- tightening observability and operational tooling
+- holding the current first-phase plus engineering-hardening baseline stable
 - defining discovery backend replacement capabilities before any SDK migration
-- only then deciding whether to deepen watch semantics or broaden feature scope
+- only then deciding whether to continue with backend engineering or broaden
+  feature scope
