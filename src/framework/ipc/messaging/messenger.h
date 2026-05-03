@@ -14,6 +14,7 @@
 
 namespace ipc
 {
+// High-level IPC facade used by applications to send and dispatch internal messages.
 class Messenger
 {
 public:
@@ -37,16 +38,21 @@ public:
     {
     }
 
+    // Sends one protobuf payload directly to a concrete process instance.
     SendResult SendToProcess(ProcessId target, const google::protobuf::Message& message) const;
+    // Resolves target through the receiver directory and sends one logical message.
     SendResult SendToReceiver(const ReceiverAddress& target, const google::protobuf::Message& message) const;
+    // Broadcasts one message to a receiver namespace across the given scope.
     SendResult BroadcastToReceiver(
         const ReceiverAddress& target,
         BroadcastScope scope,
         const google::protobuf::Message& message) const;
+    // Convenience wrapper for first-phase service broadcast semantics.
     SendResult BroadcastToService(
         ServiceType service_type,
         const BroadcastScope& scope,
         const google::protobuf::Message& message) const;
+    // Decodes one inbound data frame and dispatches or forwards its envelope.
     Result HandleIncomingFrame(const RawFrame& frame) const;
 
 private:

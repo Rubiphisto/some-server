@@ -10,16 +10,23 @@
 
 namespace ipc
 {
+// TCP transport implementation that owns sockets, accept loop, and frame IO.
 class TcpTransport final : public ITransport
 {
 public:
     ~TcpTransport() override;
 
+    // Binds and starts the TCP listener used for inbound IPC links.
     Result Listen(const Endpoint& endpoint) override;
+    // Opens one outbound TCP connection to a remote IPC endpoint.
     Result Connect(const Endpoint& endpoint) override;
+    // Writes one complete IPC frame to the target connection.
     Result Send(const RawFrame& frame) override;
+    // Closes the selected TCP connection and notifies upper layers.
     Result Close(ConnectionId connection_id) override;
+    // Sets the callback for successfully decoded inbound frames.
     void SetFrameHandler(FrameHandler handler) override;
+    // Sets the callback for transport connect/disconnect events.
     void SetConnectionEventHandler(ConnectionEventHandler handler) override;
 
 private:

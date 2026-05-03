@@ -8,6 +8,7 @@
 
 namespace ipc
 {
+// Shared small scalar aliases used by process, routing, and receiver models.
 using ServiceType = std::uint32_t;
 using InstanceId = std::uint32_t;
 using IncarnationId = std::uint64_t;

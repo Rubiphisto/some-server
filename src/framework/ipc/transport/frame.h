@@ -7,6 +7,7 @@
 
 namespace ipc
 {
+// Distinguishes control-plane and data-plane frames on one transport connection.
 enum class FrameKind : std::uint16_t
 {
     control = 1,
@@ -17,6 +18,7 @@ inline constexpr std::uint32_t kFrameMagic = 0x53495043; // "SIPC"
 inline constexpr std::uint16_t kFrameVersion = 1;
 inline constexpr std::size_t kFrameHeaderSize = 12;
 
+// Fixed transport header carried in front of every IPC frame payload.
 struct FrameHeader
 {
     std::uint32_t magic = kFrameMagic;
@@ -25,6 +27,7 @@ struct FrameHeader
     std::uint32_t length = 0;
 };
 
+// One frame received from or to be written onto a transport connection.
 struct RawFrame
 {
     ConnectionId connection_id = 0;
@@ -32,6 +35,7 @@ struct RawFrame
     ByteBuffer payload;
 };
 
+// Serializes the fixed frame header into the wire byte layout.
 inline std::array<std::byte, kFrameHeaderSize> SerializeFrameHeader(const FrameHeader& header)
 {
     // The frame header is the only part of the IPC wire format that is represented
@@ -46,6 +50,7 @@ inline std::array<std::byte, kFrameHeaderSize> SerializeFrameHeader(const FrameH
     return bytes;
 }
 
+// Parses a fixed frame header from raw bytes and validates the magic.
 inline bool DeserializeFrameHeader(const std::byte* data, std::size_t size, FrameHeader& header)
 {
     if (data == nullptr || size < kFrameHeaderSize)

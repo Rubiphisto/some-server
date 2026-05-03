@@ -5,6 +5,7 @@
 
 namespace ipc
 {
+// Uniform lightweight success/error result used across IPC layers.
 struct Result
 {
     bool ok = false;

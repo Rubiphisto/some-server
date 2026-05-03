@@ -6,6 +6,7 @@
 
 namespace ipc
 {
+// Stable logical process identity within one service type.
 struct ProcessId
 {
     ServiceType service_type = 0;
@@ -14,6 +15,7 @@ struct ProcessId
     friend bool operator==(const ProcessId&, const ProcessId&) = default;
 };
 
+// Runtime process identity including incarnation across restarts.
 struct ProcessRef
 {
     ProcessId process_id;
@@ -22,6 +24,7 @@ struct ProcessRef
     friend bool operator==(const ProcessRef&, const ProcessRef&) = default;
 };
 
+// TCP endpoint exposed by a process for IPC links.
 struct Endpoint
 {
     std::string host;
@@ -30,6 +33,7 @@ struct Endpoint
     friend bool operator==(const Endpoint&, const Endpoint&) = default;
 };
 
+// Full discovery record published for one process instance.
 struct ProcessDescriptor
 {
     ProcessRef process;

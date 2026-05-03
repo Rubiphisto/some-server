@@ -8,12 +8,17 @@
 
 namespace ipc
 {
+// Simple in-process receiver directory used by first-phase application services.
 class LocalReceiverDirectory final : public IReceiverDirectory
 {
 public:
+    // Resolves a receiver using only locally known ownership bindings.
     ReceiverLocation Resolve(const ReceiverAddress& receiver) const override;
+    // Creates a new local binding for receiver -> owner.
     Result Bind(const ReceiverAddress& receiver, const ProcessRef& owner) override;
+    // Replaces the current owner binding when old_owner still matches.
     Result Rebind(const ReceiverAddress& receiver, const ProcessRef& old_owner, const ProcessRef& new_owner) override;
+    // Removes a binding when owner/version still match the current entry.
     Result Invalidate(const ReceiverAddress& receiver, const ProcessRef& owner, std::uint64_t version) override;
 
 private:

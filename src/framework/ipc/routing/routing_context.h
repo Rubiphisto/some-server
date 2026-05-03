@@ -9,6 +9,7 @@
 
 namespace ipc
 {
+// All discovery, link, and receiver context needed to resolve one send request.
 struct RoutingContext
 {
     ProcessRef self;

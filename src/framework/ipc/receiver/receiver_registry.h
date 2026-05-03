@@ -6,10 +6,13 @@
 
 namespace ipc
 {
+// Small lookup table that maps receiver types to the local host that handles them.
 class ReceiverRegistry
 {
 public:
+    // Registers host as the dispatcher for one receiver type.
     Result Register(IReceiverHost& host, ReceiverType type);
+    // Dispatches one local envelope to the host responsible for target.type.
     DispatchResult Dispatch(const ReceiverAddress& target, const Envelope& envelope) const;
 
 private:

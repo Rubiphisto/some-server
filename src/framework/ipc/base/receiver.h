@@ -6,6 +6,7 @@
 
 namespace ipc
 {
+// Classifies the logical receiver namespace used by upper-layer IPC APIs.
 enum class ReceiverType : std::uint16_t
 {
     process = 1,
@@ -15,6 +16,7 @@ enum class ReceiverType : std::uint16_t
     group = 5
 };
 
+// Stable receiver address understood by routing and receiver directory layers.
 struct ReceiverAddress
 {
     ReceiverType type = ReceiverType::process;
@@ -24,6 +26,7 @@ struct ReceiverAddress
     friend bool operator==(const ReceiverAddress&, const ReceiverAddress&) = default;
 };
 
+// Describes whether a receiver currently resolves locally, remotely, or not at all.
 enum class ReceiverLocationKind : std::uint8_t
 {
     local,
@@ -32,6 +35,7 @@ enum class ReceiverLocationKind : std::uint8_t
     unresolved
 };
 
+// Resolution result returned by the receiver directory for one receiver address.
 struct ReceiverLocation
 {
     ReceiverLocationKind kind = ReceiverLocationKind::unresolved;
@@ -39,6 +43,7 @@ struct ReceiverLocation
     std::uint64_t version = 0;
 };
 
+// Broadcast filter used to expand one logical broadcast into target processes.
 struct BroadcastScope
 {
     std::optional<ServiceType> service_type;

@@ -5,6 +5,7 @@
 
 namespace ipc
 {
+// Tracks handshake progress and final health for one process link.
 enum class LinkState : std::uint8_t
 {
     idle,
@@ -13,6 +14,7 @@ enum class LinkState : std::uint8_t
     closed
 };
 
+// Runtime state for one remote process link bound to one TCP connection.
 struct Link
 {
     ConnectionId connection_id = 0;

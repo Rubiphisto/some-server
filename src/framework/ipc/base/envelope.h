@@ -4,12 +4,14 @@
 
 namespace ipc
 {
+// Distinguishes one-hop direct delivery from logical broadcast fanout.
 enum class DeliverySemantic : std::uint8_t
 {
     direct = 1,
     broadcast = 2
 };
 
+// Carries routing metadata that every internal payload needs during transit.
 struct EnvelopeHeader
 {
     ProcessRef source_process;
@@ -20,6 +22,7 @@ struct EnvelopeHeader
     std::uint32_t flags = 0;
 };
 
+// Wraps one internal message payload together with its IPC routing metadata.
 struct Envelope
 {
     EnvelopeHeader header;
