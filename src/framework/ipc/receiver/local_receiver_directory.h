@@ -20,6 +20,8 @@ public:
     Result Rebind(const ReceiverAddress& receiver, const ProcessRef& old_owner, const ProcessRef& new_owner) override;
     // Removes a binding when owner/version still match the current entry.
     Result Invalidate(const ReceiverAddress& receiver, const ProcessRef& owner, std::uint64_t version) override;
+    // Clears all local bindings when the hosting process tears down its runtime.
+    void Clear();
 
 private:
     struct Entry

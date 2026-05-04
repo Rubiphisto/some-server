@@ -71,7 +71,7 @@ add_custom_command(
         VERBATIM
 )
 
-some_library(framework LIBS common glaze::glaze ${Protobuf_LIBRARIES} gRPC::grpc++)
+some_library(framework LIBS glaze::glaze ${Protobuf_LIBRARIES} gRPC::grpc++)
 
 target_sources(
         framework PRIVATE

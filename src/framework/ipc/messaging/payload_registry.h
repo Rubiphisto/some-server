@@ -17,6 +17,8 @@ public:
     Result Register(const google::protobuf::Message& message);
     // Returns whether the given type URL is currently accepted locally.
     bool IsRegistered(const std::string& payload_type_url) const;
+    // Clears all registered payload types during runtime teardown.
+    void Clear();
 
     // Builds the canonical protobuf type URL for one message instance.
     static std::string TypeUrlFor(const google::protobuf::Message& message);

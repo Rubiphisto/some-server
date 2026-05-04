@@ -209,6 +209,13 @@ public:
             close(stdout_pipe[0]);
             close(stdout_pipe[1]);
 
+            const std::filesystem::path executable_path(mExecutable);
+            if (const auto parent = executable_path.parent_path(); !parent.empty())
+            {
+                std::error_code ignored;
+                std::filesystem::current_path(parent, ignored);
+            }
+
             execl(
                 mExecutable.c_str(),
                 mExecutable.c_str(),

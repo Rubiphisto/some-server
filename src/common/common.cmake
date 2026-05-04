@@ -1,1 +1,4 @@
 some_add_source(basis/singleton.h)
+some_add_source(ipc/first_phase_topology_policy.h)
+some_add_source(ipc/ipc_node_service_base.h)
+some_add_source(ipc/ipc_node_service_base.cpp)

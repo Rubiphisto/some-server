@@ -14,6 +14,8 @@ public:
     Result Register(IReceiverHost& host, ReceiverType type);
     // Dispatches one local envelope to the host responsible for target.type.
     DispatchResult Dispatch(const ReceiverAddress& target, const Envelope& envelope) const;
+    // Clears all host mappings during runtime teardown.
+    void Clear();
 
 private:
     static constexpr std::size_t kMaxReceiverTypes = 8;

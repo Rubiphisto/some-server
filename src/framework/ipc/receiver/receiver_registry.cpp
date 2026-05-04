@@ -36,4 +36,9 @@ DispatchResult ReceiverRegistry::Dispatch(const ReceiverAddress& target, const E
 
     return mHosts[index]->Dispatch(target, envelope);
 }
+
+void ReceiverRegistry::Clear()
+{
+    mHosts.fill(nullptr);
+}
 } // namespace ipc

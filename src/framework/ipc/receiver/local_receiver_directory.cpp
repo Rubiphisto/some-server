@@ -82,6 +82,12 @@ Result LocalReceiverDirectory::Invalidate(const ReceiverAddress& receiver, const
     return Result::Success();
 }
 
+void LocalReceiverDirectory::Clear()
+{
+    std::scoped_lock lock(mMutex);
+    mEntries.clear();
+}
+
 std::string LocalReceiverDirectory::MakeKey(const ReceiverAddress& receiver)
 {
     std::ostringstream stream;

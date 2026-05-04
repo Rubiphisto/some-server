@@ -13,6 +13,11 @@ bool PayloadRegistry::IsRegistered(const std::string& payload_type_url) const
     return mTypeUrls.contains(payload_type_url);
 }
 
+void PayloadRegistry::Clear()
+{
+    mTypeUrls.clear();
+}
+
 std::string PayloadRegistry::TypeUrlFor(const google::protobuf::Message& message)
 {
     return "type.googleapis.com/" + message.GetDescriptor()->full_name();
