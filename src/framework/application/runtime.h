@@ -18,7 +18,7 @@ class IApplicationRuntime
 {
 public:
     virtual ~IApplicationRuntime() = default;
-    virtual bool RegisterCommand(std::string command_name,
+    virtual void RegisterCommand(std::string command_name,
                                  std::string description,
                                  CommandHandler handler) = 0;
     virtual void RequestStop() = 0;

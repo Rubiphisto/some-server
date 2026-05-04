@@ -188,7 +188,19 @@ private:
             return;
         }
 
-        RegisterRuntimeCommands();
+        try
+        {
+            RegisterRuntimeCommands();
+        }
+        catch (const std::exception& ex)
+        {
+            throw std::runtime_error(
+                "failed to register runtime commands for application '" + GetName() + "': " + ex.what());
+        }
+        catch (...)
+        {
+            throw std::runtime_error("failed to register runtime commands for application '" + GetName() + "'");
+        }
         mRuntimeCommandsRegistered = true;
     }
 

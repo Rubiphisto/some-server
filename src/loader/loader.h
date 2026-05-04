@@ -11,7 +11,7 @@ class Loader : public IApplicationRuntime
 {
 public:
     int Run(IApplication& app, int argc, char* argv[]);
-    bool RegisterCommand(std::string command_name,
+    void RegisterCommand(std::string command_name,
                          std::string description,
                          CommandHandler handler) override;
     void RequestStop() override;

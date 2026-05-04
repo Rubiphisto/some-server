@@ -11,6 +11,7 @@
 #include <iostream>
 #include <map>
 #include <mutex>
+#include <stdexcept>
 #include <thread>
 #include <string>
 #include <string_view>
@@ -281,11 +282,15 @@ bool Loader::Initialize(IApplication& app,
     return true;
 }
 
-bool Loader::RegisterCommand(std::string command_name,
+void Loader::RegisterCommand(std::string command_name,
                              std::string description,
                              CommandHandler handler)
 {
-    return mCommandRegistry.RegisterCommand(std::move(command_name), std::move(description), std::move(handler));
+    const std::string registered_name = command_name;
+    if (!mCommandRegistry.RegisterCommand(std::move(command_name), std::move(description), std::move(handler)))
+    {
+        throw std::runtime_error("failed to register runtime command: " + registered_name);
+    }
 }
 
 void Loader::RequestStop()

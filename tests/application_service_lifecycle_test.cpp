@@ -18,10 +18,9 @@ namespace
     public:
         std::vector<std::string> registered_commands;
 
-        bool RegisterCommand(std::string command_name, std::string, CommandHandler) override
+        void RegisterCommand(std::string command_name, std::string, CommandHandler) override
         {
             registered_commands.push_back(std::move(command_name));
-            return true;
         }
 
         void RequestStop() override {}
@@ -220,11 +219,9 @@ namespace
         void RegisterRuntimeCommands() override
         {
             mEvents.emplace_back("App:RegisterRuntimeCommands");
-            const bool registered =
-                Runtime().RegisterCommand("status", "test", [](const CommandArguments&) {
-                    return CommandExecutionStatus::handled;
-                });
-            Require(registered, "runtime command registration should succeed");
+            Runtime().RegisterCommand("status", "test", [](const CommandArguments&) {
+                return CommandExecutionStatus::handled;
+            });
         }
 
         LifecycleTask OnLoad() override
@@ -255,6 +252,48 @@ namespace
         Require(IndexOf(events, "App:RegisterRuntimeCommands") < IndexOf(events, "App:Load"),
                 "runtime commands should register before app load");
     }
+
+    class ThrowingRuntime final : public IApplicationRuntime
+    {
+    public:
+        void RegisterCommand(std::string command_name, std::string, CommandHandler) override
+        {
+            throw std::runtime_error("failed to register runtime command: " + command_name);
+        }
+
+        void RequestStop() override {}
+    };
+
+    void TestRuntimeCommandRegistrationFailure()
+    {
+        std::vector<std::string> events;
+        RuntimeCommandApplication app(events);
+
+        ThrowingRuntime runtime;
+        CommonConfiguration common_configuration;
+        TestConfiguration app_configuration;
+        app.SetRuntime(runtime);
+        Require(app.Configure(common_configuration, app_configuration), "configure should succeed");
+
+        bool threw = false;
+        try
+        {
+            app.Load();
+        }
+        catch (const std::exception& ex)
+        {
+            threw = true;
+            Require(std::string{ex.what()}.find("failed to register runtime commands for application 'test'") !=
+                        std::string::npos,
+                    "load should report application runtime command registration context");
+            Require(std::string{ex.what()}.find("failed to register runtime command: status") != std::string::npos,
+                    "load should preserve runtime registration failure detail");
+        }
+
+        Require(threw, "load should throw on runtime command registration failure");
+        Require(std::find(events.begin(), events.end(), "App:Load") == events.end(),
+                "load should stop before OnLoad when runtime command registration fails");
+    }
 }
 
 SOME_SERVER_APPLICATION_CONFIG(TestConfiguration);
@@ -266,6 +305,7 @@ int main()
         TestBatchOrder();
         TestStartRollback();
         TestRuntimeCommandRegistration();
+        TestRuntimeCommandRegistrationFailure();
         std::cout << "application_service_lifecycle_test: ok" << std::endl;
         return 0;
     }

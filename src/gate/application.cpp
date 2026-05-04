@@ -2,26 +2,19 @@
 
 #include <spdlog/spdlog.h>
 
-#include <stdexcept>
-
 void Application::RegisterServices()
 {
 }
 
 void Application::RegisterRuntimeCommands()
 {
-    const bool registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "status",
         "Show gate runtime status",
         [](const CommandArguments&) {
             spdlog::info("gate status: {}", "running");
             return CommandExecutionStatus::handled;
         });
-
-    if (!registered)
-    {
-        throw std::runtime_error("failed to register gate status command");
-    }
 }
 
 LifecycleTask Application::OnLoad()

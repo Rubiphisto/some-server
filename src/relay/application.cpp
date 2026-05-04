@@ -4,8 +4,6 @@
 
 #include <spdlog/spdlog.h>
 
-#include <stdexcept>
-
 namespace
 {
 constexpr ipc::ServiceType kRelayServiceType = 99;
@@ -34,7 +32,7 @@ void Application::RegisterServices()
 
 void Application::RegisterRuntimeCommands()
 {
-    const bool status_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_status",
         "Show relay IPC bootstrap status",
         [this](const CommandArguments&) {
@@ -75,12 +73,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!status_registered)
-    {
-        throw std::runtime_error("failed to register relay ipc status command");
-    }
-
-    const bool refresh_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_refresh",
         "Refresh relay IPC discovery snapshot",
         [this](const CommandArguments&) {
@@ -111,12 +104,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!refresh_registered)
-    {
-        throw std::runtime_error("failed to register relay ipc refresh command");
-    }
-
-    const bool keepalive_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_keepalive",
         "Send one relay IPC discovery lease keepalive",
         [this](const CommandArguments&) {
@@ -137,12 +125,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!keepalive_registered)
-    {
-        throw std::runtime_error("failed to register relay ipc keepalive command");
-    }
-
-    const bool members_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_members",
         "List relay IPC discovery members",
         [this](const CommandArguments&) {
@@ -167,12 +150,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!members_registered)
-    {
-        throw std::runtime_error("failed to register relay ipc members command");
-    }
-
-    const bool topology_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_topology",
         "Show relay IPC topology and auto-connect state",
         [this](const CommandArguments&) {
@@ -213,12 +191,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!topology_registered)
-    {
-        throw std::runtime_error("failed to register relay ipc topology command");
-    }
-
-    const bool metrics_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_metrics",
         "Show relay IPC runtime metrics",
         [this](const CommandArguments&) {
@@ -244,12 +217,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!metrics_registered)
-    {
-        throw std::runtime_error("failed to register relay ipc metrics command");
-    }
-
-    const bool links_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_links",
         "List relay IPC healthy direct links",
         [this](const CommandArguments&) {
@@ -272,12 +240,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!links_registered)
-    {
-        throw std::runtime_error("failed to register relay ipc links command");
-    }
-
-    const bool connect_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_connect",
         "Connect relay to another process by service_type and instance_id",
         [this](const CommandArguments& arguments) {
@@ -304,9 +267,4 @@ void Application::RegisterRuntimeCommands()
             spdlog::info("relay ipc connect: ok");
             return CommandExecutionStatus::handled;
         });
-
-    if (!connect_registered)
-    {
-        throw std::runtime_error("failed to register relay ipc connect command");
-    }
 }

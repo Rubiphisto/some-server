@@ -4,8 +4,6 @@
 
 #include <spdlog/spdlog.h>
 
-#include <stdexcept>
-
 namespace
 {
 constexpr ipc::ServiceType kGameServiceType = 10;
@@ -34,7 +32,7 @@ void Application::RegisterServices()
 
 void Application::RegisterRuntimeCommands()
 {
-    const bool registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "status",
         "Show game runtime status",
         [](const CommandArguments&) {
@@ -42,12 +40,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!registered)
-    {
-        throw std::runtime_error("failed to register game status command");
-    }
-
-    const bool ipc_status_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_status",
         "Show game IPC bootstrap status",
         [this](const CommandArguments&) {
@@ -94,12 +87,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!ipc_status_registered)
-    {
-        throw std::runtime_error("failed to register game ipc status command");
-    }
-
-    const bool refresh_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_refresh",
         "Refresh game IPC discovery snapshot",
         [this](const CommandArguments&) {
@@ -130,12 +118,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!refresh_registered)
-    {
-        throw std::runtime_error("failed to register game ipc refresh command");
-    }
-
-    const bool keepalive_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_keepalive",
         "Send one game IPC discovery lease keepalive",
         [this](const CommandArguments&) {
@@ -156,12 +139,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!keepalive_registered)
-    {
-        throw std::runtime_error("failed to register game ipc keepalive command");
-    }
-
-    const bool members_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_members",
         "List game IPC discovery members",
         [this](const CommandArguments&) {
@@ -186,12 +164,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!members_registered)
-    {
-        throw std::runtime_error("failed to register game ipc members command");
-    }
-
-    const bool receivers_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_receivers",
         "List game local IPC receivers",
         [this](const CommandArguments&) {
@@ -218,12 +191,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!receivers_registered)
-    {
-        throw std::runtime_error("failed to register game ipc receivers command");
-    }
-
-    const bool topology_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_topology",
         "Show game IPC topology and auto-connect state",
         [this](const CommandArguments&) {
@@ -264,12 +232,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!topology_registered)
-    {
-        throw std::runtime_error("failed to register game ipc topology command");
-    }
-
-    const bool metrics_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_metrics",
         "Show game IPC runtime metrics",
         [this](const CommandArguments&) {
@@ -294,12 +257,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!metrics_registered)
-    {
-        throw std::runtime_error("failed to register game ipc metrics command");
-    }
-
-    const bool links_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_links",
         "List game IPC healthy direct links",
         [this](const CommandArguments&) {
@@ -322,12 +280,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!links_registered)
-    {
-        throw std::runtime_error("failed to register game ipc links command");
-    }
-
-    const bool connect_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_connect",
         "Connect to another game process by instance id",
         [this](const CommandArguments& arguments) {
@@ -354,12 +307,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!connect_registered)
-    {
-        throw std::runtime_error("failed to register game ipc connect command");
-    }
-
-    const bool local_send_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_send_local",
         "Send one local IPC message to the game service receiver host",
         [this](const CommandArguments&) {
@@ -380,12 +328,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!local_send_registered)
-    {
-        throw std::runtime_error("failed to register game ipc local send command");
-    }
-
-    const bool process_send_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_send_process",
         "Send one IPC process-targeted message to another game process",
         [this](const CommandArguments& arguments) {
@@ -413,12 +356,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!process_send_registered)
-    {
-        throw std::runtime_error("failed to register game ipc process send command");
-    }
-
-    const bool bind_player_local_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_bind_player_local",
         "Bind a local player receiver to this game process",
         [this](const CommandArguments& arguments) {
@@ -445,12 +383,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!bind_player_local_registered)
-    {
-        throw std::runtime_error("failed to register game ipc bind player local command");
-    }
-
-    const bool bind_player_remote_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_bind_player_remote",
         "Bind a remote player receiver to another game process in the local directory",
         [this](const CommandArguments& arguments) {
@@ -478,12 +411,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!bind_player_remote_registered)
-    {
-        throw std::runtime_error("failed to register game ipc bind player remote command");
-    }
-
-    const bool player_send_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_send_player",
         "Send one IPC player-targeted message",
         [this](const CommandArguments& arguments) {
@@ -511,12 +439,7 @@ void Application::RegisterRuntimeCommands()
             return CommandExecutionStatus::handled;
         });
 
-    if (!player_send_registered)
-    {
-        throw std::runtime_error("failed to register game ipc player send command");
-    }
-
-    const bool broadcast_service_registered = Runtime().RegisterCommand(
+    Runtime().RegisterCommand(
         "ipc_broadcast_service",
         "Broadcast one IPC service-targeted message to game instances",
         [this](const CommandArguments& arguments) {
@@ -543,11 +466,6 @@ void Application::RegisterRuntimeCommands()
             spdlog::info("game ipc broadcast service: ok");
             return CommandExecutionStatus::handled;
         });
-
-    if (!broadcast_service_registered)
-    {
-        throw std::runtime_error("failed to register game ipc broadcast service command");
-    }
 }
 
 LifecycleTask Application::OnLoad()
