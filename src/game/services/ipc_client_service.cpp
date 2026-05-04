@@ -124,22 +124,12 @@ GameLocalReceiverSnapshot GameIpcClientService::LocalReceivers() const
 ipc::Result GameIpcClientService::ConnectToProcess(const ipc::InstanceId instance_id)
 {
     std::scoped_lock lock(mMutex);
-    if (!mTransport)
+    const auto member = FindDiscoveredMemberLocked(mGameServiceType, instance_id);
+    if (!member.has_value())
     {
-        return ipc::Result::Failure("transport is not initialized");
+        return ipc::Result::Failure("target process not found in discovery snapshot");
     }
-
-    for (const auto& member : mDiscovery.All())
-    {
-        if (member.process.process_id.service_type == mGameServiceType &&
-            member.process.process_id.instance_id == instance_id &&
-            member.process != mSelf->process)
-        {
-            return mTransport->Connect(member.listen_endpoint);
-        }
-    }
-
-    return ipc::Result::Failure("target process not found in discovery snapshot");
+    return ConnectDiscoveredMemberLocked(*member);
 }
 
 ipc::Result GameIpcClientService::BindLocalPlayer(const std::uint64_t player_id)
@@ -422,32 +412,14 @@ void GameIpcClientService::TryAutoConnectMember(const ipc::ProcessDescriptor& me
         return;
     }
 
-    const ipc::Result connect_result = mTransport->Connect(member.listen_endpoint);
+    const ipc::Result connect_result = ConnectDiscoveredMemberLocked(member);
     if (!connect_result.ok)
     {
-        ++mAutoConnectFailureCount;
-        mLastAutoConnectFailureTarget = member.process;
-        mLastAutoConnectFailureReason = connect_result.message;
-        mLastError = connect_result.message;
-        spdlog::warn(
-            "game ipc auto-connect failed: service_type={} instance_id={} error={}",
-            member.process.process_id.service_type,
-            member.process.process_id.instance_id,
-            connect_result.message);
+        RecordAutoConnectFailureLocked(member, connect_result, "game ipc");
         return;
     }
 
-    mAutoConnectAttempts.insert(key);
-    ++mAutoConnectSuccessCount;
-    mLastAutoConnectTarget = member.process;
-    mLastAutoConnectFailureTarget.reset();
-    mLastAutoConnectFailureReason.clear();
-    spdlog::info(
-        "game ipc auto-connect: service_type={} instance_id={} host={} port={}",
-        member.process.process_id.service_type,
-        member.process.process_id.instance_id,
-        member.listen_endpoint.host,
-        member.listen_endpoint.port);
+    RecordAutoConnectSuccessLocked(member, "game ipc");
 }
 
 bool GameIpcClientService::HasHealthyRelayLink() const

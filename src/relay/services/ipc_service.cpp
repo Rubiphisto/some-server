@@ -110,22 +110,12 @@ RelayIpcStatus RelayIpcService::Snapshot() const
 ipc::Result RelayIpcService::ConnectToMember(const ipc::ServiceType service_type, const ipc::InstanceId instance_id)
 {
     std::scoped_lock lock(mMutex);
-    if (!mTransport)
+    const auto member = FindDiscoveredMemberLocked(service_type, instance_id);
+    if (!member.has_value())
     {
-        return ipc::Result::Failure("transport is not initialized");
+        return ipc::Result::Failure("target member not found in discovery snapshot");
     }
-
-    for (const auto& member : mDiscovery.All())
-    {
-        if (member.process.process_id.service_type == service_type &&
-            member.process.process_id.instance_id == instance_id &&
-            (!mSelf.has_value() || member.process != mSelf->process))
-        {
-            return mTransport->Connect(member.listen_endpoint);
-        }
-    }
-
-    return ipc::Result::Failure("target member not found in discovery snapshot");
+    return ConnectDiscoveredMemberLocked(*member);
 }
 
 ipc::ProcessDescriptor RelayIpcService::BuildSelfDescriptor() const
@@ -208,32 +198,14 @@ void RelayIpcService::TryAutoConnectMember(const ipc::ProcessDescriptor& member)
         return;
     }
 
-    const ipc::Result connect_result = mTransport->Connect(member.listen_endpoint);
+    const ipc::Result connect_result = ConnectDiscoveredMemberLocked(member);
     if (!connect_result.ok)
     {
-        ++mAutoConnectFailureCount;
-        mLastAutoConnectFailureTarget = member.process;
-        mLastAutoConnectFailureReason = connect_result.message;
-        mLastError = connect_result.message;
-        spdlog::warn(
-            "relay ipc auto-connect failed: service_type={} instance_id={} error={}",
-            member.process.process_id.service_type,
-            member.process.process_id.instance_id,
-            connect_result.message);
+        RecordAutoConnectFailureLocked(member, connect_result, "relay ipc");
         return;
     }
 
-    mAutoConnectAttempts.insert(key);
-    ++mAutoConnectSuccessCount;
-    mLastAutoConnectTarget = member.process;
-    mLastAutoConnectFailureTarget.reset();
-    mLastAutoConnectFailureReason.clear();
-    spdlog::info(
-        "relay ipc auto-connect: service_type={} instance_id={} host={} port={}",
-        member.process.process_id.service_type,
-        member.process.process_id.instance_id,
-        member.listen_endpoint.host,
-        member.listen_endpoint.port);
+    RecordAutoConnectSuccessLocked(member, "relay ipc");
 }
 
 void RelayIpcService::RecordForwardFailureLocked(const std::string& reason)

@@ -21,6 +21,7 @@
 #include <thread>
 #include <unordered_set>
 #include <vector>
+#include <string_view>
 
 namespace some_server::common
 {
@@ -114,6 +115,16 @@ protected:
     void FlushLinkFrames();
     bool IsIpcActiveLocked() const;
     static std::uint64_t MakeProcessKey(const ipc::ProcessId& id);
+    std::optional<ipc::ProcessDescriptor> FindDiscoveredMemberLocked(
+        ipc::ServiceType service_type,
+        ipc::InstanceId instance_id,
+        bool exclude_self = true) const;
+    ipc::Result ConnectDiscoveredMemberLocked(const ipc::ProcessDescriptor& member);
+    void RecordAutoConnectFailureLocked(
+        const ipc::ProcessDescriptor& member,
+        const ipc::Result& result,
+        std::string_view actor_name);
+    void RecordAutoConnectSuccessLocked(const ipc::ProcessDescriptor& member, std::string_view actor_name);
     void StartAutoConnectLoop();
     void StopAutoConnectLoop();
     void ReconcileAutoConnectMembers();

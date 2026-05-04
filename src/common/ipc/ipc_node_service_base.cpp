@@ -295,6 +295,73 @@ bool IpcNodeServiceBase::IsIpcActiveLocked() const
     return mRegistered && mIpcReady;
 }
 
+std::optional<ipc::ProcessDescriptor> IpcNodeServiceBase::FindDiscoveredMemberLocked(
+    const ipc::ServiceType service_type,
+    const ipc::InstanceId instance_id,
+    const bool exclude_self) const
+{
+    for (const auto& member : mDiscovery.All())
+    {
+        if (member.process.process_id.service_type != service_type ||
+            member.process.process_id.instance_id != instance_id)
+        {
+            continue;
+        }
+        if (exclude_self && mSelf.has_value() && member.process == mSelf->process)
+        {
+            continue;
+        }
+        return member;
+    }
+
+    return std::nullopt;
+}
+
+ipc::Result IpcNodeServiceBase::ConnectDiscoveredMemberLocked(const ipc::ProcessDescriptor& member)
+{
+    if (!mTransport)
+    {
+        return ipc::Result::Failure("transport is not initialized");
+    }
+
+    return mTransport->Connect(member.listen_endpoint);
+}
+
+void IpcNodeServiceBase::RecordAutoConnectFailureLocked(
+    const ipc::ProcessDescriptor& member,
+    const ipc::Result& result,
+    const std::string_view actor_name)
+{
+    ++mAutoConnectFailureCount;
+    mLastAutoConnectFailureTarget = member.process;
+    mLastAutoConnectFailureReason = result.message;
+    mLastError = result.message;
+    spdlog::warn(
+        "{} auto-connect failed: service_type={} instance_id={} error={}",
+        actor_name,
+        member.process.process_id.service_type,
+        member.process.process_id.instance_id,
+        result.message);
+}
+
+void IpcNodeServiceBase::RecordAutoConnectSuccessLocked(
+    const ipc::ProcessDescriptor& member,
+    const std::string_view actor_name)
+{
+    mAutoConnectAttempts.insert(MakeProcessKey(member.process.process_id));
+    ++mAutoConnectSuccessCount;
+    mLastAutoConnectTarget = member.process;
+    mLastAutoConnectFailureTarget.reset();
+    mLastAutoConnectFailureReason.clear();
+    spdlog::info(
+        "{} auto-connect: service_type={} instance_id={} host={} port={}",
+        actor_name,
+        member.process.process_id.service_type,
+        member.process.process_id.instance_id,
+        member.listen_endpoint.host,
+        member.listen_endpoint.port);
+}
+
 IpcNodeBaseStatusSnapshot IpcNodeServiceBase::SnapshotBaseStatusLocked() const
 {
     IpcNodeBaseStatusSnapshot status;
