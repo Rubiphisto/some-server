@@ -13,6 +13,26 @@
       "daily_minute": 0
     }
   },
+  "redis": {
+    "default": {
+      "endpoints": [
+        "127.0.0.1:6379"
+      ],
+      "password": "",
+      "database": 0,
+      "key_prefix": "some_server:"
+    }
+  },
+  "maria": {
+    "default": {
+      "host": "127.0.0.1",
+      "port": 3306,
+      "database": "some_game",
+      "username": "game",
+      "password": "game",
+      "pool_size": 16
+    }
+  },
   "game": {
     "instance_id": 1,
     "listen": {
@@ -25,6 +45,21 @@
       ],
       "prefix": "/some_server/ipc/dev/local",
       "lease_ttl_seconds": 5
+    },
+    "storage": {
+      "defaults": {
+        "alive_time_seconds": 86400,
+        "landing_time_seconds": 1800,
+        "landing_min_time_seconds": 60
+      },
+      "datasets": {
+        "player": {
+          "redis": "default",
+          "maria": "default",
+          "redis_prefix": "player:",
+          "table_prefix": "player_"
+        }
+      }
     }
   }
 }

@@ -40,6 +40,23 @@ set_tests_properties(application_service_lifecycle_test PROPERTIES
         WORKING_DIRECTORY ${SERVER_BINARY_FOLDER}/bin
 )
 
+add_executable(game_configuration_test
+        game_configuration_test.cpp
+)
+
+target_include_directories(game_configuration_test PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(game_configuration_test PRIVATE
+        framework
+)
+
+add_test(NAME game_configuration_test COMMAND $<TARGET_FILE:game_configuration_test>)
+set_tests_properties(game_configuration_test PROPERTIES
+        WORKING_DIRECTORY ${SERVER_BINARY_FOLDER}/bin
+)
+
 add_executable(ipc_transport_link_test
         ipc_transport_link_test.cpp
 )

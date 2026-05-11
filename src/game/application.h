@@ -1,6 +1,9 @@
 #pragma once
 
 #include "framework/application/application.h"
+#include "framework/storage/configuration.h"
+#include "framework/storage/resolved_configuration.h"
+#include "framework/storage/service.h"
 
 #include <cstdint>
 #include <string>
@@ -17,16 +20,17 @@ struct GameConfiguration : public BaseApplicationConfiguration, public JsonAppli
 {
     std::uint32_t instance_id = 1;
     GameDiscoveryConfiguration discovery;
+    some_server::storage::StorageConfiguration storage;
 };
 
 class GameIpcClientService;
-
 class Application : public ApplicationBase<GameConfiguration>
 {
 public:
     std::string GetName() const override { return "game"; }
 
 protected:
+    bool OnConfigure() override;
     void RegisterServices() override;
     void RegisterRuntimeCommands() override;
     LifecycleTask OnUnload() override;
@@ -36,6 +40,8 @@ protected:
 
 private:
     GameIpcClientService* mIpcService = nullptr;
+    some_server::storage::StorageService* mStorageService = nullptr;
+    some_server::storage::ResolvedStorageConfiguration mStorageConfiguration;
 };
 
 SOME_SERVER_APPLICATION_CONFIG(
@@ -43,7 +49,9 @@ SOME_SERVER_APPLICATION_CONFIG(
     "instance_id",
     &GameConfiguration::instance_id,
     "discovery",
-    &GameConfiguration::discovery);
+    &GameConfiguration::discovery,
+    "storage",
+    &GameConfiguration::storage);
 
 template <>
 struct glz::meta<GameDiscoveryConfiguration>

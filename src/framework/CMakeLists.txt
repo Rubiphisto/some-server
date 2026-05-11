@@ -1,3 +1,6 @@
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(FRAMEWORK_STORAGE_DEPS REQUIRED IMPORTED_TARGET hiredis libmariadb)
+
 set(FRAMEWORK_IPC_PROTO_ROOT ${CMAKE_SOURCE_DIR}/proto)
 set(FRAMEWORK_IPC_PROTO_GEN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ipc/pb)
 set(FRAMEWORK_ETCD_PROTO_ROOT ${CMAKE_SOURCE_DIR}/third_party/etcd-proto)
@@ -72,6 +75,8 @@ add_custom_command(
 )
 
 some_library(framework LIBS glaze::glaze ${Protobuf_LIBRARIES} gRPC::grpc++)
+
+target_link_libraries(framework PUBLIC PkgConfig::FRAMEWORK_STORAGE_DEPS)
 
 target_sources(
         framework PRIVATE

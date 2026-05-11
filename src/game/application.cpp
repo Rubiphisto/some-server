@@ -4,6 +4,8 @@
 
 #include <spdlog/spdlog.h>
 
+#include <sstream>
+
 namespace
 {
 constexpr ipc::ServiceType kGameServiceType = 10;
@@ -21,10 +23,40 @@ const char* ToString(const ipc::MembershipEventType type)
     }
     return "unknown";
 }
+
+std::string JoinArguments(const CommandArguments& arguments, const std::size_t begin_index)
+{
+    std::ostringstream stream;
+    for (std::size_t index = begin_index; index < arguments.size(); ++index)
+    {
+        if (index != begin_index)
+        {
+            stream << ' ';
+        }
+        stream << arguments[index];
+    }
+    return stream.str();
+}
+}
+
+bool Application::OnConfigure()
+{
+    std::string error;
+    if (!some_server::storage::ResolveStorageConfiguration(
+            CommonConfig(), AppConfig().storage, mStorageConfiguration, error))
+    {
+        spdlog::error("Application::OnConfigure(storage) failed: {}", error);
+        return false;
+    }
+    return true;
 }
 
 void Application::RegisterServices()
 {
+    auto storage_service = std::make_unique<some_server::storage::StorageService>(mStorageConfiguration);
+    mStorageService = storage_service.get();
+    AddService(std::move(storage_service));
+
     auto service = std::make_unique<GameIpcClientService>(AppConfig(), kGameServiceType);
     mIpcService = service.get();
     AddService(std::move(service));
@@ -37,6 +69,210 @@ void Application::RegisterRuntimeCommands()
         "Show game runtime status",
         [](const CommandArguments&) {
             spdlog::info("game status: {}", "running");
+            return CommandExecutionStatus::handled;
+        });
+
+    Runtime().RegisterCommand(
+        "storage_status",
+        "Show resolved storage datasets and reachability",
+        [this](const CommandArguments&) {
+            if (mStorageService == nullptr)
+            {
+                spdlog::warn("storage status: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+
+            const auto snapshot = mStorageService->Snapshot();
+            spdlog::info(
+                "storage status: datasets={} redis_targets={} maria_targets={}",
+                snapshot.dataset_count,
+                snapshot.redis.size(),
+                snapshot.maria.size());
+            for (const auto& [name, status] : snapshot.redis)
+            {
+                spdlog::info(
+                    "storage redis: name={} target={} reachable={} error={}",
+                    name,
+                    status.target.empty() ? "none" : status.target,
+                    status.reachable,
+                    status.error.empty() ? "none" : status.error);
+            }
+            for (const auto& [name, status] : snapshot.maria)
+            {
+                spdlog::info(
+                    "storage maria: name={} target={} reachable={} error={}",
+                    name,
+                    status.target.empty() ? "none" : status.target,
+                    status.reachable,
+                    status.error.empty() ? "none" : status.error);
+            }
+            for (const auto& [dataset_name, dataset] : mStorageConfiguration.Datasets())
+            {
+                spdlog::info(
+                    "storage dataset: name={} redis={} maria={} redis_prefix={} full_redis_prefix={} table_prefix={} alive_time_seconds={} landing_time_seconds={} landing_min_time_seconds={}",
+                    dataset_name,
+                    dataset.redis_name,
+                    dataset.maria_name,
+                    dataset.redis_prefix,
+                    dataset.full_redis_prefix,
+                    dataset.table_prefix,
+                    dataset.timing.alive_time_seconds,
+                    dataset.timing.landing_time_seconds,
+                    dataset.timing.landing_min_time_seconds);
+            }
+            return CommandExecutionStatus::handled;
+        });
+
+    Runtime().RegisterCommand(
+        "storage_probe",
+        "Probe resolved Redis and Maria targets again",
+        [this](const CommandArguments&) {
+            if (mStorageService == nullptr)
+            {
+                spdlog::warn("storage probe: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+
+            const auto snapshot = mStorageService->ProbeNow();
+            spdlog::info(
+                "storage probe: datasets={} redis_targets={} maria_targets={}",
+                snapshot.dataset_count,
+                snapshot.redis.size(),
+                snapshot.maria.size());
+            for (const auto& [name, status] : snapshot.redis)
+            {
+                spdlog::info(
+                    "storage redis probe: name={} target={} reachable={} error={}",
+                    name,
+                    status.target.empty() ? "none" : status.target,
+                    status.reachable,
+                    status.error.empty() ? "none" : status.error);
+            }
+            for (const auto& [name, status] : snapshot.maria)
+            {
+                spdlog::info(
+                    "storage maria probe: name={} target={} reachable={} error={}",
+                    name,
+                    status.target.empty() ? "none" : status.target,
+                    status.reachable,
+                    status.error.empty() ? "none" : status.error);
+            }
+            return CommandExecutionStatus::handled;
+        });
+
+    Runtime().RegisterCommand(
+        "storage_redis_set",
+        "Set one Redis string value through a dataset binding",
+        [this](const CommandArguments& arguments) {
+            if (mStorageService == nullptr)
+            {
+                spdlog::warn("storage redis set: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+            if (arguments.size() < 3)
+            {
+                spdlog::warn("usage: storage_redis_set <dataset> <key_suffix> <value...>");
+                return CommandExecutionStatus::handled;
+            }
+
+            const std::string value = JoinArguments(arguments, 2);
+            const auto result = mStorageService->RedisSet(arguments[0], arguments[1], value);
+            if (!result.ok)
+            {
+                spdlog::warn("storage redis set failed: {}", result.message);
+                return CommandExecutionStatus::handled;
+            }
+            spdlog::info(
+                "storage redis set: dataset={} key={} result={}",
+                arguments[0],
+                mStorageService->BuildRedisKey(arguments[0], arguments[1]),
+                result.message);
+            return CommandExecutionStatus::handled;
+        });
+
+    Runtime().RegisterCommand(
+        "storage_redis_get",
+        "Get one Redis string value through a dataset binding",
+        [this](const CommandArguments& arguments) {
+            if (mStorageService == nullptr)
+            {
+                spdlog::warn("storage redis get: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+            if (arguments.size() != 2)
+            {
+                spdlog::warn("usage: storage_redis_get <dataset> <key_suffix>");
+                return CommandExecutionStatus::handled;
+            }
+
+            std::string value;
+            const auto result = mStorageService->RedisGet(arguments[0], arguments[1], value);
+            if (!result.ok)
+            {
+                spdlog::warn("storage redis get failed: {}", result.message);
+                return CommandExecutionStatus::handled;
+            }
+            spdlog::info(
+                "storage redis get: dataset={} key={} value={}",
+                arguments[0],
+                mStorageService->BuildRedisKey(arguments[0], arguments[1]),
+                value);
+            return CommandExecutionStatus::handled;
+        });
+
+    Runtime().RegisterCommand(
+        "storage_redis_del",
+        "Delete one Redis key through a dataset binding",
+        [this](const CommandArguments& arguments) {
+            if (mStorageService == nullptr)
+            {
+                spdlog::warn("storage redis del: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+            if (arguments.size() != 2)
+            {
+                spdlog::warn("usage: storage_redis_del <dataset> <key_suffix>");
+                return CommandExecutionStatus::handled;
+            }
+
+            const auto result = mStorageService->RedisDelete(arguments[0], arguments[1]);
+            if (!result.ok)
+            {
+                spdlog::warn("storage redis del failed: {}", result.message);
+                return CommandExecutionStatus::handled;
+            }
+            spdlog::info(
+                "storage redis del: dataset={} key={} result={}",
+                arguments[0],
+                mStorageService->BuildRedisKey(arguments[0], arguments[1]),
+                result.message);
+            return CommandExecutionStatus::handled;
+        });
+
+    Runtime().RegisterCommand(
+        "storage_maria_exec",
+        "Execute one Maria SQL statement through a dataset binding",
+        [this](const CommandArguments& arguments) {
+            if (mStorageService == nullptr)
+            {
+                spdlog::warn("storage maria exec: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+            if (arguments.size() < 2)
+            {
+                spdlog::warn("usage: storage_maria_exec <dataset> <sql...>");
+                return CommandExecutionStatus::handled;
+            }
+
+            std::string summary;
+            const std::string sql = JoinArguments(arguments, 1);
+            const auto result = mStorageService->MariaExecute(arguments[0], sql, summary);
+            if (!result.ok)
+            {
+                spdlog::warn("storage maria exec failed: {}", result.message);
+                return CommandExecutionStatus::handled;
+            }
+            spdlog::info("storage maria exec: dataset={} sql={} summary={}", arguments[0], sql, summary);
             return CommandExecutionStatus::handled;
         });
 
@@ -473,6 +709,7 @@ LifecycleTask Application::OnLoad()
     spdlog::info("Application::Configure(listen={}:{})",
                  AppConfig().listen.host,
                  AppConfig().listen.port);
+    spdlog::info("Application::Configure(storage_datasets={})", mStorageConfiguration.Size());
     spdlog::info("Application::Load()");
     return LifecycleTask::Completed();
 }

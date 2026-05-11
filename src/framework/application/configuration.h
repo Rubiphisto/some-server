@@ -4,8 +4,10 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <string>
 #include <utility>
+#include <vector>
 
 struct LogRotationConfiguration
 {
@@ -26,9 +28,29 @@ struct LogConfiguration
     LogRotationConfiguration rotate;
 };
 
+struct RedisConfiguration
+{
+    std::vector<std::string> endpoints{"127.0.0.1:6379"};
+    std::string password;
+    std::uint32_t database = 0;
+    std::string key_prefix;
+};
+
+struct MariaConfiguration
+{
+    std::string host = "127.0.0.1";
+    std::uint16_t port = 3306;
+    std::string database;
+    std::string username;
+    std::string password;
+    std::uint32_t pool_size = 16;
+};
+
 struct CommonConfiguration
 {
     LogConfiguration log;
+    std::map<std::string, RedisConfiguration> redis;
+    std::map<std::string, MariaConfiguration> maria;
 };
 
 struct ListenConfiguration
@@ -120,7 +142,7 @@ template <>
 struct glz::meta<CommonConfiguration>
 {
     using T = CommonConfiguration;
-    static constexpr auto value = glz::object("log", &T::log);
+    static constexpr auto value = glz::object("log", &T::log, "redis", &T::redis, "maria", &T::maria);
 };
 
 template <>
@@ -135,6 +157,33 @@ struct glz::meta<BaseApplicationConfiguration>
 {
     using T = BaseApplicationConfiguration;
     static constexpr auto value = glz::object("listen", &T::listen);
+};
+
+template <>
+struct glz::meta<RedisConfiguration>
+{
+    using T = RedisConfiguration;
+    static constexpr auto value =
+        glz::object("endpoints", &T::endpoints, "password", &T::password, "database", &T::database, "key_prefix", &T::key_prefix);
+};
+
+template <>
+struct glz::meta<MariaConfiguration>
+{
+    using T = MariaConfiguration;
+    static constexpr auto value = glz::object(
+        "host",
+        &T::host,
+        "port",
+        &T::port,
+        "database",
+        &T::database,
+        "username",
+        &T::username,
+        "password",
+        &T::password,
+        "pool_size",
+        &T::pool_size);
 };
 
 #define SOME_SERVER_APPLICATION_CONFIG(Type, ...)        \

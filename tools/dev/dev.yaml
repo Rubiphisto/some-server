@@ -12,6 +12,9 @@ services:
     environment:
       # 改成你自己的密码；若配置了公钥，SSH 会优先用公钥，密码仍可兜底
       DEV_PASSWORD: "somegame"
+      DEV_MARIA_DATABASE: "data"
+      DEV_MARIA_USER: "game"
+      DEV_MARIA_PASSWORD: "game"
 
       # 也可以直接把公钥内容写在这里，或留空并使用下面的文件挂载方式
       # DEV_AUTHORIZED_KEY: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... your@email"

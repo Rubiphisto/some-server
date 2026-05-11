@@ -4,6 +4,9 @@ set -euo pipefail
 DEV_USER="${DEV_USER:-dev}"
 DEV_HOME="/home/${DEV_USER}"
 AUTHORIZED_KEYS_FILE="${DEV_HOME}/.ssh/authorized_keys"
+DEV_MARIA_DATABASE="${DEV_MARIA_DATABASE:-data}"
+DEV_MARIA_USER="${DEV_MARIA_USER:-game}"
+DEV_MARIA_PASSWORD="${DEV_MARIA_PASSWORD:-game}"
 
 mkdir -p /var/run/sshd
 mkdir -p /var/run/mysqld
@@ -42,6 +45,14 @@ echo "Initializing MariaDB database..."
 sudo mariadb-install-db --user=mysql --ldata=/var/lib/mysql
 echo "Starting MariaDB..."
 service mariadb start
+echo "Configuring MariaDB application database..."
+mariadb <<SQL
+CREATE DATABASE IF NOT EXISTS \`${DEV_MARIA_DATABASE}\`;
+CREATE USER IF NOT EXISTS '${DEV_MARIA_USER}'@'%' IDENTIFIED BY '${DEV_MARIA_PASSWORD}';
+ALTER USER '${DEV_MARIA_USER}'@'%' IDENTIFIED BY '${DEV_MARIA_PASSWORD}';
+GRANT ALL PRIVILEGES ON \`${DEV_MARIA_DATABASE}\`.* TO '${DEV_MARIA_USER}'@'%';
+FLUSH PRIVILEGES;
+SQL
 
 echo "Starting Redis..."
 service redis-server start
