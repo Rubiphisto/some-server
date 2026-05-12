@@ -182,6 +182,27 @@ namespace
         Require(endpoint.host == "127.0.0.1", "redis endpoint host");
         Require(endpoint.port == 6380, "redis endpoint port");
     }
+
+    void TestStorageResolveFailsOnUnsafeTablePrefix()
+    {
+        CommonConfiguration common_configuration;
+        common_configuration.redis["default"] = RedisConfiguration{};
+        common_configuration.maria["default"] = MariaConfiguration{};
+
+        some_server::storage::StorageConfiguration storage_configuration;
+        storage_configuration.datasets["player"] = some_server::storage::DatasetConfiguration{
+            .redis = "default",
+            .maria = "default",
+            .redis_prefix = "player:",
+            .table_prefix = "player-unsafe"};
+
+        some_server::storage::ResolvedStorageConfiguration resolved;
+        std::string error;
+        Require(
+            !some_server::storage::ResolveStorageConfiguration(common_configuration, storage_configuration, resolved, error),
+            "resolve should fail for unsafe table prefix");
+        Require(error.find("table_prefix must contain only") != std::string::npos, "unsafe table prefix error");
+    }
 }
 
 int main()
@@ -192,6 +213,7 @@ int main()
         TestStorageResolve();
         TestStorageResolveFailsOnUnknownReference();
         TestParseRedisEndpoint();
+        TestStorageResolveFailsOnUnsafeTablePrefix();
         std::cout << "game_configuration_test: ok" << std::endl;
         return 0;
     }

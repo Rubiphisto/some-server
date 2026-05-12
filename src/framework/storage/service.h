@@ -44,9 +44,14 @@ public:
     const ResolvedDatasetConfiguration* GetDataset(std::string_view dataset_name) const;
 
     std::string BuildRedisKey(std::string_view dataset_name, std::string_view suffix) const;
+    std::string BuildMariaEntriesTableName(std::string_view dataset_name) const;
+    StorageCommandResult EnsureMariaEntriesTable(std::string_view dataset_name);
     StorageCommandResult RedisSet(std::string_view dataset_name, std::string_view suffix, std::string_view value);
     StorageCommandResult RedisGet(std::string_view dataset_name, std::string_view suffix, std::string& value) const;
     StorageCommandResult RedisDelete(std::string_view dataset_name, std::string_view suffix);
+    StorageCommandResult DatasetPut(std::string_view dataset_name, std::string_view entry_key, std::string_view value);
+    StorageCommandResult DatasetGet(std::string_view dataset_name, std::string_view entry_key, std::string& value);
+    StorageCommandResult DatasetDelete(std::string_view dataset_name, std::string_view entry_key);
     StorageCommandResult MariaExecute(std::string_view dataset_name, std::string_view sql, std::string& summary);
 
 private:

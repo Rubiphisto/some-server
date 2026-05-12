@@ -4,6 +4,18 @@ namespace some_server::storage
 {
 namespace
 {
+bool IsSafeTablePrefix(const std::string_view text)
+{
+    for (const unsigned char ch : text)
+    {
+        if (!std::isalnum(ch) && ch != '_')
+        {
+            return false;
+        }
+    }
+    return !text.empty();
+}
+
 std::uint32_t ResolveTimingValue(const std::uint32_t dataset_value, const std::uint32_t default_value)
 {
     return dataset_value != 0 ? dataset_value : default_value;
@@ -40,6 +52,12 @@ bool ResolveStorageConfiguration(const CommonConfiguration& common,
         if (dataset.table_prefix.empty())
         {
             error = "storage.datasets." + dataset_name + ".table_prefix must not be empty";
+            resolved.Clear();
+            return false;
+        }
+        if (!IsSafeTablePrefix(dataset.table_prefix))
+        {
+            error = "storage.datasets." + dataset_name + ".table_prefix must contain only [A-Za-z0-9_]";
             resolved.Clear();
             return false;
         }

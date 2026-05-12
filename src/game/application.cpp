@@ -161,6 +161,116 @@ void Application::RegisterRuntimeCommands()
         });
 
     Runtime().RegisterCommand(
+        "storage_dataset_init",
+        "Create the generic Maria entries table for a dataset",
+        [this](const CommandArguments& arguments) {
+            if (mStorageService == nullptr)
+            {
+                spdlog::warn("storage dataset init: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+            if (arguments.size() != 1)
+            {
+                spdlog::warn("usage: storage_dataset_init <dataset>");
+                return CommandExecutionStatus::handled;
+            }
+
+            const auto result = mStorageService->EnsureMariaEntriesTable(arguments[0]);
+            if (!result.ok)
+            {
+                spdlog::warn("storage dataset init failed: {}", result.message);
+                return CommandExecutionStatus::handled;
+            }
+            spdlog::info(
+                "storage dataset init: dataset={} table={}",
+                arguments[0],
+                mStorageService->BuildMariaEntriesTableName(arguments[0]));
+            return CommandExecutionStatus::handled;
+        });
+
+    Runtime().RegisterCommand(
+        "storage_dataset_put",
+        "Write one generic dataset entry to Maria and Redis",
+        [this](const CommandArguments& arguments) {
+            if (mStorageService == nullptr)
+            {
+                spdlog::warn("storage dataset put: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+            if (arguments.size() < 3)
+            {
+                spdlog::warn("usage: storage_dataset_put <dataset> <entry_key> <value...>");
+                return CommandExecutionStatus::handled;
+            }
+
+            const std::string value = JoinArguments(arguments, 2);
+            const auto result = mStorageService->DatasetPut(arguments[0], arguments[1], value);
+            if (!result.ok)
+            {
+                spdlog::warn("storage dataset put failed: {}", result.message);
+                return CommandExecutionStatus::handled;
+            }
+            spdlog::info("storage dataset put: dataset={} entry_key={} result={}", arguments[0], arguments[1], result.message);
+            return CommandExecutionStatus::handled;
+        });
+
+    Runtime().RegisterCommand(
+        "storage_dataset_get",
+        "Read one generic dataset entry with Redis read-through",
+        [this](const CommandArguments& arguments) {
+            if (mStorageService == nullptr)
+            {
+                spdlog::warn("storage dataset get: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+            if (arguments.size() != 2)
+            {
+                spdlog::warn("usage: storage_dataset_get <dataset> <entry_key>");
+                return CommandExecutionStatus::handled;
+            }
+
+            std::string value;
+            const auto result = mStorageService->DatasetGet(arguments[0], arguments[1], value);
+            if (!result.ok)
+            {
+                spdlog::warn("storage dataset get failed: {}", result.message);
+                return CommandExecutionStatus::handled;
+            }
+            spdlog::info(
+                "storage dataset get: dataset={} entry_key={} source={} value={}",
+                arguments[0],
+                arguments[1],
+                result.message,
+                value);
+            return CommandExecutionStatus::handled;
+        });
+
+    Runtime().RegisterCommand(
+        "storage_dataset_del",
+        "Delete one generic dataset entry from Maria and Redis",
+        [this](const CommandArguments& arguments) {
+            if (mStorageService == nullptr)
+            {
+                spdlog::warn("storage dataset del: service not registered");
+                return CommandExecutionStatus::handled;
+            }
+            if (arguments.size() != 2)
+            {
+                spdlog::warn("usage: storage_dataset_del <dataset> <entry_key>");
+                return CommandExecutionStatus::handled;
+            }
+
+            const auto result = mStorageService->DatasetDelete(arguments[0], arguments[1]);
+            if (!result.ok)
+            {
+                spdlog::warn("storage dataset del failed: {}", result.message);
+                return CommandExecutionStatus::handled;
+            }
+            spdlog::info("storage dataset del: dataset={} entry_key={} result={}", arguments[0], arguments[1], result.message);
+            return CommandExecutionStatus::handled;
+        });
+
+    Runtime().RegisterCommand(
         "storage_redis_set",
         "Set one Redis string value through a dataset binding",
         [this](const CommandArguments& arguments) {

@@ -2,10 +2,43 @@
 
 #include <hiredis/hiredis.h>
 
+#include <cctype>
 #include <sstream>
 
 namespace some_server::storage
 {
+namespace
+{
+bool IsSafeSqlIdentifier(std::string_view text)
+{
+    if (text.empty())
+    {
+        return false;
+    }
+    for (const unsigned char ch : text)
+    {
+        if (!std::isalnum(ch) && ch != '_')
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+std::string EscapeMariaLiteral(MYSQL& handle, std::string_view text)
+{
+    std::string escaped;
+    escaped.resize(text.size() * 2 + 1);
+    const unsigned long size = mysql_real_escape_string(
+        &handle,
+        escaped.data(),
+        text.data(),
+        static_cast<unsigned long>(text.size()));
+    escaped.resize(size);
+    return escaped;
+}
+}
+
 StorageService::StorageService(const ResolvedStorageConfiguration& configuration)
     : ServiceBase("storage", 0), mConfiguration(configuration)
 {
@@ -84,6 +117,44 @@ std::string StorageService::BuildRedisKey(std::string_view dataset_name, std::st
     std::string key = dataset->full_redis_prefix;
     key += suffix;
     return key;
+}
+
+std::string StorageService::BuildMariaEntriesTableName(std::string_view dataset_name) const
+{
+    const auto* dataset = GetDataset(dataset_name);
+    if (dataset == nullptr || !IsSafeSqlIdentifier(dataset->table_prefix))
+    {
+        return {};
+    }
+    return dataset->table_prefix + "entries";
+}
+
+StorageCommandResult StorageService::EnsureMariaEntriesTable(std::string_view dataset_name)
+{
+    MYSQL* maria = GetMariaForDataset(dataset_name);
+    if (maria == nullptr)
+    {
+        return Failure("maria connection is unavailable");
+    }
+    const std::string table = BuildMariaEntriesTableName(dataset_name);
+    if (table.empty())
+    {
+        return Failure("dataset table_prefix is invalid");
+    }
+
+    const std::string sql =
+        "CREATE TABLE IF NOT EXISTS `" + table +
+        "` ("
+        "`entry_key` VARCHAR(255) NOT NULL,"
+        "`entry_value` LONGTEXT NOT NULL,"
+        "`updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,"
+        "PRIMARY KEY (`entry_key`)"
+        ")";
+    if (mysql_query(maria, sql.c_str()) != 0)
+    {
+        return Failure(mysql_error(maria));
+    }
+    return {true, "OK"};
 }
 
 StorageCommandResult StorageService::RedisSet(std::string_view dataset_name,
@@ -176,6 +247,131 @@ StorageCommandResult StorageService::RedisDelete(std::string_view dataset_name, 
     const auto deleted = static_cast<long long>(reply->integer);
     freeReplyObject(reply);
     return {true, "deleted=" + std::to_string(deleted)};
+}
+
+StorageCommandResult StorageService::DatasetPut(std::string_view dataset_name,
+                                                std::string_view entry_key,
+                                                std::string_view value)
+{
+    MYSQL* maria = GetMariaForDataset(dataset_name);
+    if (maria == nullptr)
+    {
+        return Failure("maria connection is unavailable");
+    }
+    if (entry_key.empty())
+    {
+        return Failure("entry_key must not be empty");
+    }
+
+    const auto ensure = EnsureMariaEntriesTable(dataset_name);
+    if (!ensure.ok)
+    {
+        return ensure;
+    }
+
+    const std::string table = BuildMariaEntriesTableName(dataset_name);
+    const std::string escaped_key = EscapeMariaLiteral(*maria, entry_key);
+    const std::string escaped_value = EscapeMariaLiteral(*maria, value);
+    const std::string sql =
+        "INSERT INTO `" + table + "` (`entry_key`, `entry_value`) VALUES ('" + escaped_key + "', '" + escaped_value +
+        "') ON DUPLICATE KEY UPDATE `entry_value`=VALUES(`entry_value`)";
+    if (mysql_query(maria, sql.c_str()) != 0)
+    {
+        return Failure(mysql_error(maria));
+    }
+
+    const auto redis = RedisSet(dataset_name, std::string{"entries:"} + std::string{entry_key}, value);
+    if (!redis.ok)
+    {
+        return {true, "maria=OK redis=" + redis.message};
+    }
+    return {true, "OK"};
+}
+
+StorageCommandResult StorageService::DatasetGet(std::string_view dataset_name,
+                                                std::string_view entry_key,
+                                                std::string& value)
+{
+    if (entry_key.empty())
+    {
+        return Failure("entry_key must not be empty");
+    }
+
+    const auto redis_result = RedisGet(dataset_name, std::string{"entries:"} + std::string{entry_key}, value);
+    if (redis_result.ok)
+    {
+        return {true, "redis"};
+    }
+    if (redis_result.message != "nil")
+    {
+        return redis_result;
+    }
+
+    MYSQL* maria = GetMariaForDataset(dataset_name);
+    if (maria == nullptr)
+    {
+        return Failure("maria connection is unavailable");
+    }
+    const auto ensure = EnsureMariaEntriesTable(dataset_name);
+    if (!ensure.ok)
+    {
+        return ensure;
+    }
+    const std::string table = BuildMariaEntriesTableName(dataset_name);
+    const std::string escaped_key = EscapeMariaLiteral(*maria, entry_key);
+    const std::string sql =
+        "SELECT `entry_value` FROM `" + table + "` WHERE `entry_key`='" + escaped_key + "' LIMIT 1";
+    if (mysql_query(maria, sql.c_str()) != 0)
+    {
+        return Failure(mysql_error(maria));
+    }
+    MYSQL_RES* result = mysql_store_result(maria);
+    if (result == nullptr)
+    {
+        return Failure(mysql_error(maria));
+    }
+    MYSQL_ROW row = mysql_fetch_row(result);
+    if (row == nullptr || row[0] == nullptr)
+    {
+        mysql_free_result(result);
+        return Failure("not found");
+    }
+    unsigned long* lengths = mysql_fetch_lengths(result);
+    value.assign(row[0], static_cast<std::size_t>(lengths[0]));
+    mysql_free_result(result);
+    (void)RedisSet(dataset_name, std::string{"entries:"} + std::string{entry_key}, value);
+    return {true, "maria"};
+}
+
+StorageCommandResult StorageService::DatasetDelete(std::string_view dataset_name, std::string_view entry_key)
+{
+    MYSQL* maria = GetMariaForDataset(dataset_name);
+    if (maria == nullptr)
+    {
+        return Failure("maria connection is unavailable");
+    }
+    if (entry_key.empty())
+    {
+        return Failure("entry_key must not be empty");
+    }
+    const auto ensure = EnsureMariaEntriesTable(dataset_name);
+    if (!ensure.ok)
+    {
+        return ensure;
+    }
+    const std::string table = BuildMariaEntriesTableName(dataset_name);
+    const std::string escaped_key = EscapeMariaLiteral(*maria, entry_key);
+    const std::string sql = "DELETE FROM `" + table + "` WHERE `entry_key`='" + escaped_key + "'";
+    if (mysql_query(maria, sql.c_str()) != 0)
+    {
+        return Failure(mysql_error(maria));
+    }
+    const auto redis = RedisDelete(dataset_name, std::string{"entries:"} + std::string{entry_key});
+    if (!redis.ok)
+    {
+        return {true, "maria=OK redis=" + redis.message};
+    }
+    return {true, "OK"};
 }
 
 StorageCommandResult StorageService::MariaExecute(std::string_view dataset_name,
