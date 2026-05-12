@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package client.login.v1;
+
+import "common/v1/types.proto";
+
+message LoginRequest {
+  client.common.v1.RequestHeader header = 1;
+  string platform = 2;
+  string account_id = 3;
+  string credential = 4;
+  uint32 client_version = 5;
+  string channel = 6;
+}
+
+message LoginResponse {
+  client.common.v1.ResponseHeader header = 1;
+  uint64 player_id = 2;
+  bytes initial_snapshot = 3;
+  bool is_reconnect = 4;
+}
+
+message HeartbeatRequest {
+  client.common.v1.RequestHeader header = 1;
+}
+
+message HeartbeatResponse {
+  client.common.v1.ResponseHeader header = 1;
+  uint64 server_time_ms = 2;
+}
+
+message KickNotification {
+  string reason = 1;
+}
+

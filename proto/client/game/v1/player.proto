@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package client.game.v1;
+
+import "common/v1/types.proto";
+
+message PlayerMessageRequest {
+  client.common.v1.RequestHeader header = 1;
+  bytes payload = 2;
+}
+
+message PlayerMessageResponse {
+  client.common.v1.ResponseHeader header = 1;
+  bytes payload = 2;
+}
+
+message PlayerPushMessage {
+  uint32 message_id = 1;
+  bytes payload = 2;
+}
+

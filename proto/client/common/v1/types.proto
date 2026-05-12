@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package client.common.v1;
+
+enum ErrorCode {
+  ERROR_CODE_UNSPECIFIED = 0;
+  ERROR_CODE_OK = 1;
+  ERROR_CODE_INVALID_REQUEST = 2;
+  ERROR_CODE_UNAUTHORIZED = 3;
+  ERROR_CODE_INTERNAL = 4;
+}
+
+message RequestHeader {
+  uint32 message_id = 1;
+  uint64 sequence = 2;
+  uint64 timestamp_ms = 3;
+}
+
+message ResponseHeader {
+  uint32 message_id = 1;
+  uint64 sequence = 2;
+  ErrorCode error_code = 3;
+  string error_message = 4;
+}
+
