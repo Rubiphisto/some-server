@@ -24,6 +24,14 @@ struct GameConfiguration : public BaseApplicationConfiguration, public JsonAppli
 };
 
 class GameIpcClientService;
+class PlayerDirectoryService;
+class PlayerLoginService;
+class PlayerLeaseService;
+class GamePlayerMessageService;
+class PlayerPersistenceService;
+class PlayerRepository;
+class PlayerRuntimeService;
+class PlayerSessionService;
 class Application : public ApplicationBase<GameConfiguration>
 {
 public:
@@ -41,6 +49,14 @@ protected:
 private:
     GameIpcClientService* mIpcService = nullptr;
     some_server::storage::StorageService* mStorageService = nullptr;
+    PlayerDirectoryService* mPlayerDirectoryService = nullptr;
+    PlayerLoginService* mPlayerLoginService = nullptr;
+    PlayerLeaseService* mPlayerLeaseService = nullptr;
+    GamePlayerMessageService* mPlayerMessageService = nullptr;
+    PlayerPersistenceService* mPlayerPersistenceService = nullptr;
+    PlayerRepository* mPlayerRepository = nullptr;
+    PlayerRuntimeService* mPlayerRuntimeService = nullptr;
+    PlayerSessionService* mPlayerSessionService = nullptr;
     some_server::storage::ResolvedStorageConfiguration mStorageConfiguration;
 };
 

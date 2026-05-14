@@ -141,3 +141,54 @@ add_test(NAME ipc_multi_process_integration_test COMMAND $<TARGET_FILE:ipc_multi
 set_tests_properties(ipc_multi_process_integration_test PROPERTIES
         WORKING_DIRECTORY ${SERVER_BINARY_FOLDER}/bin
 )
+
+foreach (scenario
+        reconnect_after_disconnect
+        same_account_kick
+        migration_recover_after_kick
+        default_player_recover_after_maria_restore
+        player_directory_persist_across_restart)
+    add_custom_target(sim_client_regression_${scenario}
+            COMMAND ${CMAKE_COMMAND} -E env
+                    BUILD_DIR=${CMAKE_BINARY_DIR}
+                    ${CMAKE_SOURCE_DIR}/tools/sim_client/run_regression.sh
+                    ${scenario}
+            DEPENDS relay gate game sim_client
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            COMMENT "Run sim_client regression scenario: ${scenario}"
+            VERBATIM
+    )
+endforeach ()
+
+add_custom_target(sim_client_regression
+        COMMAND ${CMAKE_COMMAND} -E env
+                BUILD_DIR=${CMAKE_BINARY_DIR}
+                ${CMAKE_SOURCE_DIR}/tools/sim_client/run_all_regressions.sh
+        DEPENDS
+                relay gate game sim_client
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Run all sim_client regression scenarios serially"
+        VERBATIM
+)
+
+if (ENABLE_HOST_INTEGRATION_TESTS)
+    foreach (scenario
+            reconnect_after_disconnect
+            same_account_kick
+            migration_recover_after_kick
+            default_player_recover_after_maria_restore
+            player_directory_persist_across_restart)
+        add_test(
+                NAME sim_client_regression_${scenario}
+                COMMAND ${CMAKE_COMMAND} -E env
+                        BUILD_DIR=${CMAKE_BINARY_DIR}
+                        ${CMAKE_SOURCE_DIR}/tools/sim_client/run_regression.sh
+                        ${scenario}
+        )
+        set_tests_properties(sim_client_regression_${scenario} PROPERTIES
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                RUN_SERIAL TRUE
+                LABELS "host_integration;sim_client"
+        )
+    endforeach ()
+endif ()

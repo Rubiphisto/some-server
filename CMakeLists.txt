@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 option(ENABLE_TESTS "Build tests" ON)
+option(ENABLE_HOST_INTEGRATION_TESTS "Register host-only multi-process integration tests" OFF)
 
 include(GNUInstallDirs)
 include(FetchContent)

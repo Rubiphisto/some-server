@@ -53,6 +53,12 @@
         "landing_min_time_seconds": 60
       },
       "datasets": {
+        "directory": {
+          "redis": "default",
+          "maria": "default",
+          "redis_prefix": "player_directory:",
+          "table_prefix": "player_directory_"
+        },
         "player": {
           "redis": "default",
           "maria": "default",

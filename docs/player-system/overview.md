@@ -18,6 +18,17 @@
 - 客户端协议与 IPC 协议彻底解耦
 - 需要独立的 `sim_client` 新进程用于真实链路联调
 
+## 当前阶段范围
+
+当前阶段按“基础功能 + 常见高频问题”收口，额外约束如下：
+
+- 当前不提前考虑 `social`
+- 当前不继续扩展 CI / nightly 接入
+- 当前不继续扩展低频释放、补档、lease 丢失等边角问题
+- 当前不增加新的复杂运维体系
+- 当前保留并继续使用 `PlayerDirectoryService`
+- 当前测试完成线以现有 5 条 host-only 回归场景为准
+
 ## 强约束
 
 以下约束适用于所有后续设计文档：
@@ -48,10 +59,12 @@
 ### 总体设计
 
 - [player-login-storage-design.md](/home/dev/projects/some-server/docs/player-system/player-login-storage-design.md)
+- [current-scope-and-boundary.md](/home/dev/projects/some-server/docs/player-system/current-scope-and-boundary.md)
 
 说明：
 
 - 保留整体架构、职责边界、主流程
+- 记录当前版本范围、完成线与暂不做事项
 - 作为总述，不再承担所有细节
 
 ### `gate` 长连接与会话设计
@@ -103,6 +116,28 @@
 - 真实协议接入
 - 联调、回归、压测场景
 - 多账号、多连接、顶号、重连脚本
+
+### Host-Only 回归接入
+
+- [host-integration-ci.md](/home/dev/projects/some-server/docs/player-system/host-integration-ci.md)
+
+说明：
+
+- 宿主环境回归入口
+- `ctest` 可选注册方式
+- nightly / 手工流水线接入建议
+- 失败产物与摘要排障顺序
+
+### 默认数据玩家补档检查
+
+- [default-player-recovery-checklist.md](/home/dev/projects/some-server/docs/player-system/default-player-recovery-checklist.md)
+
+说明：
+
+- Maria 不可用窗口下的新玩家默认数据策略
+- 补档完成的判定条件
+- 运维检查顺序
+- 回归验收标准
 
 ### IPC 改进设计
 

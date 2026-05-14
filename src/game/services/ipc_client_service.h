@@ -7,6 +7,7 @@
 #include "service_receiver_host.h"
 
 #include <atomic>
+#include <functional>
 #include <google/protobuf/wrappers.pb.h>
 #include <memory>
 #include <mutex>
@@ -60,6 +61,8 @@ struct GameLocalReceiverSnapshot
 class GameIpcClientService final : public some_server::common::IpcNodeServiceBase
 {
 public:
+    using ProcessDispatchHandler = std::function<ipc::DispatchResult(const ipc::ReceiverAddress&, const ipc::Envelope&)>;
+
     GameIpcClientService(const GameConfiguration& configuration, ipc::ServiceType game_service_type);
 
     LifecycleTask Load() override;
@@ -77,11 +80,14 @@ public:
     GameLocalReceiverSnapshot LocalReceivers() const;
     ipc::Result ConnectToProcess(ipc::InstanceId instance_id);
     ipc::Result BindLocalPlayer(std::uint64_t player_id);
+    ipc::Result UnbindLocalPlayer(std::uint64_t player_id);
     ipc::Result BindRemotePlayer(std::uint64_t player_id, ipc::InstanceId instance_id);
+    ipc::SendResult SendProcessPayload(ipc::ProcessId target, const google::protobuf::Message& message);
     ipc::SendResult SendLocalServiceMessage(const std::string& value);
     ipc::SendResult SendProcessMessage(ipc::InstanceId instance_id, const std::string& value);
     ipc::SendResult SendPlayerMessage(std::uint64_t player_id, const std::string& value);
     ipc::SendResult BroadcastServiceMessage(const std::string& value, bool include_local);
+    void SetProcessDispatchHandler(ProcessDispatchHandler handler);
 
 private:
     ipc::ProcessDescriptor BuildSelfDescriptor() const override;
@@ -104,6 +110,7 @@ private:
     std::unique_ptr<ProcessReceiverHost> mProcessReceiverHost;
     PlayerReceiverHost mPlayerReceiverHost;
     ServiceReceiverHost mServiceReceiverHost;
+    ProcessDispatchHandler mProcessDispatchHandler;
     std::uint64_t mSendRejectCount = 0;
     std::string mLastSendRejectReason;
 };

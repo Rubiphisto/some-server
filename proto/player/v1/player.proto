@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package some_server.player.v1;
+
+message PlayerBaseData {
+  uint64 player_id = 1;
+  string display_name = 2;
+  uint64 created_at_ms = 3;
+  uint64 last_login_at_ms = 4;
+}
+
+message PlayerCoreData {
+  uint32 level = 1;
+  uint64 experience = 2;
+  uint64 login_count = 3;
+}
+
+message PlayerExtensionsData {
+  bytes opaque_blob = 1;
+}
+
+message PlayerData {
+  PlayerBaseData base = 1;
+  PlayerCoreData core = 2;
+  PlayerExtensionsData extensions = 3;
+}

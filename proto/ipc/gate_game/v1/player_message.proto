@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package some_server.ipc.gate_game.v1;
+
+import "ipc/gate_game/v1/common.proto";
+
+message ForwardPlayerMessageRequest {
+  uint64 request_id = 1;
+  uint32 gate_service_type = 2;
+  uint32 gate_instance_id = 3;
+  uint64 gate_session_id = 4;
+  uint64 player_id = 5;
+  uint32 message_id = 6;
+  bytes payload_bytes = 7;
+  uint64 client_sequence = 8;
+  uint64 timestamp_ms = 9;
+}
+
+message ForwardPlayerMessageResponse {
+  uint64 request_id = 1;
+  uint64 player_id = 2;
+  uint32 message_id = 3;
+  ResultCode result_code = 4;
+  bytes response_payload_bytes = 5;
+  uint64 server_sequence = 6;
+  string error_message = 7;
+}
+

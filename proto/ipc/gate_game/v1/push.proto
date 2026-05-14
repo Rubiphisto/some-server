@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package some_server.ipc.gate_game.v1;
+
+message PushPlayerMessage {
+  uint64 player_id = 1;
+  uint32 gate_service_type = 2;
+  uint32 gate_instance_id = 3;
+  uint64 gate_session_id = 4;
+  uint32 message_id = 5;
+  bytes payload_bytes = 6;
+  uint64 push_sequence = 7;
+}

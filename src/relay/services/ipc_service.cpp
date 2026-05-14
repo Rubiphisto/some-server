@@ -142,16 +142,27 @@ ipc::Result RelayIpcService::SetupRoleComponentsLocked()
 
 void RelayIpcService::HandleIncomingDataFrameLocked(const ipc::RawFrame& frame)
 {
-    if (!mMessenger)
+    ipc::Messenger* messenger = nullptr;
+    {
+        std::scoped_lock lock(mMutex);
+        if (!mMessenger)
+        {
+            return;
+        }
+        if (!IsIpcActiveLocked())
+        {
+            RecordForwardFailureLocked("ipc is not active");
+            return;
+        }
+        messenger = mMessenger.get();
+    }
+
+    if (messenger == nullptr)
     {
         return;
     }
-    if (!IsIpcActiveLocked())
-    {
-        RecordForwardFailureLocked("ipc is not active");
-        return;
-    }
-    const ipc::Result handle_result = mMessenger->HandleIncomingFrame(frame);
+    const ipc::Result handle_result = messenger->HandleIncomingFrame(frame);
+    std::scoped_lock lock(mMutex);
     if (handle_result.ok)
     {
         ++mForwardedDataFrameCount;

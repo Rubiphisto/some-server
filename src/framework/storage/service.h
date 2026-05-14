@@ -9,6 +9,7 @@
 
 #include <map>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 
@@ -46,13 +47,19 @@ public:
     std::string BuildRedisKey(std::string_view dataset_name, std::string_view suffix) const;
     std::string BuildMariaEntriesTableName(std::string_view dataset_name) const;
     StorageCommandResult EnsureMariaEntriesTable(std::string_view dataset_name);
+    StorageCommandResult MigrateMariaEntriesTableToBinary(std::string_view dataset_name);
     StorageCommandResult RedisSet(std::string_view dataset_name, std::string_view suffix, std::string_view value);
+    StorageCommandResult RedisSetIfAbsent(std::string_view dataset_name, std::string_view suffix, std::string_view value);
     StorageCommandResult RedisGet(std::string_view dataset_name, std::string_view suffix, std::string& value) const;
     StorageCommandResult RedisDelete(std::string_view dataset_name, std::string_view suffix);
+    StorageCommandResult RedisIncrement(std::string_view dataset_name, std::string_view suffix, std::int64_t delta, std::int64_t& value);
     StorageCommandResult DatasetPut(std::string_view dataset_name, std::string_view entry_key, std::string_view value);
     StorageCommandResult DatasetGet(std::string_view dataset_name, std::string_view entry_key, std::string& value);
     StorageCommandResult DatasetDelete(std::string_view dataset_name, std::string_view entry_key);
     StorageCommandResult MariaExecute(std::string_view dataset_name, std::string_view sql, std::string& summary);
+    bool DisableMariaTarget(std::string_view name);
+    bool EnableMariaTarget(std::string_view name);
+    bool IsMariaTargetDisabled(std::string_view name) const;
 
 private:
     struct RedisConnectionState
@@ -79,5 +86,6 @@ private:
     const ResolvedStorageConfiguration& mConfiguration;
     std::map<std::string, RedisConnectionState> mRedisConnections;
     std::map<std::string, MariaConnectionState> mMariaConnections;
+    std::set<std::string> mDisabledMariaTargets;
 };
 }

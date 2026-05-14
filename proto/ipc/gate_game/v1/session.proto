@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package some_server.ipc.gate_game.v1;
+
+import "ipc/gate_game/v1/common.proto";
+
+message KickAccountSession {
+  uint64 request_id = 1;
+  string account_id = 2;
+  uint32 old_gate_service_type = 3;
+  uint32 old_gate_instance_id = 4;
+  uint64 old_gate_session_id = 5;
+  uint32 new_gate_service_type = 6;
+  uint32 new_gate_instance_id = 7;
+  string reason = 8;
+}
+
+message KickAccountSessionAck {
+  uint64 request_id = 1;
+  ResultCode result_code = 2;
+  string account_id = 3;
+  uint64 old_gate_session_id = 4;
+}
+
+message PlayerDisconnected {
+  uint64 player_id = 1;
+  uint32 gate_service_type = 2;
+  uint32 gate_instance_id = 3;
+  uint64 gate_session_id = 4;
+  DisconnectReason reason = 5;
+  uint64 occurred_at_ms = 6;
+}
+
+message BindPlayerSession {
+  uint64 player_id = 1;
+  uint32 gate_service_type = 2;
+  uint32 gate_instance_id = 3;
+  uint64 gate_session_id = 4;
+}
+
+message UnbindPlayerSession {
+  uint64 player_id = 1;
+  uint32 gate_service_type = 2;
+  uint32 gate_instance_id = 3;
+  uint64 gate_session_id = 4;
+  DisconnectReason reason = 5;
+}
+

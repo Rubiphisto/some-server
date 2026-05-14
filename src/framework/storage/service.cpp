@@ -87,7 +87,15 @@ redisContext* StorageService::GetRedis(std::string_view name) const
 MYSQL* StorageService::GetMaria(std::string_view name) const
 {
     const auto it = mMariaConnections.find(std::string{name});
-    return it == mMariaConnections.end() ? nullptr : it->second.handle;
+    if (it == mMariaConnections.end())
+    {
+        return nullptr;
+    }
+    if (mDisabledMariaTargets.contains(std::string{name}))
+    {
+        return nullptr;
+    }
+    return it->second.handle;
 }
 
 redisContext* StorageService::GetRedisForDataset(std::string_view dataset_name) const
@@ -146,11 +154,40 @@ StorageCommandResult StorageService::EnsureMariaEntriesTable(std::string_view da
         "CREATE TABLE IF NOT EXISTS `" + table +
         "` ("
         "`entry_key` VARCHAR(255) NOT NULL,"
-        "`entry_value` LONGTEXT NOT NULL,"
+        "`entry_value` LONGBLOB NOT NULL,"
         "`updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,"
         "PRIMARY KEY (`entry_key`)"
         ")";
     if (mysql_query(maria, sql.c_str()) != 0)
+    {
+        return Failure(mysql_error(maria));
+    }
+
+    return {true, "OK"};
+}
+
+StorageCommandResult StorageService::MigrateMariaEntriesTableToBinary(std::string_view dataset_name)
+{
+    MYSQL* maria = GetMariaForDataset(dataset_name);
+    if (maria == nullptr)
+    {
+        return Failure("maria connection is unavailable");
+    }
+    const auto ensure = EnsureMariaEntriesTable(dataset_name);
+    if (!ensure.ok)
+    {
+        return ensure;
+    }
+
+    const std::string table = BuildMariaEntriesTableName(dataset_name);
+    if (table.empty())
+    {
+        return Failure("dataset table_prefix is invalid");
+    }
+
+    const std::string alter_sql =
+        "ALTER TABLE `" + table + "` MODIFY COLUMN `entry_value` LONGBLOB NOT NULL";
+    if (mysql_query(maria, alter_sql.c_str()) != 0)
     {
         return Failure(mysql_error(maria));
     }
@@ -180,6 +217,38 @@ StorageCommandResult StorageService::RedisSet(std::string_view dataset_name,
     }
     const bool ok = reply->type == REDIS_REPLY_STATUS && reply->str != nullptr && std::string_view(reply->str) == "OK";
     const std::string message = ok ? "OK" : (reply->str != nullptr ? reply->str : "redis SET failed");
+    freeReplyObject(reply);
+    return {ok, message};
+}
+
+StorageCommandResult StorageService::RedisSetIfAbsent(std::string_view dataset_name,
+                                                      std::string_view suffix,
+                                                      std::string_view value)
+{
+    redisContext* redis = GetRedisForDataset(dataset_name);
+    if (redis == nullptr)
+    {
+        return Failure("redis connection is unavailable");
+    }
+    const std::string key = BuildRedisKey(dataset_name, suffix);
+    if (key.empty())
+    {
+        return Failure("dataset is unknown");
+    }
+
+    redisReply* reply = static_cast<redisReply*>(
+        redisCommand(redis, "SET %b %b NX", key.data(), key.size(), value.data(), value.size()));
+    if (reply == nullptr)
+    {
+        return Failure(redis->err != 0 && redis->errstr[0] != '\0' ? redis->errstr : "redis SET NX failed");
+    }
+    if (reply->type == REDIS_REPLY_NIL)
+    {
+        freeReplyObject(reply);
+        return {false, "exists"};
+    }
+    const bool ok = reply->type == REDIS_REPLY_STATUS && reply->str != nullptr && std::string_view(reply->str) == "OK";
+    const std::string message = ok ? "OK" : (reply->str != nullptr ? reply->str : "redis SET NX failed");
     freeReplyObject(reply);
     return {ok, message};
 }
@@ -247,6 +316,39 @@ StorageCommandResult StorageService::RedisDelete(std::string_view dataset_name, 
     const auto deleted = static_cast<long long>(reply->integer);
     freeReplyObject(reply);
     return {true, "deleted=" + std::to_string(deleted)};
+}
+
+StorageCommandResult StorageService::RedisIncrement(std::string_view dataset_name,
+                                                    std::string_view suffix,
+                                                    const std::int64_t delta,
+                                                    std::int64_t& value)
+{
+    redisContext* redis = GetRedisForDataset(dataset_name);
+    if (redis == nullptr)
+    {
+        return Failure("redis connection is unavailable");
+    }
+    const std::string key = BuildRedisKey(dataset_name, suffix);
+    if (key.empty())
+    {
+        return Failure("dataset is unknown");
+    }
+
+    redisReply* reply = static_cast<redisReply*>(
+        redisCommand(redis, "INCRBY %b %lld", key.data(), key.size(), static_cast<long long>(delta)));
+    if (reply == nullptr)
+    {
+        return Failure(redis->err != 0 && redis->errstr[0] != '\0' ? redis->errstr : "redis INCRBY failed");
+    }
+    if (reply->type != REDIS_REPLY_INTEGER)
+    {
+        const std::string message = reply->str != nullptr ? reply->str : "redis INCRBY returned unexpected reply";
+        freeReplyObject(reply);
+        return {false, message};
+    }
+    value = static_cast<std::int64_t>(reply->integer);
+    freeReplyObject(reply);
+    return {true, "OK"};
 }
 
 StorageCommandResult StorageService::DatasetPut(std::string_view dataset_name,
@@ -442,6 +544,36 @@ StorageCommandResult StorageService::MariaExecute(std::string_view dataset_name,
     return {true, "OK"};
 }
 
+bool StorageService::DisableMariaTarget(std::string_view name)
+{
+    const auto it = mMariaConnections.find(std::string{name});
+    if (it == mMariaConnections.end())
+    {
+        return false;
+    }
+    mDisabledMariaTargets.emplace(std::string{name});
+    CloseMaria(it->second.handle);
+    it->second.handle = nullptr;
+    it->second.status.reachable = false;
+    it->second.status.error = "disabled by runtime command";
+    return true;
+}
+
+bool StorageService::EnableMariaTarget(std::string_view name)
+{
+    const auto it = mMariaConnections.find(std::string{name});
+    if (it == mMariaConnections.end())
+    {
+        return false;
+    }
+    return mDisabledMariaTargets.erase(std::string{name}) > 0;
+}
+
+bool StorageService::IsMariaTargetDisabled(std::string_view name) const
+{
+    return mDisabledMariaTargets.contains(std::string{name});
+}
+
 void StorageService::RefreshConnections()
 {
     for (auto& [name, state] : mRedisConnections)
@@ -503,6 +635,14 @@ void StorageService::RefreshRedisConnection(const std::string& name, RedisConnec
 void StorageService::RefreshMariaConnection(const std::string& name, MariaConnectionState& state)
 {
     state.status.name = name;
+    if (mDisabledMariaTargets.contains(name))
+    {
+        CloseMaria(state.handle);
+        state.handle = nullptr;
+        state.status.reachable = false;
+        state.status.error = "disabled by runtime command";
+        return;
+    }
     if (state.configuration == nullptr)
     {
         state.status.reachable = false;

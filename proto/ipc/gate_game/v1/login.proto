@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package some_server.ipc.gate_game.v1;
+
+import "ipc/gate_game/v1/common.proto";
+
+message LoginPlayerRequest {
+  uint64 request_id = 1;
+  uint32 gate_service_type = 2;
+  uint32 gate_instance_id = 3;
+  uint64 gate_session_id = 4;
+  string platform = 5;
+  string account_id = 6;
+  uint32 area_id = 7;
+  uint32 client_version = 8;
+  string channel = 9;
+  string login_token = 10;
+}
+
+message LoginPlayerResponse {
+  uint64 request_id = 1;
+  ResultCode result_code = 2;
+  uint64 player_id = 3;
+  uint32 game_service_type = 4;
+  uint32 game_instance_id = 5;
+  bool is_reconnect = 6;
+  bytes initial_player_snapshot = 7;
+  string error_message = 8;
+}
+
+message ReconnectPlayerRequest {
+  uint64 request_id = 1;
+  uint64 player_id = 2;
+  uint32 gate_service_type = 3;
+  uint32 gate_instance_id = 4;
+  uint64 gate_session_id = 5;
+  string account_id = 6;
+  uint32 client_version = 7;
+}
+
+message ReconnectPlayerResponse {
+  uint64 request_id = 1;
+  ResultCode result_code = 2;
+  uint64 player_id = 3;
+  uint32 game_service_type = 4;
+  uint32 game_instance_id = 5;
+  bytes player_snapshot = 6;
+  string error_message = 7;
+}
+

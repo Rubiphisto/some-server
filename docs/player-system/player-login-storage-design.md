@@ -87,6 +87,17 @@
 
 这一层可以直接迁移思路，但应作为独立服务存在，不应耦合到 `gate` 连接管理或 `game` 玩家对象内部。
 
+当前实现补充：
+
+- 账号目录当前已优先持久化到 Redis
+- 目录键空间已与玩家数据键空间分离
+- 目录 dataset 当前使用独立前缀：`player_directory:`
+- `PlayerDirectoryService` 当前应视为正式保留组件，而不是临时过渡方案
+- 当前职责只包括：
+  - `platform + account_id + area_id -> player_id`
+  - `next_player_id` 持久化计数器
+- 当前不应把玩家数据加载、lease、gate 路由或账号中心类职责继续并入 `PlayerDirectoryService`
+
 ### 3. 玩家数据加载与存储层
 
 相关文件：
@@ -279,6 +290,13 @@
 - 维护 `AccountIdentity -> playerId`
 - 首次登录时创建映射
 - 使用 Redis 做热点缓存，MariaDB 做最终存储
+- 维护独立的目录持久化键空间与 `next_player_id` 计数器
+
+当前阶段结论：
+
+- `PlayerDirectoryService` 保留并继续使用
+- 当前实现使用独立 `directory` dataset 即可
+- 当前不再继续把它扩展成更复杂的账号中心或目录中心
 
 #### `PlayerRepository`
 
@@ -314,7 +332,8 @@
 
 - 将“协议号”映射到 protobuf 请求类型和处理函数
 - 分发玩家命令
-- 面向未来扩展到 `social` 等其他进程
+- 当前只服务 `game` 内玩家消息分发
+- 若后续真的出现新的同类进程，再单独评估是否复用这套模型
 
 #### `PlayerPersistenceService`
 
@@ -689,9 +708,15 @@ Redis key 示例：
 
 - Redis 是热数据
 - MariaDB 是耐久数据
-- `game` 先写 Redis
-- 落盘服务延迟写 MariaDB
-- 玩家释放前确保至少已登记待落盘
+- 当前实现的 `DatasetPut()` 以 Maria 写成功为准
+- Redis 回写当前是 best-effort 热态更新
+- 后台持久化服务负责择机触发 flush
+- 玩家释放前若仍为 `dirty`，必须先 flush 成功
+
+说明：
+
+- “先写 Redis、再延迟写 Maria” 仍然可以作为后续演进方向
+- 但当前已落地口径应以实际实现为准，不再假设已有独立落盘队列
 
 ## 玩家数据加载与存储流程
 
@@ -709,19 +734,44 @@ Redis key 示例：
 ### 保存流程
 
 1. 玩家逻辑修改内存 protobuf 数据
-2. 标记脏块
-3. 请求结束或 tick 结束时写回 Redis
-4. 将 `player_id` 放入待落盘队列
-5. 后台异步落盘到 MariaDB
+2. 标记整玩家 `dirty`
+3. 后台持久化服务扫描 `dirty` / `detached` / `pending_initial_persist`
+4. 调用 `FlushPlayer()`
+5. `FlushPlayer()` 再通过 `DatasetPut()` 写入 Maria，并 best-effort 回写 Redis
+
+当前补充：
+
+- flush 失败会进入 retry/backoff
+- `pending_initial_persist` 玩家会被优先 flush
+- 在“新玩家首次创建 + Maria 不可用”时，允许受控创建默认数据，但会显式标记为待首次落盘
+- 只有真正完成 Maria 成功写入后，才清除“首次待落盘”语义
 
 ### 释放流程
 
 1. 玩家进入 `unloading`
-2. 执行最后一次 Redis flush
-3. 确保落盘任务已登记
+2. 若仓储仍为 `dirty`，执行最后一次 `FlushPlayer()`
+3. 若 flush 失败，则撤回 `unloading` 并拒绝释放
 4. 解绑 `PlayerReceiver`
 5. 释放本地实例
-6. Redis 热数据保留一段时间
+6. 释放 lease
+
+当前补充：
+
+- 这样可以避免 Maria 异常时把脏玩家静默释放掉
+- 对“首次待落盘”玩家同样适用
+
+### 默认数据玩家策略结论
+
+当前实现的明确结论是：
+
+- 允许新玩家在 Maria 不可用窗口先以默认数据进入游戏
+- 但必须显式保留：
+  - `pending_initial_persist`
+  - `created_without_maria`
+- 后续只有在 Maria 真正写成功后，才允许把它当作已完成建档的正式玩家
+- 在此之前：
+  - 后台持久化会优先处理它
+  - 释放路径会保护它，避免静默丢档
 
 ## 协议系统设计
 
@@ -744,7 +794,6 @@ proto/client/
   common/v1/
   login/v1/
   game/v1/
-  social/v1/
 ```
 
 建议生成目录：
@@ -764,7 +813,6 @@ src/protocol/client/pb/
 特点：
 
 - gate <-> game
-- game <-> social
 - protobuf
 - 不直接复用客户端协议
 - 目录、生成、编译、脚本完全独立于客户端协议
@@ -776,7 +824,6 @@ proto/ipc/
   common/v1/
   control/v1/
   gate_game/v1/
-  game_social/v1/
 ```
 
 建议生成目录：
@@ -812,7 +859,7 @@ src/framework/ipc/pb/
 
 ## 协议号与 protobuf 绑定机制
 
-建议设计一套统一的消息注册表，至少应用于 `game`，后续可复用于 `social`。
+建议设计一套统一的消息注册表，当前先应用于 `game`。
 
 ### 目标
 
@@ -856,7 +903,6 @@ public:
 这样做的好处是：
 
 - 协议号与业务处理逻辑解耦
-- 未来 `social` 也可复用同一注册机制
 - 可以逐步沉淀统一中间件层
 
 `sim_client` 应直接复用同一套客户端协议号定义和 protobuf 消息定义，以保证联调路径真实。
@@ -886,7 +932,6 @@ proto/
     common/v1/
     control/v1/
     gate_game/v1/
-    game_social/v1/
 ```
 
 ### 生成产物隔离
@@ -1153,7 +1198,7 @@ src/sim_client/
 - `GateRoutingService` 不关心玩家对象内部逻辑
 - IPC 基础层不感知账号、session、player 业务规则
 
-这个边界能保证后续即使增加 `social`，也能复用消息分发和 protobuf 机制，而不会把 `gate/game` 私有逻辑污染到框架层。
+这个边界能保证当前 `gate/game` 私有逻辑不会反向污染框架层。
 
 ## 下一步建议
 

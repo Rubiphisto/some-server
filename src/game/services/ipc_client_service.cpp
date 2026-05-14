@@ -2,6 +2,11 @@
 
 #include "../../common/ipc/first_phase_topology_policy.h"
 
+#include <ipc/gate_game/v1/common.pb.h>
+#include <ipc/gate_game/v1/login.pb.h>
+#include <ipc/gate_game/v1/player_message.pb.h>
+#include <ipc/gate_game/v1/push.pb.h>
+#include <ipc/gate_game/v1/session.pb.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
@@ -151,6 +156,38 @@ ipc::Result GameIpcClientService::BindLocalPlayer(const std::uint64_t player_id)
     return bind_result;
 }
 
+ipc::Result GameIpcClientService::UnbindLocalPlayer(const std::uint64_t player_id)
+{
+    std::scoped_lock lock(mMutex);
+    if (!mSelf.has_value())
+    {
+        return ipc::Result::Failure("self descriptor is not initialized");
+    }
+    if (!mPlayerReceiverHost.IsBound(player_id))
+    {
+        return ipc::Result::Failure("player is not bound locally");
+    }
+
+    const auto receiver = PlayerReceiverAddress(player_id);
+    const auto location = mReceiverDirectory.Resolve(receiver);
+    if (location.kind != ipc::ReceiverLocationKind::single_process || location.processes.size() != 1)
+    {
+        return ipc::Result::Failure("player receiver location is not locally resolvable");
+    }
+    if (location.processes[0] != mSelf->process)
+    {
+        return ipc::Result::Failure("player receiver owner mismatch");
+    }
+
+    const ipc::Result invalidate_result = mReceiverDirectory.Invalidate(receiver, mSelf->process, location.version);
+    if (!invalidate_result.ok)
+    {
+        return invalidate_result;
+    }
+    (void)mPlayerReceiverHost.Unbind(player_id);
+    return ipc::Result::Success();
+}
+
 ipc::Result GameIpcClientService::BindRemotePlayer(const std::uint64_t player_id, const ipc::InstanceId instance_id)
 {
     std::scoped_lock lock(mMutex);
@@ -190,6 +227,30 @@ ipc::SendResult GameIpcClientService::SendLocalServiceMessage(const std::string&
     google::protobuf::StringValue payload;
     payload.set_value(value);
     const ipc::SendResult result = mMessenger->SendToReceiver(LocalServiceReceiverAddress(), payload);
+    if (!result.ok)
+    {
+        RecordSendRejectLocked(result.message);
+    }
+    return result;
+}
+
+ipc::SendResult GameIpcClientService::SendProcessPayload(const ipc::ProcessId target, const google::protobuf::Message& message)
+{
+    std::scoped_lock lock(mMutex);
+    if (!mMessenger)
+    {
+        const auto result = ipc::SendResult::Failure("messenger is not initialized");
+        RecordSendRejectLocked(result.message);
+        return result;
+    }
+    if (!IsIpcActiveLocked())
+    {
+        const auto result = ipc::SendResult::Failure("ipc is not active");
+        RecordSendRejectLocked(result.message);
+        return result;
+    }
+
+    const ipc::SendResult result = mMessenger->SendToProcess(target, message);
     if (!result.ok)
     {
         RecordSendRejectLocked(result.message);
@@ -296,6 +357,7 @@ ipc::ProcessDescriptor GameIpcClientService::BuildSelfDescriptor() const
 ipc::Result GameIpcClientService::SetupRoleComponentsLocked()
 {
     mProcessReceiverHost = std::make_unique<ProcessReceiverHost>(mSelf->process);
+    mProcessReceiverHost->SetDispatchHandler(mProcessDispatchHandler);
     if (const ipc::Result host_result = mReceiverRegistry.Register(*mProcessReceiverHost, ipc::ReceiverType::process); !host_result.ok)
     {
         mLastError = host_result.message;
@@ -323,11 +385,41 @@ ipc::Result GameIpcClientService::SetupRoleComponentsLocked()
     }
 
     google::protobuf::StringValue sample_message;
-    if (const ipc::Result payload_result = mPayloadRegistry.Register(sample_message); !payload_result.ok)
+    some_server::ipc::gate_game::v1::LoginPlayerRequest login_request;
+    some_server::ipc::gate_game::v1::LoginPlayerResponse login_response;
+    some_server::ipc::gate_game::v1::ReconnectPlayerRequest reconnect_request;
+    some_server::ipc::gate_game::v1::ReconnectPlayerResponse reconnect_response;
+    some_server::ipc::gate_game::v1::KickAccountSession kick_request;
+    some_server::ipc::gate_game::v1::KickAccountSessionAck kick_ack;
+    some_server::ipc::gate_game::v1::PlayerDisconnected disconnected;
+    some_server::ipc::gate_game::v1::BindPlayerSession bind_session;
+    some_server::ipc::gate_game::v1::UnbindPlayerSession unbind_session;
+    some_server::ipc::gate_game::v1::ForwardPlayerMessageRequest player_message_request;
+    some_server::ipc::gate_game::v1::ForwardPlayerMessageResponse player_message_response;
+    some_server::ipc::gate_game::v1::PushPlayerMessage push_message;
+
+    const google::protobuf::Message* payloads[] = {
+        &sample_message,
+        &login_request,
+        &login_response,
+        &reconnect_request,
+        &reconnect_response,
+        &kick_request,
+        &kick_ack,
+        &disconnected,
+        &bind_session,
+        &unbind_session,
+        &player_message_request,
+        &player_message_response,
+        &push_message};
+    for (const auto* payload : payloads)
     {
-        mLastError = payload_result.message;
-        spdlog::warn("game ipc payload register failed: {}", mLastError);
-        return payload_result;
+        if (const ipc::Result payload_result = mPayloadRegistry.Register(*payload); !payload_result.ok)
+        {
+            mLastError = payload_result.message;
+            spdlog::warn("game ipc payload register failed: {}", mLastError);
+            return payload_result;
+        }
     }
 
     return ipc::Result::Success();
@@ -340,11 +432,21 @@ void GameIpcClientService::TeardownRoleComponentsLocked()
 
 void GameIpcClientService::HandleIncomingDataFrameLocked(const ipc::RawFrame& frame)
 {
-    if (!mMessenger || !IsIpcActiveLocked())
+    ipc::Messenger* messenger = nullptr;
+    {
+        std::scoped_lock lock(mMutex);
+        if (!mMessenger || !IsIpcActiveLocked())
+        {
+            return;
+        }
+        messenger = mMessenger.get();
+    }
+
+    if (messenger == nullptr)
     {
         return;
     }
-    (void)mMessenger->HandleIncomingFrame(frame);
+    (void)messenger->HandleIncomingFrame(frame);
 }
 
 void GameIpcClientService::HandleDiscoveryFailureLockedExtra(const std::string&)
@@ -446,4 +548,14 @@ void GameIpcClientService::RecordSendRejectLocked(const std::string& reason)
     ++mSendRejectCount;
     mLastSendRejectReason = reason;
     mLastError = reason;
+}
+
+void GameIpcClientService::SetProcessDispatchHandler(ProcessDispatchHandler handler)
+{
+    std::scoped_lock lock(mMutex);
+    mProcessDispatchHandler = std::move(handler);
+    if (mProcessReceiverHost)
+    {
+        mProcessReceiverHost->SetDispatchHandler(mProcessDispatchHandler);
+    }
 }

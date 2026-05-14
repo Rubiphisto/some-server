@@ -1,4 +1,4 @@
-some_application(gate LIBS loader framework common)
+some_application(gate LIBS loader framework common gate_game_proto client_proto)
 
 add_custom_command(TARGET gate POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:gate>/conf

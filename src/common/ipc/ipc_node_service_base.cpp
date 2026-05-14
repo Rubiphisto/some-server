@@ -97,7 +97,6 @@ LifecycleTask IpcNodeServiceBase::LoadIpcRuntime()
 
             if (frame.header.kind == ipc::FrameKind::data)
             {
-                std::scoped_lock lock(mMutex);
                 HandleIncomingDataFrameLocked(frame);
                 return;
             }
