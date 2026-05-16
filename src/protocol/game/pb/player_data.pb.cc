@@ -20,9 +20,7 @@ PROTOBUF_PRAGMA_INIT_SEG
 namespace _pb = ::PROTOBUF_NAMESPACE_ID;
 namespace _pbi = _pb::internal;
 
-namespace some_server {
-namespace player {
-namespace v1 {
+namespace pb {
 PROTOBUF_CONSTEXPR PlayerBaseData::PlayerBaseData(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.display_name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
@@ -82,81 +80,77 @@ struct PlayerDataDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 PlayerDataDefaultTypeInternal _PlayerData_default_instance_;
-}  // namespace v1
-}  // namespace player
-}  // namespace some_server
+}  // namespace pb
 static ::_pb::Metadata file_level_metadata_player_5fdata_2eproto[4];
 static constexpr ::_pb::EnumDescriptor const** file_level_enum_descriptors_player_5fdata_2eproto = nullptr;
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_player_5fdata_2eproto = nullptr;
 
 const uint32_t TableStruct_player_5fdata_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::some_server::player::v1::PlayerBaseData, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::pb::PlayerBaseData, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::some_server::player::v1::PlayerBaseData, _impl_.player_id_),
-  PROTOBUF_FIELD_OFFSET(::some_server::player::v1::PlayerBaseData, _impl_.display_name_),
-  PROTOBUF_FIELD_OFFSET(::some_server::player::v1::PlayerBaseData, _impl_.created_at_ms_),
-  PROTOBUF_FIELD_OFFSET(::some_server::player::v1::PlayerBaseData, _impl_.last_login_at_ms_),
+  PROTOBUF_FIELD_OFFSET(::pb::PlayerBaseData, _impl_.player_id_),
+  PROTOBUF_FIELD_OFFSET(::pb::PlayerBaseData, _impl_.display_name_),
+  PROTOBUF_FIELD_OFFSET(::pb::PlayerBaseData, _impl_.created_at_ms_),
+  PROTOBUF_FIELD_OFFSET(::pb::PlayerBaseData, _impl_.last_login_at_ms_),
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::some_server::player::v1::PlayerCoreData, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::pb::PlayerCoreData, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::some_server::player::v1::PlayerCoreData, _impl_.level_),
-  PROTOBUF_FIELD_OFFSET(::some_server::player::v1::PlayerCoreData, _impl_.experience_),
-  PROTOBUF_FIELD_OFFSET(::some_server::player::v1::PlayerCoreData, _impl_.login_count_),
+  PROTOBUF_FIELD_OFFSET(::pb::PlayerCoreData, _impl_.level_),
+  PROTOBUF_FIELD_OFFSET(::pb::PlayerCoreData, _impl_.experience_),
+  PROTOBUF_FIELD_OFFSET(::pb::PlayerCoreData, _impl_.login_count_),
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::some_server::player::v1::PlayerExtensionsData, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::pb::PlayerExtensionsData, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::some_server::player::v1::PlayerExtensionsData, _impl_.opaque_blob_),
+  PROTOBUF_FIELD_OFFSET(::pb::PlayerExtensionsData, _impl_.opaque_blob_),
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::some_server::player::v1::PlayerData, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::pb::PlayerData, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::some_server::player::v1::PlayerData, _impl_.base_),
-  PROTOBUF_FIELD_OFFSET(::some_server::player::v1::PlayerData, _impl_.core_),
-  PROTOBUF_FIELD_OFFSET(::some_server::player::v1::PlayerData, _impl_.extensions_),
+  PROTOBUF_FIELD_OFFSET(::pb::PlayerData, _impl_.base_),
+  PROTOBUF_FIELD_OFFSET(::pb::PlayerData, _impl_.core_),
+  PROTOBUF_FIELD_OFFSET(::pb::PlayerData, _impl_.extensions_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  { 0, -1, -1, sizeof(::some_server::player::v1::PlayerBaseData)},
-  { 10, -1, -1, sizeof(::some_server::player::v1::PlayerCoreData)},
-  { 19, -1, -1, sizeof(::some_server::player::v1::PlayerExtensionsData)},
-  { 26, -1, -1, sizeof(::some_server::player::v1::PlayerData)},
+  { 0, -1, -1, sizeof(::pb::PlayerBaseData)},
+  { 10, -1, -1, sizeof(::pb::PlayerCoreData)},
+  { 19, -1, -1, sizeof(::pb::PlayerExtensionsData)},
+  { 26, -1, -1, sizeof(::pb::PlayerData)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
-  &::some_server::player::v1::_PlayerBaseData_default_instance_._instance,
-  &::some_server::player::v1::_PlayerCoreData_default_instance_._instance,
-  &::some_server::player::v1::_PlayerExtensionsData_default_instance_._instance,
-  &::some_server::player::v1::_PlayerData_default_instance_._instance,
+  &::pb::_PlayerBaseData_default_instance_._instance,
+  &::pb::_PlayerCoreData_default_instance_._instance,
+  &::pb::_PlayerExtensionsData_default_instance_._instance,
+  &::pb::_PlayerData_default_instance_._instance,
 };
 
 const char descriptor_table_protodef_player_5fdata_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\021player_data.proto\022\025some_server.player."
-  "v1\"j\n\016PlayerBaseData\022\021\n\tplayer_id\030\001 \001(\004\022"
-  "\024\n\014display_name\030\002 \001(\t\022\025\n\rcreated_at_ms\030\003"
-  " \001(\004\022\030\n\020last_login_at_ms\030\004 \001(\004\"H\n\016Player"
-  "CoreData\022\r\n\005level\030\001 \001(\r\022\022\n\nexperience\030\002 "
-  "\001(\004\022\023\n\013login_count\030\003 \001(\004\"+\n\024PlayerExtens"
-  "ionsData\022\023\n\013opaque_blob\030\001 \001(\014\"\267\001\n\nPlayer"
-  "Data\0223\n\004base\030\001 \001(\0132%.some_server.player."
-  "v1.PlayerBaseData\0223\n\004core\030\002 \001(\0132%.some_s"
-  "erver.player.v1.PlayerCoreData\022\?\n\nextens"
-  "ions\030\003 \001(\0132+.some_server.player.v1.Playe"
-  "rExtensionsDatab\006proto3"
+  "\n\021player_data.proto\022\002pb\"j\n\016PlayerBaseDat"
+  "a\022\021\n\tplayer_id\030\001 \001(\004\022\024\n\014display_name\030\002 \001"
+  "(\t\022\025\n\rcreated_at_ms\030\003 \001(\004\022\030\n\020last_login_"
+  "at_ms\030\004 \001(\004\"H\n\016PlayerCoreData\022\r\n\005level\030\001"
+  " \001(\r\022\022\n\nexperience\030\002 \001(\004\022\023\n\013login_count\030"
+  "\003 \001(\004\"+\n\024PlayerExtensionsData\022\023\n\013opaque_"
+  "blob\030\001 \001(\014\"~\n\nPlayerData\022 \n\004base\030\001 \001(\0132\022"
+  ".pb.PlayerBaseData\022 \n\004core\030\002 \001(\0132\022.pb.Pl"
+  "ayerCoreData\022,\n\nextensions\030\003 \001(\0132\030.pb.Pl"
+  "ayerExtensionsDatab\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_player_5fdata_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_player_5fdata_2eproto = {
-    false, false, 463, descriptor_table_protodef_player_5fdata_2eproto,
+    false, false, 386, descriptor_table_protodef_player_5fdata_2eproto,
     "player_data.proto",
     &descriptor_table_player_5fdata_2eproto_once, nullptr, 0, 4,
     schemas, file_default_instances, TableStruct_player_5fdata_2eproto::offsets,
@@ -169,9 +163,7 @@ PROTOBUF_ATTRIBUTE_WEAK const ::_pbi::DescriptorTable* descriptor_table_player_5
 
 // Force running AddDescriptors() at dynamic initialization time.
 PROTOBUF_ATTRIBUTE_INIT_PRIORITY2 static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_player_5fdata_2eproto(&descriptor_table_player_5fdata_2eproto);
-namespace some_server {
-namespace player {
-namespace v1 {
+namespace pb {
 
 // ===================================================================
 
@@ -183,7 +175,7 @@ PlayerBaseData::PlayerBaseData(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:some_server.player.v1.PlayerBaseData)
+  // @@protoc_insertion_point(arena_constructor:pb.PlayerBaseData)
 }
 PlayerBaseData::PlayerBaseData(const PlayerBaseData& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
@@ -207,7 +199,7 @@ PlayerBaseData::PlayerBaseData(const PlayerBaseData& from)
   ::memcpy(&_impl_.player_id_, &from._impl_.player_id_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.last_login_at_ms_) -
     reinterpret_cast<char*>(&_impl_.player_id_)) + sizeof(_impl_.last_login_at_ms_));
-  // @@protoc_insertion_point(copy_constructor:some_server.player.v1.PlayerBaseData)
+  // @@protoc_insertion_point(copy_constructor:pb.PlayerBaseData)
 }
 
 inline void PlayerBaseData::SharedCtor(
@@ -228,7 +220,7 @@ inline void PlayerBaseData::SharedCtor(
 }
 
 PlayerBaseData::~PlayerBaseData() {
-  // @@protoc_insertion_point(destructor:some_server.player.v1.PlayerBaseData)
+  // @@protoc_insertion_point(destructor:pb.PlayerBaseData)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
   (void)arena;
     return;
@@ -246,7 +238,7 @@ void PlayerBaseData::SetCachedSize(int size) const {
 }
 
 void PlayerBaseData::Clear() {
-// @@protoc_insertion_point(message_clear_start:some_server.player.v1.PlayerBaseData)
+// @@protoc_insertion_point(message_clear_start:pb.PlayerBaseData)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -278,7 +270,7 @@ const char* PlayerBaseData::_InternalParse(const char* ptr, ::_pbi::ParseContext
           auto str = _internal_mutable_display_name();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "some_server.player.v1.PlayerBaseData.display_name"));
+          CHK_(::_pbi::VerifyUTF8(str, "pb.PlayerBaseData.display_name"));
         } else
           goto handle_unusual;
         continue;
@@ -323,7 +315,7 @@ failure:
 
 uint8_t* PlayerBaseData::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:some_server.player.v1.PlayerBaseData)
+  // @@protoc_insertion_point(serialize_to_array_start:pb.PlayerBaseData)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -338,7 +330,7 @@ uint8_t* PlayerBaseData::_InternalSerialize(
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_display_name().data(), static_cast<int>(this->_internal_display_name().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "some_server.player.v1.PlayerBaseData.display_name");
+      "pb.PlayerBaseData.display_name");
     target = stream->WriteStringMaybeAliased(
         2, this->_internal_display_name(), target);
   }
@@ -359,12 +351,12 @@ uint8_t* PlayerBaseData::_InternalSerialize(
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:some_server.player.v1.PlayerBaseData)
+  // @@protoc_insertion_point(serialize_to_array_end:pb.PlayerBaseData)
   return target;
 }
 
 size_t PlayerBaseData::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:some_server.player.v1.PlayerBaseData)
+// @@protoc_insertion_point(message_byte_size_start:pb.PlayerBaseData)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -406,7 +398,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*PlayerBaseData::GetClassData()
 void PlayerBaseData::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
   auto* const _this = static_cast<PlayerBaseData*>(&to_msg);
   auto& from = static_cast<const PlayerBaseData&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:some_server.player.v1.PlayerBaseData)
+  // @@protoc_insertion_point(class_specific_merge_from_start:pb.PlayerBaseData)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
@@ -427,7 +419,7 @@ void PlayerBaseData::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const :
 }
 
 void PlayerBaseData::CopyFrom(const PlayerBaseData& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:some_server.player.v1.PlayerBaseData)
+// @@protoc_insertion_point(class_specific_copy_from_start:pb.PlayerBaseData)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -470,7 +462,7 @@ PlayerCoreData::PlayerCoreData(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:some_server.player.v1.PlayerCoreData)
+  // @@protoc_insertion_point(arena_constructor:pb.PlayerCoreData)
 }
 PlayerCoreData::PlayerCoreData(const PlayerCoreData& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
@@ -485,7 +477,7 @@ PlayerCoreData::PlayerCoreData(const PlayerCoreData& from)
   ::memcpy(&_impl_.experience_, &from._impl_.experience_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.level_) -
     reinterpret_cast<char*>(&_impl_.experience_)) + sizeof(_impl_.level_));
-  // @@protoc_insertion_point(copy_constructor:some_server.player.v1.PlayerCoreData)
+  // @@protoc_insertion_point(copy_constructor:pb.PlayerCoreData)
 }
 
 inline void PlayerCoreData::SharedCtor(
@@ -501,7 +493,7 @@ inline void PlayerCoreData::SharedCtor(
 }
 
 PlayerCoreData::~PlayerCoreData() {
-  // @@protoc_insertion_point(destructor:some_server.player.v1.PlayerCoreData)
+  // @@protoc_insertion_point(destructor:pb.PlayerCoreData)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
   (void)arena;
     return;
@@ -518,7 +510,7 @@ void PlayerCoreData::SetCachedSize(int size) const {
 }
 
 void PlayerCoreData::Clear() {
-// @@protoc_insertion_point(message_clear_start:some_server.player.v1.PlayerCoreData)
+// @@protoc_insertion_point(message_clear_start:pb.PlayerCoreData)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -584,7 +576,7 @@ failure:
 
 uint8_t* PlayerCoreData::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:some_server.player.v1.PlayerCoreData)
+  // @@protoc_insertion_point(serialize_to_array_start:pb.PlayerCoreData)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -610,12 +602,12 @@ uint8_t* PlayerCoreData::_InternalSerialize(
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:some_server.player.v1.PlayerCoreData)
+  // @@protoc_insertion_point(serialize_to_array_end:pb.PlayerCoreData)
   return target;
 }
 
 size_t PlayerCoreData::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:some_server.player.v1.PlayerCoreData)
+// @@protoc_insertion_point(message_byte_size_start:pb.PlayerCoreData)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -650,7 +642,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*PlayerCoreData::GetClassData()
 void PlayerCoreData::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
   auto* const _this = static_cast<PlayerCoreData*>(&to_msg);
   auto& from = static_cast<const PlayerCoreData&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:some_server.player.v1.PlayerCoreData)
+  // @@protoc_insertion_point(class_specific_merge_from_start:pb.PlayerCoreData)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
@@ -668,7 +660,7 @@ void PlayerCoreData::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const :
 }
 
 void PlayerCoreData::CopyFrom(const PlayerCoreData& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:some_server.player.v1.PlayerCoreData)
+// @@protoc_insertion_point(class_specific_copy_from_start:pb.PlayerCoreData)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -705,7 +697,7 @@ PlayerExtensionsData::PlayerExtensionsData(::PROTOBUF_NAMESPACE_ID::Arena* arena
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:some_server.player.v1.PlayerExtensionsData)
+  // @@protoc_insertion_point(arena_constructor:pb.PlayerExtensionsData)
 }
 PlayerExtensionsData::PlayerExtensionsData(const PlayerExtensionsData& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
@@ -723,7 +715,7 @@ PlayerExtensionsData::PlayerExtensionsData(const PlayerExtensionsData& from)
     _this->_impl_.opaque_blob_.Set(from._internal_opaque_blob(), 
       _this->GetArenaForAllocation());
   }
-  // @@protoc_insertion_point(copy_constructor:some_server.player.v1.PlayerExtensionsData)
+  // @@protoc_insertion_point(copy_constructor:pb.PlayerExtensionsData)
 }
 
 inline void PlayerExtensionsData::SharedCtor(
@@ -741,7 +733,7 @@ inline void PlayerExtensionsData::SharedCtor(
 }
 
 PlayerExtensionsData::~PlayerExtensionsData() {
-  // @@protoc_insertion_point(destructor:some_server.player.v1.PlayerExtensionsData)
+  // @@protoc_insertion_point(destructor:pb.PlayerExtensionsData)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
   (void)arena;
     return;
@@ -759,7 +751,7 @@ void PlayerExtensionsData::SetCachedSize(int size) const {
 }
 
 void PlayerExtensionsData::Clear() {
-// @@protoc_insertion_point(message_clear_start:some_server.player.v1.PlayerExtensionsData)
+// @@protoc_insertion_point(message_clear_start:pb.PlayerExtensionsData)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -808,7 +800,7 @@ failure:
 
 uint8_t* PlayerExtensionsData::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:some_server.player.v1.PlayerExtensionsData)
+  // @@protoc_insertion_point(serialize_to_array_start:pb.PlayerExtensionsData)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -822,12 +814,12 @@ uint8_t* PlayerExtensionsData::_InternalSerialize(
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:some_server.player.v1.PlayerExtensionsData)
+  // @@protoc_insertion_point(serialize_to_array_end:pb.PlayerExtensionsData)
   return target;
 }
 
 size_t PlayerExtensionsData::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:some_server.player.v1.PlayerExtensionsData)
+// @@protoc_insertion_point(message_byte_size_start:pb.PlayerExtensionsData)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -854,7 +846,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*PlayerExtensionsData::GetClass
 void PlayerExtensionsData::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
   auto* const _this = static_cast<PlayerExtensionsData*>(&to_msg);
   auto& from = static_cast<const PlayerExtensionsData&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:some_server.player.v1.PlayerExtensionsData)
+  // @@protoc_insertion_point(class_specific_merge_from_start:pb.PlayerExtensionsData)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
@@ -866,7 +858,7 @@ void PlayerExtensionsData::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, c
 }
 
 void PlayerExtensionsData::CopyFrom(const PlayerExtensionsData& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:some_server.player.v1.PlayerExtensionsData)
+// @@protoc_insertion_point(class_specific_copy_from_start:pb.PlayerExtensionsData)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -897,20 +889,20 @@ void PlayerExtensionsData::InternalSwap(PlayerExtensionsData* other) {
 
 class PlayerData::_Internal {
  public:
-  static const ::some_server::player::v1::PlayerBaseData& base(const PlayerData* msg);
-  static const ::some_server::player::v1::PlayerCoreData& core(const PlayerData* msg);
-  static const ::some_server::player::v1::PlayerExtensionsData& extensions(const PlayerData* msg);
+  static const ::pb::PlayerBaseData& base(const PlayerData* msg);
+  static const ::pb::PlayerCoreData& core(const PlayerData* msg);
+  static const ::pb::PlayerExtensionsData& extensions(const PlayerData* msg);
 };
 
-const ::some_server::player::v1::PlayerBaseData&
+const ::pb::PlayerBaseData&
 PlayerData::_Internal::base(const PlayerData* msg) {
   return *msg->_impl_.base_;
 }
-const ::some_server::player::v1::PlayerCoreData&
+const ::pb::PlayerCoreData&
 PlayerData::_Internal::core(const PlayerData* msg) {
   return *msg->_impl_.core_;
 }
-const ::some_server::player::v1::PlayerExtensionsData&
+const ::pb::PlayerExtensionsData&
 PlayerData::_Internal::extensions(const PlayerData* msg) {
   return *msg->_impl_.extensions_;
 }
@@ -918,7 +910,7 @@ PlayerData::PlayerData(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:some_server.player.v1.PlayerData)
+  // @@protoc_insertion_point(arena_constructor:pb.PlayerData)
 }
 PlayerData::PlayerData(const PlayerData& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
@@ -931,15 +923,15 @@ PlayerData::PlayerData(const PlayerData& from)
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   if (from._internal_has_base()) {
-    _this->_impl_.base_ = new ::some_server::player::v1::PlayerBaseData(*from._impl_.base_);
+    _this->_impl_.base_ = new ::pb::PlayerBaseData(*from._impl_.base_);
   }
   if (from._internal_has_core()) {
-    _this->_impl_.core_ = new ::some_server::player::v1::PlayerCoreData(*from._impl_.core_);
+    _this->_impl_.core_ = new ::pb::PlayerCoreData(*from._impl_.core_);
   }
   if (from._internal_has_extensions()) {
-    _this->_impl_.extensions_ = new ::some_server::player::v1::PlayerExtensionsData(*from._impl_.extensions_);
+    _this->_impl_.extensions_ = new ::pb::PlayerExtensionsData(*from._impl_.extensions_);
   }
-  // @@protoc_insertion_point(copy_constructor:some_server.player.v1.PlayerData)
+  // @@protoc_insertion_point(copy_constructor:pb.PlayerData)
 }
 
 inline void PlayerData::SharedCtor(
@@ -955,7 +947,7 @@ inline void PlayerData::SharedCtor(
 }
 
 PlayerData::~PlayerData() {
-  // @@protoc_insertion_point(destructor:some_server.player.v1.PlayerData)
+  // @@protoc_insertion_point(destructor:pb.PlayerData)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
   (void)arena;
     return;
@@ -975,7 +967,7 @@ void PlayerData::SetCachedSize(int size) const {
 }
 
 void PlayerData::Clear() {
-// @@protoc_insertion_point(message_clear_start:some_server.player.v1.PlayerData)
+// @@protoc_insertion_point(message_clear_start:pb.PlayerData)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -1001,7 +993,7 @@ const char* PlayerData::_InternalParse(const char* ptr, ::_pbi::ParseContext* ct
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // .some_server.player.v1.PlayerBaseData base = 1;
+      // .pb.PlayerBaseData base = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_base(), ptr);
@@ -1009,7 +1001,7 @@ const char* PlayerData::_InternalParse(const char* ptr, ::_pbi::ParseContext* ct
         } else
           goto handle_unusual;
         continue;
-      // .some_server.player.v1.PlayerCoreData core = 2;
+      // .pb.PlayerCoreData core = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
           ptr = ctx->ParseMessage(_internal_mutable_core(), ptr);
@@ -1017,7 +1009,7 @@ const char* PlayerData::_InternalParse(const char* ptr, ::_pbi::ParseContext* ct
         } else
           goto handle_unusual;
         continue;
-      // .some_server.player.v1.PlayerExtensionsData extensions = 3;
+      // .pb.PlayerExtensionsData extensions = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
           ptr = ctx->ParseMessage(_internal_mutable_extensions(), ptr);
@@ -1050,25 +1042,25 @@ failure:
 
 uint8_t* PlayerData::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:some_server.player.v1.PlayerData)
+  // @@protoc_insertion_point(serialize_to_array_start:pb.PlayerData)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // .some_server.player.v1.PlayerBaseData base = 1;
+  // .pb.PlayerBaseData base = 1;
   if (this->_internal_has_base()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(1, _Internal::base(this),
         _Internal::base(this).GetCachedSize(), target, stream);
   }
 
-  // .some_server.player.v1.PlayerCoreData core = 2;
+  // .pb.PlayerCoreData core = 2;
   if (this->_internal_has_core()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(2, _Internal::core(this),
         _Internal::core(this).GetCachedSize(), target, stream);
   }
 
-  // .some_server.player.v1.PlayerExtensionsData extensions = 3;
+  // .pb.PlayerExtensionsData extensions = 3;
   if (this->_internal_has_extensions()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(3, _Internal::extensions(this),
@@ -1079,33 +1071,33 @@ uint8_t* PlayerData::_InternalSerialize(
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:some_server.player.v1.PlayerData)
+  // @@protoc_insertion_point(serialize_to_array_end:pb.PlayerData)
   return target;
 }
 
 size_t PlayerData::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:some_server.player.v1.PlayerData)
+// @@protoc_insertion_point(message_byte_size_start:pb.PlayerData)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // .some_server.player.v1.PlayerBaseData base = 1;
+  // .pb.PlayerBaseData base = 1;
   if (this->_internal_has_base()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *_impl_.base_);
   }
 
-  // .some_server.player.v1.PlayerCoreData core = 2;
+  // .pb.PlayerCoreData core = 2;
   if (this->_internal_has_core()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *_impl_.core_);
   }
 
-  // .some_server.player.v1.PlayerExtensionsData extensions = 3;
+  // .pb.PlayerExtensionsData extensions = 3;
   if (this->_internal_has_extensions()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
@@ -1125,28 +1117,28 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*PlayerData::GetClassData() con
 void PlayerData::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
   auto* const _this = static_cast<PlayerData*>(&to_msg);
   auto& from = static_cast<const PlayerData&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:some_server.player.v1.PlayerData)
+  // @@protoc_insertion_point(class_specific_merge_from_start:pb.PlayerData)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (from._internal_has_base()) {
-    _this->_internal_mutable_base()->::some_server::player::v1::PlayerBaseData::MergeFrom(
+    _this->_internal_mutable_base()->::pb::PlayerBaseData::MergeFrom(
         from._internal_base());
   }
   if (from._internal_has_core()) {
-    _this->_internal_mutable_core()->::some_server::player::v1::PlayerCoreData::MergeFrom(
+    _this->_internal_mutable_core()->::pb::PlayerCoreData::MergeFrom(
         from._internal_core());
   }
   if (from._internal_has_extensions()) {
-    _this->_internal_mutable_extensions()->::some_server::player::v1::PlayerExtensionsData::MergeFrom(
+    _this->_internal_mutable_extensions()->::pb::PlayerExtensionsData::MergeFrom(
         from._internal_extensions());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void PlayerData::CopyFrom(const PlayerData& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:some_server.player.v1.PlayerData)
+// @@protoc_insertion_point(class_specific_copy_from_start:pb.PlayerData)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -1174,25 +1166,23 @@ void PlayerData::InternalSwap(PlayerData* other) {
 }
 
 // @@protoc_insertion_point(namespace_scope)
-}  // namespace v1
-}  // namespace player
-}  // namespace some_server
+}  // namespace pb
 PROTOBUF_NAMESPACE_OPEN
-template<> PROTOBUF_NOINLINE ::some_server::player::v1::PlayerBaseData*
-Arena::CreateMaybeMessage< ::some_server::player::v1::PlayerBaseData >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::some_server::player::v1::PlayerBaseData >(arena);
+template<> PROTOBUF_NOINLINE ::pb::PlayerBaseData*
+Arena::CreateMaybeMessage< ::pb::PlayerBaseData >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::pb::PlayerBaseData >(arena);
 }
-template<> PROTOBUF_NOINLINE ::some_server::player::v1::PlayerCoreData*
-Arena::CreateMaybeMessage< ::some_server::player::v1::PlayerCoreData >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::some_server::player::v1::PlayerCoreData >(arena);
+template<> PROTOBUF_NOINLINE ::pb::PlayerCoreData*
+Arena::CreateMaybeMessage< ::pb::PlayerCoreData >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::pb::PlayerCoreData >(arena);
 }
-template<> PROTOBUF_NOINLINE ::some_server::player::v1::PlayerExtensionsData*
-Arena::CreateMaybeMessage< ::some_server::player::v1::PlayerExtensionsData >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::some_server::player::v1::PlayerExtensionsData >(arena);
+template<> PROTOBUF_NOINLINE ::pb::PlayerExtensionsData*
+Arena::CreateMaybeMessage< ::pb::PlayerExtensionsData >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::pb::PlayerExtensionsData >(arena);
 }
-template<> PROTOBUF_NOINLINE ::some_server::player::v1::PlayerData*
-Arena::CreateMaybeMessage< ::some_server::player::v1::PlayerData >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::some_server::player::v1::PlayerData >(arena);
+template<> PROTOBUF_NOINLINE ::pb::PlayerData*
+Arena::CreateMaybeMessage< ::pb::PlayerData >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::pb::PlayerData >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 

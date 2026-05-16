@@ -45,9 +45,7 @@ struct TableStruct_login_2eproto {
   static const uint32_t offsets[];
 };
 extern const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_login_2eproto;
-namespace client {
-namespace login {
-namespace v1 {
+namespace pb {
 class HeartbeatRequest;
 struct HeartbeatRequestDefaultTypeInternal;
 extern HeartbeatRequestDefaultTypeInternal _HeartbeatRequest_default_instance_;
@@ -63,24 +61,20 @@ extern LoginRequestDefaultTypeInternal _LoginRequest_default_instance_;
 class LoginResponse;
 struct LoginResponseDefaultTypeInternal;
 extern LoginResponseDefaultTypeInternal _LoginResponse_default_instance_;
-}  // namespace v1
-}  // namespace login
-}  // namespace client
+}  // namespace pb
 PROTOBUF_NAMESPACE_OPEN
-template<> ::client::login::v1::HeartbeatRequest* Arena::CreateMaybeMessage<::client::login::v1::HeartbeatRequest>(Arena*);
-template<> ::client::login::v1::HeartbeatResponse* Arena::CreateMaybeMessage<::client::login::v1::HeartbeatResponse>(Arena*);
-template<> ::client::login::v1::KickNotification* Arena::CreateMaybeMessage<::client::login::v1::KickNotification>(Arena*);
-template<> ::client::login::v1::LoginRequest* Arena::CreateMaybeMessage<::client::login::v1::LoginRequest>(Arena*);
-template<> ::client::login::v1::LoginResponse* Arena::CreateMaybeMessage<::client::login::v1::LoginResponse>(Arena*);
+template<> ::pb::HeartbeatRequest* Arena::CreateMaybeMessage<::pb::HeartbeatRequest>(Arena*);
+template<> ::pb::HeartbeatResponse* Arena::CreateMaybeMessage<::pb::HeartbeatResponse>(Arena*);
+template<> ::pb::KickNotification* Arena::CreateMaybeMessage<::pb::KickNotification>(Arena*);
+template<> ::pb::LoginRequest* Arena::CreateMaybeMessage<::pb::LoginRequest>(Arena*);
+template<> ::pb::LoginResponse* Arena::CreateMaybeMessage<::pb::LoginResponse>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
-namespace client {
-namespace login {
-namespace v1 {
+namespace pb {
 
 // ===================================================================
 
 class LoginRequest final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:client.login.v1.LoginRequest) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.LoginRequest) */ {
  public:
   inline LoginRequest() : LoginRequest(nullptr) {}
   ~LoginRequest() override;
@@ -183,7 +177,7 @@ class LoginRequest final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "client.login.v1.LoginRequest";
+    return "pb.LoginRequest";
   }
   protected:
   explicit LoginRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -263,23 +257,23 @@ class LoginRequest final :
   std::string* _internal_mutable_channel();
   public:
 
-  // .client.common.v1.RequestHeader header = 1;
+  // .pb.RequestHeader header = 1;
   bool has_header() const;
   private:
   bool _internal_has_header() const;
   public:
   void clear_header();
-  const ::client::common::v1::RequestHeader& header() const;
-  PROTOBUF_NODISCARD ::client::common::v1::RequestHeader* release_header();
-  ::client::common::v1::RequestHeader* mutable_header();
-  void set_allocated_header(::client::common::v1::RequestHeader* header);
+  const ::pb::RequestHeader& header() const;
+  PROTOBUF_NODISCARD ::pb::RequestHeader* release_header();
+  ::pb::RequestHeader* mutable_header();
+  void set_allocated_header(::pb::RequestHeader* header);
   private:
-  const ::client::common::v1::RequestHeader& _internal_header() const;
-  ::client::common::v1::RequestHeader* _internal_mutable_header();
+  const ::pb::RequestHeader& _internal_header() const;
+  ::pb::RequestHeader* _internal_mutable_header();
   public:
   void unsafe_arena_set_allocated_header(
-      ::client::common::v1::RequestHeader* header);
-  ::client::common::v1::RequestHeader* unsafe_arena_release_header();
+      ::pb::RequestHeader* header);
+  ::pb::RequestHeader* unsafe_arena_release_header();
 
   // uint32 client_version = 5;
   void clear_client_version();
@@ -290,7 +284,7 @@ class LoginRequest final :
   void _internal_set_client_version(uint32_t value);
   public:
 
-  // @@protoc_insertion_point(class_scope:client.login.v1.LoginRequest)
+  // @@protoc_insertion_point(class_scope:pb.LoginRequest)
  private:
   class _Internal;
 
@@ -302,7 +296,7 @@ class LoginRequest final :
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr account_id_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr credential_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr channel_;
-    ::client::common::v1::RequestHeader* header_;
+    ::pb::RequestHeader* header_;
     uint32_t client_version_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
@@ -312,7 +306,7 @@ class LoginRequest final :
 // -------------------------------------------------------------------
 
 class LoginResponse final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:client.login.v1.LoginResponse) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.LoginResponse) */ {
  public:
   inline LoginResponse() : LoginResponse(nullptr) {}
   ~LoginResponse() override;
@@ -415,7 +409,7 @@ class LoginResponse final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "client.login.v1.LoginResponse";
+    return "pb.LoginResponse";
   }
   protected:
   explicit LoginResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -451,23 +445,23 @@ class LoginResponse final :
   std::string* _internal_mutable_initial_snapshot();
   public:
 
-  // .client.common.v1.ResponseHeader header = 1;
+  // .pb.ResponseHeader header = 1;
   bool has_header() const;
   private:
   bool _internal_has_header() const;
   public:
   void clear_header();
-  const ::client::common::v1::ResponseHeader& header() const;
-  PROTOBUF_NODISCARD ::client::common::v1::ResponseHeader* release_header();
-  ::client::common::v1::ResponseHeader* mutable_header();
-  void set_allocated_header(::client::common::v1::ResponseHeader* header);
+  const ::pb::ResponseHeader& header() const;
+  PROTOBUF_NODISCARD ::pb::ResponseHeader* release_header();
+  ::pb::ResponseHeader* mutable_header();
+  void set_allocated_header(::pb::ResponseHeader* header);
   private:
-  const ::client::common::v1::ResponseHeader& _internal_header() const;
-  ::client::common::v1::ResponseHeader* _internal_mutable_header();
+  const ::pb::ResponseHeader& _internal_header() const;
+  ::pb::ResponseHeader* _internal_mutable_header();
   public:
   void unsafe_arena_set_allocated_header(
-      ::client::common::v1::ResponseHeader* header);
-  ::client::common::v1::ResponseHeader* unsafe_arena_release_header();
+      ::pb::ResponseHeader* header);
+  ::pb::ResponseHeader* unsafe_arena_release_header();
 
   // uint64 player_id = 2;
   void clear_player_id();
@@ -487,7 +481,7 @@ class LoginResponse final :
   void _internal_set_is_reconnect(bool value);
   public:
 
-  // @@protoc_insertion_point(class_scope:client.login.v1.LoginResponse)
+  // @@protoc_insertion_point(class_scope:pb.LoginResponse)
  private:
   class _Internal;
 
@@ -496,7 +490,7 @@ class LoginResponse final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr initial_snapshot_;
-    ::client::common::v1::ResponseHeader* header_;
+    ::pb::ResponseHeader* header_;
     uint64_t player_id_;
     bool is_reconnect_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
@@ -507,7 +501,7 @@ class LoginResponse final :
 // -------------------------------------------------------------------
 
 class HeartbeatRequest final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:client.login.v1.HeartbeatRequest) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.HeartbeatRequest) */ {
  public:
   inline HeartbeatRequest() : HeartbeatRequest(nullptr) {}
   ~HeartbeatRequest() override;
@@ -610,7 +604,7 @@ class HeartbeatRequest final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "client.login.v1.HeartbeatRequest";
+    return "pb.HeartbeatRequest";
   }
   protected:
   explicit HeartbeatRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -629,25 +623,25 @@ class HeartbeatRequest final :
   enum : int {
     kHeaderFieldNumber = 1,
   };
-  // .client.common.v1.RequestHeader header = 1;
+  // .pb.RequestHeader header = 1;
   bool has_header() const;
   private:
   bool _internal_has_header() const;
   public:
   void clear_header();
-  const ::client::common::v1::RequestHeader& header() const;
-  PROTOBUF_NODISCARD ::client::common::v1::RequestHeader* release_header();
-  ::client::common::v1::RequestHeader* mutable_header();
-  void set_allocated_header(::client::common::v1::RequestHeader* header);
+  const ::pb::RequestHeader& header() const;
+  PROTOBUF_NODISCARD ::pb::RequestHeader* release_header();
+  ::pb::RequestHeader* mutable_header();
+  void set_allocated_header(::pb::RequestHeader* header);
   private:
-  const ::client::common::v1::RequestHeader& _internal_header() const;
-  ::client::common::v1::RequestHeader* _internal_mutable_header();
+  const ::pb::RequestHeader& _internal_header() const;
+  ::pb::RequestHeader* _internal_mutable_header();
   public:
   void unsafe_arena_set_allocated_header(
-      ::client::common::v1::RequestHeader* header);
-  ::client::common::v1::RequestHeader* unsafe_arena_release_header();
+      ::pb::RequestHeader* header);
+  ::pb::RequestHeader* unsafe_arena_release_header();
 
-  // @@protoc_insertion_point(class_scope:client.login.v1.HeartbeatRequest)
+  // @@protoc_insertion_point(class_scope:pb.HeartbeatRequest)
  private:
   class _Internal;
 
@@ -655,7 +649,7 @@ class HeartbeatRequest final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::client::common::v1::RequestHeader* header_;
+    ::pb::RequestHeader* header_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -664,7 +658,7 @@ class HeartbeatRequest final :
 // -------------------------------------------------------------------
 
 class HeartbeatResponse final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:client.login.v1.HeartbeatResponse) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.HeartbeatResponse) */ {
  public:
   inline HeartbeatResponse() : HeartbeatResponse(nullptr) {}
   ~HeartbeatResponse() override;
@@ -767,7 +761,7 @@ class HeartbeatResponse final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "client.login.v1.HeartbeatResponse";
+    return "pb.HeartbeatResponse";
   }
   protected:
   explicit HeartbeatResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -787,23 +781,23 @@ class HeartbeatResponse final :
     kHeaderFieldNumber = 1,
     kServerTimeMsFieldNumber = 2,
   };
-  // .client.common.v1.ResponseHeader header = 1;
+  // .pb.ResponseHeader header = 1;
   bool has_header() const;
   private:
   bool _internal_has_header() const;
   public:
   void clear_header();
-  const ::client::common::v1::ResponseHeader& header() const;
-  PROTOBUF_NODISCARD ::client::common::v1::ResponseHeader* release_header();
-  ::client::common::v1::ResponseHeader* mutable_header();
-  void set_allocated_header(::client::common::v1::ResponseHeader* header);
+  const ::pb::ResponseHeader& header() const;
+  PROTOBUF_NODISCARD ::pb::ResponseHeader* release_header();
+  ::pb::ResponseHeader* mutable_header();
+  void set_allocated_header(::pb::ResponseHeader* header);
   private:
-  const ::client::common::v1::ResponseHeader& _internal_header() const;
-  ::client::common::v1::ResponseHeader* _internal_mutable_header();
+  const ::pb::ResponseHeader& _internal_header() const;
+  ::pb::ResponseHeader* _internal_mutable_header();
   public:
   void unsafe_arena_set_allocated_header(
-      ::client::common::v1::ResponseHeader* header);
-  ::client::common::v1::ResponseHeader* unsafe_arena_release_header();
+      ::pb::ResponseHeader* header);
+  ::pb::ResponseHeader* unsafe_arena_release_header();
 
   // uint64 server_time_ms = 2;
   void clear_server_time_ms();
@@ -814,7 +808,7 @@ class HeartbeatResponse final :
   void _internal_set_server_time_ms(uint64_t value);
   public:
 
-  // @@protoc_insertion_point(class_scope:client.login.v1.HeartbeatResponse)
+  // @@protoc_insertion_point(class_scope:pb.HeartbeatResponse)
  private:
   class _Internal;
 
@@ -822,7 +816,7 @@ class HeartbeatResponse final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::client::common::v1::ResponseHeader* header_;
+    ::pb::ResponseHeader* header_;
     uint64_t server_time_ms_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
@@ -832,7 +826,7 @@ class HeartbeatResponse final :
 // -------------------------------------------------------------------
 
 class KickNotification final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:client.login.v1.KickNotification) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.KickNotification) */ {
  public:
   inline KickNotification() : KickNotification(nullptr) {}
   ~KickNotification() override;
@@ -935,7 +929,7 @@ class KickNotification final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "client.login.v1.KickNotification";
+    return "pb.KickNotification";
   }
   protected:
   explicit KickNotification(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -968,7 +962,7 @@ class KickNotification final :
   std::string* _internal_mutable_reason();
   public:
 
-  // @@protoc_insertion_point(class_scope:client.login.v1.KickNotification)
+  // @@protoc_insertion_point(class_scope:pb.KickNotification)
  private:
   class _Internal;
 
@@ -993,24 +987,24 @@ class KickNotification final :
 #endif  // __GNUC__
 // LoginRequest
 
-// .client.common.v1.RequestHeader header = 1;
+// .pb.RequestHeader header = 1;
 inline bool LoginRequest::_internal_has_header() const {
   return this != internal_default_instance() && _impl_.header_ != nullptr;
 }
 inline bool LoginRequest::has_header() const {
   return _internal_has_header();
 }
-inline const ::client::common::v1::RequestHeader& LoginRequest::_internal_header() const {
-  const ::client::common::v1::RequestHeader* p = _impl_.header_;
-  return p != nullptr ? *p : reinterpret_cast<const ::client::common::v1::RequestHeader&>(
-      ::client::common::v1::_RequestHeader_default_instance_);
+inline const ::pb::RequestHeader& LoginRequest::_internal_header() const {
+  const ::pb::RequestHeader* p = _impl_.header_;
+  return p != nullptr ? *p : reinterpret_cast<const ::pb::RequestHeader&>(
+      ::pb::_RequestHeader_default_instance_);
 }
-inline const ::client::common::v1::RequestHeader& LoginRequest::header() const {
-  // @@protoc_insertion_point(field_get:client.login.v1.LoginRequest.header)
+inline const ::pb::RequestHeader& LoginRequest::header() const {
+  // @@protoc_insertion_point(field_get:pb.LoginRequest.header)
   return _internal_header();
 }
 inline void LoginRequest::unsafe_arena_set_allocated_header(
-    ::client::common::v1::RequestHeader* header) {
+    ::pb::RequestHeader* header) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.header_);
   }
@@ -1020,11 +1014,11 @@ inline void LoginRequest::unsafe_arena_set_allocated_header(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:client.login.v1.LoginRequest.header)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:pb.LoginRequest.header)
 }
-inline ::client::common::v1::RequestHeader* LoginRequest::release_header() {
+inline ::pb::RequestHeader* LoginRequest::release_header() {
   
-  ::client::common::v1::RequestHeader* temp = _impl_.header_;
+  ::pb::RequestHeader* temp = _impl_.header_;
   _impl_.header_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
@@ -1037,27 +1031,27 @@ inline ::client::common::v1::RequestHeader* LoginRequest::release_header() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::client::common::v1::RequestHeader* LoginRequest::unsafe_arena_release_header() {
-  // @@protoc_insertion_point(field_release:client.login.v1.LoginRequest.header)
+inline ::pb::RequestHeader* LoginRequest::unsafe_arena_release_header() {
+  // @@protoc_insertion_point(field_release:pb.LoginRequest.header)
   
-  ::client::common::v1::RequestHeader* temp = _impl_.header_;
+  ::pb::RequestHeader* temp = _impl_.header_;
   _impl_.header_ = nullptr;
   return temp;
 }
-inline ::client::common::v1::RequestHeader* LoginRequest::_internal_mutable_header() {
+inline ::pb::RequestHeader* LoginRequest::_internal_mutable_header() {
   
   if (_impl_.header_ == nullptr) {
-    auto* p = CreateMaybeMessage<::client::common::v1::RequestHeader>(GetArenaForAllocation());
+    auto* p = CreateMaybeMessage<::pb::RequestHeader>(GetArenaForAllocation());
     _impl_.header_ = p;
   }
   return _impl_.header_;
 }
-inline ::client::common::v1::RequestHeader* LoginRequest::mutable_header() {
-  ::client::common::v1::RequestHeader* _msg = _internal_mutable_header();
-  // @@protoc_insertion_point(field_mutable:client.login.v1.LoginRequest.header)
+inline ::pb::RequestHeader* LoginRequest::mutable_header() {
+  ::pb::RequestHeader* _msg = _internal_mutable_header();
+  // @@protoc_insertion_point(field_mutable:pb.LoginRequest.header)
   return _msg;
 }
-inline void LoginRequest::set_allocated_header(::client::common::v1::RequestHeader* header) {
+inline void LoginRequest::set_allocated_header(::pb::RequestHeader* header) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.header_);
@@ -1075,7 +1069,7 @@ inline void LoginRequest::set_allocated_header(::client::common::v1::RequestHead
     
   }
   _impl_.header_ = header;
-  // @@protoc_insertion_point(field_set_allocated:client.login.v1.LoginRequest.header)
+  // @@protoc_insertion_point(field_set_allocated:pb.LoginRequest.header)
 }
 
 // string platform = 2;
@@ -1083,7 +1077,7 @@ inline void LoginRequest::clear_platform() {
   _impl_.platform_.ClearToEmpty();
 }
 inline const std::string& LoginRequest::platform() const {
-  // @@protoc_insertion_point(field_get:client.login.v1.LoginRequest.platform)
+  // @@protoc_insertion_point(field_get:pb.LoginRequest.platform)
   return _internal_platform();
 }
 template <typename ArgT0, typename... ArgT>
@@ -1091,11 +1085,11 @@ inline PROTOBUF_ALWAYS_INLINE
 void LoginRequest::set_platform(ArgT0&& arg0, ArgT... args) {
  
  _impl_.platform_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:client.login.v1.LoginRequest.platform)
+  // @@protoc_insertion_point(field_set:pb.LoginRequest.platform)
 }
 inline std::string* LoginRequest::mutable_platform() {
   std::string* _s = _internal_mutable_platform();
-  // @@protoc_insertion_point(field_mutable:client.login.v1.LoginRequest.platform)
+  // @@protoc_insertion_point(field_mutable:pb.LoginRequest.platform)
   return _s;
 }
 inline const std::string& LoginRequest::_internal_platform() const {
@@ -1110,7 +1104,7 @@ inline std::string* LoginRequest::_internal_mutable_platform() {
   return _impl_.platform_.Mutable(GetArenaForAllocation());
 }
 inline std::string* LoginRequest::release_platform() {
-  // @@protoc_insertion_point(field_release:client.login.v1.LoginRequest.platform)
+  // @@protoc_insertion_point(field_release:pb.LoginRequest.platform)
   return _impl_.platform_.Release();
 }
 inline void LoginRequest::set_allocated_platform(std::string* platform) {
@@ -1125,7 +1119,7 @@ inline void LoginRequest::set_allocated_platform(std::string* platform) {
     _impl_.platform_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:client.login.v1.LoginRequest.platform)
+  // @@protoc_insertion_point(field_set_allocated:pb.LoginRequest.platform)
 }
 
 // string account_id = 3;
@@ -1133,7 +1127,7 @@ inline void LoginRequest::clear_account_id() {
   _impl_.account_id_.ClearToEmpty();
 }
 inline const std::string& LoginRequest::account_id() const {
-  // @@protoc_insertion_point(field_get:client.login.v1.LoginRequest.account_id)
+  // @@protoc_insertion_point(field_get:pb.LoginRequest.account_id)
   return _internal_account_id();
 }
 template <typename ArgT0, typename... ArgT>
@@ -1141,11 +1135,11 @@ inline PROTOBUF_ALWAYS_INLINE
 void LoginRequest::set_account_id(ArgT0&& arg0, ArgT... args) {
  
  _impl_.account_id_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:client.login.v1.LoginRequest.account_id)
+  // @@protoc_insertion_point(field_set:pb.LoginRequest.account_id)
 }
 inline std::string* LoginRequest::mutable_account_id() {
   std::string* _s = _internal_mutable_account_id();
-  // @@protoc_insertion_point(field_mutable:client.login.v1.LoginRequest.account_id)
+  // @@protoc_insertion_point(field_mutable:pb.LoginRequest.account_id)
   return _s;
 }
 inline const std::string& LoginRequest::_internal_account_id() const {
@@ -1160,7 +1154,7 @@ inline std::string* LoginRequest::_internal_mutable_account_id() {
   return _impl_.account_id_.Mutable(GetArenaForAllocation());
 }
 inline std::string* LoginRequest::release_account_id() {
-  // @@protoc_insertion_point(field_release:client.login.v1.LoginRequest.account_id)
+  // @@protoc_insertion_point(field_release:pb.LoginRequest.account_id)
   return _impl_.account_id_.Release();
 }
 inline void LoginRequest::set_allocated_account_id(std::string* account_id) {
@@ -1175,7 +1169,7 @@ inline void LoginRequest::set_allocated_account_id(std::string* account_id) {
     _impl_.account_id_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:client.login.v1.LoginRequest.account_id)
+  // @@protoc_insertion_point(field_set_allocated:pb.LoginRequest.account_id)
 }
 
 // string credential = 4;
@@ -1183,7 +1177,7 @@ inline void LoginRequest::clear_credential() {
   _impl_.credential_.ClearToEmpty();
 }
 inline const std::string& LoginRequest::credential() const {
-  // @@protoc_insertion_point(field_get:client.login.v1.LoginRequest.credential)
+  // @@protoc_insertion_point(field_get:pb.LoginRequest.credential)
   return _internal_credential();
 }
 template <typename ArgT0, typename... ArgT>
@@ -1191,11 +1185,11 @@ inline PROTOBUF_ALWAYS_INLINE
 void LoginRequest::set_credential(ArgT0&& arg0, ArgT... args) {
  
  _impl_.credential_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:client.login.v1.LoginRequest.credential)
+  // @@protoc_insertion_point(field_set:pb.LoginRequest.credential)
 }
 inline std::string* LoginRequest::mutable_credential() {
   std::string* _s = _internal_mutable_credential();
-  // @@protoc_insertion_point(field_mutable:client.login.v1.LoginRequest.credential)
+  // @@protoc_insertion_point(field_mutable:pb.LoginRequest.credential)
   return _s;
 }
 inline const std::string& LoginRequest::_internal_credential() const {
@@ -1210,7 +1204,7 @@ inline std::string* LoginRequest::_internal_mutable_credential() {
   return _impl_.credential_.Mutable(GetArenaForAllocation());
 }
 inline std::string* LoginRequest::release_credential() {
-  // @@protoc_insertion_point(field_release:client.login.v1.LoginRequest.credential)
+  // @@protoc_insertion_point(field_release:pb.LoginRequest.credential)
   return _impl_.credential_.Release();
 }
 inline void LoginRequest::set_allocated_credential(std::string* credential) {
@@ -1225,7 +1219,7 @@ inline void LoginRequest::set_allocated_credential(std::string* credential) {
     _impl_.credential_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:client.login.v1.LoginRequest.credential)
+  // @@protoc_insertion_point(field_set_allocated:pb.LoginRequest.credential)
 }
 
 // uint32 client_version = 5;
@@ -1236,7 +1230,7 @@ inline uint32_t LoginRequest::_internal_client_version() const {
   return _impl_.client_version_;
 }
 inline uint32_t LoginRequest::client_version() const {
-  // @@protoc_insertion_point(field_get:client.login.v1.LoginRequest.client_version)
+  // @@protoc_insertion_point(field_get:pb.LoginRequest.client_version)
   return _internal_client_version();
 }
 inline void LoginRequest::_internal_set_client_version(uint32_t value) {
@@ -1245,7 +1239,7 @@ inline void LoginRequest::_internal_set_client_version(uint32_t value) {
 }
 inline void LoginRequest::set_client_version(uint32_t value) {
   _internal_set_client_version(value);
-  // @@protoc_insertion_point(field_set:client.login.v1.LoginRequest.client_version)
+  // @@protoc_insertion_point(field_set:pb.LoginRequest.client_version)
 }
 
 // string channel = 6;
@@ -1253,7 +1247,7 @@ inline void LoginRequest::clear_channel() {
   _impl_.channel_.ClearToEmpty();
 }
 inline const std::string& LoginRequest::channel() const {
-  // @@protoc_insertion_point(field_get:client.login.v1.LoginRequest.channel)
+  // @@protoc_insertion_point(field_get:pb.LoginRequest.channel)
   return _internal_channel();
 }
 template <typename ArgT0, typename... ArgT>
@@ -1261,11 +1255,11 @@ inline PROTOBUF_ALWAYS_INLINE
 void LoginRequest::set_channel(ArgT0&& arg0, ArgT... args) {
  
  _impl_.channel_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:client.login.v1.LoginRequest.channel)
+  // @@protoc_insertion_point(field_set:pb.LoginRequest.channel)
 }
 inline std::string* LoginRequest::mutable_channel() {
   std::string* _s = _internal_mutable_channel();
-  // @@protoc_insertion_point(field_mutable:client.login.v1.LoginRequest.channel)
+  // @@protoc_insertion_point(field_mutable:pb.LoginRequest.channel)
   return _s;
 }
 inline const std::string& LoginRequest::_internal_channel() const {
@@ -1280,7 +1274,7 @@ inline std::string* LoginRequest::_internal_mutable_channel() {
   return _impl_.channel_.Mutable(GetArenaForAllocation());
 }
 inline std::string* LoginRequest::release_channel() {
-  // @@protoc_insertion_point(field_release:client.login.v1.LoginRequest.channel)
+  // @@protoc_insertion_point(field_release:pb.LoginRequest.channel)
   return _impl_.channel_.Release();
 }
 inline void LoginRequest::set_allocated_channel(std::string* channel) {
@@ -1295,31 +1289,31 @@ inline void LoginRequest::set_allocated_channel(std::string* channel) {
     _impl_.channel_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:client.login.v1.LoginRequest.channel)
+  // @@protoc_insertion_point(field_set_allocated:pb.LoginRequest.channel)
 }
 
 // -------------------------------------------------------------------
 
 // LoginResponse
 
-// .client.common.v1.ResponseHeader header = 1;
+// .pb.ResponseHeader header = 1;
 inline bool LoginResponse::_internal_has_header() const {
   return this != internal_default_instance() && _impl_.header_ != nullptr;
 }
 inline bool LoginResponse::has_header() const {
   return _internal_has_header();
 }
-inline const ::client::common::v1::ResponseHeader& LoginResponse::_internal_header() const {
-  const ::client::common::v1::ResponseHeader* p = _impl_.header_;
-  return p != nullptr ? *p : reinterpret_cast<const ::client::common::v1::ResponseHeader&>(
-      ::client::common::v1::_ResponseHeader_default_instance_);
+inline const ::pb::ResponseHeader& LoginResponse::_internal_header() const {
+  const ::pb::ResponseHeader* p = _impl_.header_;
+  return p != nullptr ? *p : reinterpret_cast<const ::pb::ResponseHeader&>(
+      ::pb::_ResponseHeader_default_instance_);
 }
-inline const ::client::common::v1::ResponseHeader& LoginResponse::header() const {
-  // @@protoc_insertion_point(field_get:client.login.v1.LoginResponse.header)
+inline const ::pb::ResponseHeader& LoginResponse::header() const {
+  // @@protoc_insertion_point(field_get:pb.LoginResponse.header)
   return _internal_header();
 }
 inline void LoginResponse::unsafe_arena_set_allocated_header(
-    ::client::common::v1::ResponseHeader* header) {
+    ::pb::ResponseHeader* header) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.header_);
   }
@@ -1329,11 +1323,11 @@ inline void LoginResponse::unsafe_arena_set_allocated_header(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:client.login.v1.LoginResponse.header)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:pb.LoginResponse.header)
 }
-inline ::client::common::v1::ResponseHeader* LoginResponse::release_header() {
+inline ::pb::ResponseHeader* LoginResponse::release_header() {
   
-  ::client::common::v1::ResponseHeader* temp = _impl_.header_;
+  ::pb::ResponseHeader* temp = _impl_.header_;
   _impl_.header_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
@@ -1346,27 +1340,27 @@ inline ::client::common::v1::ResponseHeader* LoginResponse::release_header() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::client::common::v1::ResponseHeader* LoginResponse::unsafe_arena_release_header() {
-  // @@protoc_insertion_point(field_release:client.login.v1.LoginResponse.header)
+inline ::pb::ResponseHeader* LoginResponse::unsafe_arena_release_header() {
+  // @@protoc_insertion_point(field_release:pb.LoginResponse.header)
   
-  ::client::common::v1::ResponseHeader* temp = _impl_.header_;
+  ::pb::ResponseHeader* temp = _impl_.header_;
   _impl_.header_ = nullptr;
   return temp;
 }
-inline ::client::common::v1::ResponseHeader* LoginResponse::_internal_mutable_header() {
+inline ::pb::ResponseHeader* LoginResponse::_internal_mutable_header() {
   
   if (_impl_.header_ == nullptr) {
-    auto* p = CreateMaybeMessage<::client::common::v1::ResponseHeader>(GetArenaForAllocation());
+    auto* p = CreateMaybeMessage<::pb::ResponseHeader>(GetArenaForAllocation());
     _impl_.header_ = p;
   }
   return _impl_.header_;
 }
-inline ::client::common::v1::ResponseHeader* LoginResponse::mutable_header() {
-  ::client::common::v1::ResponseHeader* _msg = _internal_mutable_header();
-  // @@protoc_insertion_point(field_mutable:client.login.v1.LoginResponse.header)
+inline ::pb::ResponseHeader* LoginResponse::mutable_header() {
+  ::pb::ResponseHeader* _msg = _internal_mutable_header();
+  // @@protoc_insertion_point(field_mutable:pb.LoginResponse.header)
   return _msg;
 }
-inline void LoginResponse::set_allocated_header(::client::common::v1::ResponseHeader* header) {
+inline void LoginResponse::set_allocated_header(::pb::ResponseHeader* header) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.header_);
@@ -1384,7 +1378,7 @@ inline void LoginResponse::set_allocated_header(::client::common::v1::ResponseHe
     
   }
   _impl_.header_ = header;
-  // @@protoc_insertion_point(field_set_allocated:client.login.v1.LoginResponse.header)
+  // @@protoc_insertion_point(field_set_allocated:pb.LoginResponse.header)
 }
 
 // uint64 player_id = 2;
@@ -1395,7 +1389,7 @@ inline uint64_t LoginResponse::_internal_player_id() const {
   return _impl_.player_id_;
 }
 inline uint64_t LoginResponse::player_id() const {
-  // @@protoc_insertion_point(field_get:client.login.v1.LoginResponse.player_id)
+  // @@protoc_insertion_point(field_get:pb.LoginResponse.player_id)
   return _internal_player_id();
 }
 inline void LoginResponse::_internal_set_player_id(uint64_t value) {
@@ -1404,7 +1398,7 @@ inline void LoginResponse::_internal_set_player_id(uint64_t value) {
 }
 inline void LoginResponse::set_player_id(uint64_t value) {
   _internal_set_player_id(value);
-  // @@protoc_insertion_point(field_set:client.login.v1.LoginResponse.player_id)
+  // @@protoc_insertion_point(field_set:pb.LoginResponse.player_id)
 }
 
 // bytes initial_snapshot = 3;
@@ -1412,7 +1406,7 @@ inline void LoginResponse::clear_initial_snapshot() {
   _impl_.initial_snapshot_.ClearToEmpty();
 }
 inline const std::string& LoginResponse::initial_snapshot() const {
-  // @@protoc_insertion_point(field_get:client.login.v1.LoginResponse.initial_snapshot)
+  // @@protoc_insertion_point(field_get:pb.LoginResponse.initial_snapshot)
   return _internal_initial_snapshot();
 }
 template <typename ArgT0, typename... ArgT>
@@ -1420,11 +1414,11 @@ inline PROTOBUF_ALWAYS_INLINE
 void LoginResponse::set_initial_snapshot(ArgT0&& arg0, ArgT... args) {
  
  _impl_.initial_snapshot_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:client.login.v1.LoginResponse.initial_snapshot)
+  // @@protoc_insertion_point(field_set:pb.LoginResponse.initial_snapshot)
 }
 inline std::string* LoginResponse::mutable_initial_snapshot() {
   std::string* _s = _internal_mutable_initial_snapshot();
-  // @@protoc_insertion_point(field_mutable:client.login.v1.LoginResponse.initial_snapshot)
+  // @@protoc_insertion_point(field_mutable:pb.LoginResponse.initial_snapshot)
   return _s;
 }
 inline const std::string& LoginResponse::_internal_initial_snapshot() const {
@@ -1439,7 +1433,7 @@ inline std::string* LoginResponse::_internal_mutable_initial_snapshot() {
   return _impl_.initial_snapshot_.Mutable(GetArenaForAllocation());
 }
 inline std::string* LoginResponse::release_initial_snapshot() {
-  // @@protoc_insertion_point(field_release:client.login.v1.LoginResponse.initial_snapshot)
+  // @@protoc_insertion_point(field_release:pb.LoginResponse.initial_snapshot)
   return _impl_.initial_snapshot_.Release();
 }
 inline void LoginResponse::set_allocated_initial_snapshot(std::string* initial_snapshot) {
@@ -1454,7 +1448,7 @@ inline void LoginResponse::set_allocated_initial_snapshot(std::string* initial_s
     _impl_.initial_snapshot_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:client.login.v1.LoginResponse.initial_snapshot)
+  // @@protoc_insertion_point(field_set_allocated:pb.LoginResponse.initial_snapshot)
 }
 
 // bool is_reconnect = 4;
@@ -1465,7 +1459,7 @@ inline bool LoginResponse::_internal_is_reconnect() const {
   return _impl_.is_reconnect_;
 }
 inline bool LoginResponse::is_reconnect() const {
-  // @@protoc_insertion_point(field_get:client.login.v1.LoginResponse.is_reconnect)
+  // @@protoc_insertion_point(field_get:pb.LoginResponse.is_reconnect)
   return _internal_is_reconnect();
 }
 inline void LoginResponse::_internal_set_is_reconnect(bool value) {
@@ -1474,31 +1468,31 @@ inline void LoginResponse::_internal_set_is_reconnect(bool value) {
 }
 inline void LoginResponse::set_is_reconnect(bool value) {
   _internal_set_is_reconnect(value);
-  // @@protoc_insertion_point(field_set:client.login.v1.LoginResponse.is_reconnect)
+  // @@protoc_insertion_point(field_set:pb.LoginResponse.is_reconnect)
 }
 
 // -------------------------------------------------------------------
 
 // HeartbeatRequest
 
-// .client.common.v1.RequestHeader header = 1;
+// .pb.RequestHeader header = 1;
 inline bool HeartbeatRequest::_internal_has_header() const {
   return this != internal_default_instance() && _impl_.header_ != nullptr;
 }
 inline bool HeartbeatRequest::has_header() const {
   return _internal_has_header();
 }
-inline const ::client::common::v1::RequestHeader& HeartbeatRequest::_internal_header() const {
-  const ::client::common::v1::RequestHeader* p = _impl_.header_;
-  return p != nullptr ? *p : reinterpret_cast<const ::client::common::v1::RequestHeader&>(
-      ::client::common::v1::_RequestHeader_default_instance_);
+inline const ::pb::RequestHeader& HeartbeatRequest::_internal_header() const {
+  const ::pb::RequestHeader* p = _impl_.header_;
+  return p != nullptr ? *p : reinterpret_cast<const ::pb::RequestHeader&>(
+      ::pb::_RequestHeader_default_instance_);
 }
-inline const ::client::common::v1::RequestHeader& HeartbeatRequest::header() const {
-  // @@protoc_insertion_point(field_get:client.login.v1.HeartbeatRequest.header)
+inline const ::pb::RequestHeader& HeartbeatRequest::header() const {
+  // @@protoc_insertion_point(field_get:pb.HeartbeatRequest.header)
   return _internal_header();
 }
 inline void HeartbeatRequest::unsafe_arena_set_allocated_header(
-    ::client::common::v1::RequestHeader* header) {
+    ::pb::RequestHeader* header) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.header_);
   }
@@ -1508,11 +1502,11 @@ inline void HeartbeatRequest::unsafe_arena_set_allocated_header(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:client.login.v1.HeartbeatRequest.header)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:pb.HeartbeatRequest.header)
 }
-inline ::client::common::v1::RequestHeader* HeartbeatRequest::release_header() {
+inline ::pb::RequestHeader* HeartbeatRequest::release_header() {
   
-  ::client::common::v1::RequestHeader* temp = _impl_.header_;
+  ::pb::RequestHeader* temp = _impl_.header_;
   _impl_.header_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
@@ -1525,27 +1519,27 @@ inline ::client::common::v1::RequestHeader* HeartbeatRequest::release_header() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::client::common::v1::RequestHeader* HeartbeatRequest::unsafe_arena_release_header() {
-  // @@protoc_insertion_point(field_release:client.login.v1.HeartbeatRequest.header)
+inline ::pb::RequestHeader* HeartbeatRequest::unsafe_arena_release_header() {
+  // @@protoc_insertion_point(field_release:pb.HeartbeatRequest.header)
   
-  ::client::common::v1::RequestHeader* temp = _impl_.header_;
+  ::pb::RequestHeader* temp = _impl_.header_;
   _impl_.header_ = nullptr;
   return temp;
 }
-inline ::client::common::v1::RequestHeader* HeartbeatRequest::_internal_mutable_header() {
+inline ::pb::RequestHeader* HeartbeatRequest::_internal_mutable_header() {
   
   if (_impl_.header_ == nullptr) {
-    auto* p = CreateMaybeMessage<::client::common::v1::RequestHeader>(GetArenaForAllocation());
+    auto* p = CreateMaybeMessage<::pb::RequestHeader>(GetArenaForAllocation());
     _impl_.header_ = p;
   }
   return _impl_.header_;
 }
-inline ::client::common::v1::RequestHeader* HeartbeatRequest::mutable_header() {
-  ::client::common::v1::RequestHeader* _msg = _internal_mutable_header();
-  // @@protoc_insertion_point(field_mutable:client.login.v1.HeartbeatRequest.header)
+inline ::pb::RequestHeader* HeartbeatRequest::mutable_header() {
+  ::pb::RequestHeader* _msg = _internal_mutable_header();
+  // @@protoc_insertion_point(field_mutable:pb.HeartbeatRequest.header)
   return _msg;
 }
-inline void HeartbeatRequest::set_allocated_header(::client::common::v1::RequestHeader* header) {
+inline void HeartbeatRequest::set_allocated_header(::pb::RequestHeader* header) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.header_);
@@ -1563,31 +1557,31 @@ inline void HeartbeatRequest::set_allocated_header(::client::common::v1::Request
     
   }
   _impl_.header_ = header;
-  // @@protoc_insertion_point(field_set_allocated:client.login.v1.HeartbeatRequest.header)
+  // @@protoc_insertion_point(field_set_allocated:pb.HeartbeatRequest.header)
 }
 
 // -------------------------------------------------------------------
 
 // HeartbeatResponse
 
-// .client.common.v1.ResponseHeader header = 1;
+// .pb.ResponseHeader header = 1;
 inline bool HeartbeatResponse::_internal_has_header() const {
   return this != internal_default_instance() && _impl_.header_ != nullptr;
 }
 inline bool HeartbeatResponse::has_header() const {
   return _internal_has_header();
 }
-inline const ::client::common::v1::ResponseHeader& HeartbeatResponse::_internal_header() const {
-  const ::client::common::v1::ResponseHeader* p = _impl_.header_;
-  return p != nullptr ? *p : reinterpret_cast<const ::client::common::v1::ResponseHeader&>(
-      ::client::common::v1::_ResponseHeader_default_instance_);
+inline const ::pb::ResponseHeader& HeartbeatResponse::_internal_header() const {
+  const ::pb::ResponseHeader* p = _impl_.header_;
+  return p != nullptr ? *p : reinterpret_cast<const ::pb::ResponseHeader&>(
+      ::pb::_ResponseHeader_default_instance_);
 }
-inline const ::client::common::v1::ResponseHeader& HeartbeatResponse::header() const {
-  // @@protoc_insertion_point(field_get:client.login.v1.HeartbeatResponse.header)
+inline const ::pb::ResponseHeader& HeartbeatResponse::header() const {
+  // @@protoc_insertion_point(field_get:pb.HeartbeatResponse.header)
   return _internal_header();
 }
 inline void HeartbeatResponse::unsafe_arena_set_allocated_header(
-    ::client::common::v1::ResponseHeader* header) {
+    ::pb::ResponseHeader* header) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.header_);
   }
@@ -1597,11 +1591,11 @@ inline void HeartbeatResponse::unsafe_arena_set_allocated_header(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:client.login.v1.HeartbeatResponse.header)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:pb.HeartbeatResponse.header)
 }
-inline ::client::common::v1::ResponseHeader* HeartbeatResponse::release_header() {
+inline ::pb::ResponseHeader* HeartbeatResponse::release_header() {
   
-  ::client::common::v1::ResponseHeader* temp = _impl_.header_;
+  ::pb::ResponseHeader* temp = _impl_.header_;
   _impl_.header_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
@@ -1614,27 +1608,27 @@ inline ::client::common::v1::ResponseHeader* HeartbeatResponse::release_header()
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::client::common::v1::ResponseHeader* HeartbeatResponse::unsafe_arena_release_header() {
-  // @@protoc_insertion_point(field_release:client.login.v1.HeartbeatResponse.header)
+inline ::pb::ResponseHeader* HeartbeatResponse::unsafe_arena_release_header() {
+  // @@protoc_insertion_point(field_release:pb.HeartbeatResponse.header)
   
-  ::client::common::v1::ResponseHeader* temp = _impl_.header_;
+  ::pb::ResponseHeader* temp = _impl_.header_;
   _impl_.header_ = nullptr;
   return temp;
 }
-inline ::client::common::v1::ResponseHeader* HeartbeatResponse::_internal_mutable_header() {
+inline ::pb::ResponseHeader* HeartbeatResponse::_internal_mutable_header() {
   
   if (_impl_.header_ == nullptr) {
-    auto* p = CreateMaybeMessage<::client::common::v1::ResponseHeader>(GetArenaForAllocation());
+    auto* p = CreateMaybeMessage<::pb::ResponseHeader>(GetArenaForAllocation());
     _impl_.header_ = p;
   }
   return _impl_.header_;
 }
-inline ::client::common::v1::ResponseHeader* HeartbeatResponse::mutable_header() {
-  ::client::common::v1::ResponseHeader* _msg = _internal_mutable_header();
-  // @@protoc_insertion_point(field_mutable:client.login.v1.HeartbeatResponse.header)
+inline ::pb::ResponseHeader* HeartbeatResponse::mutable_header() {
+  ::pb::ResponseHeader* _msg = _internal_mutable_header();
+  // @@protoc_insertion_point(field_mutable:pb.HeartbeatResponse.header)
   return _msg;
 }
-inline void HeartbeatResponse::set_allocated_header(::client::common::v1::ResponseHeader* header) {
+inline void HeartbeatResponse::set_allocated_header(::pb::ResponseHeader* header) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.header_);
@@ -1652,7 +1646,7 @@ inline void HeartbeatResponse::set_allocated_header(::client::common::v1::Respon
     
   }
   _impl_.header_ = header;
-  // @@protoc_insertion_point(field_set_allocated:client.login.v1.HeartbeatResponse.header)
+  // @@protoc_insertion_point(field_set_allocated:pb.HeartbeatResponse.header)
 }
 
 // uint64 server_time_ms = 2;
@@ -1663,7 +1657,7 @@ inline uint64_t HeartbeatResponse::_internal_server_time_ms() const {
   return _impl_.server_time_ms_;
 }
 inline uint64_t HeartbeatResponse::server_time_ms() const {
-  // @@protoc_insertion_point(field_get:client.login.v1.HeartbeatResponse.server_time_ms)
+  // @@protoc_insertion_point(field_get:pb.HeartbeatResponse.server_time_ms)
   return _internal_server_time_ms();
 }
 inline void HeartbeatResponse::_internal_set_server_time_ms(uint64_t value) {
@@ -1672,7 +1666,7 @@ inline void HeartbeatResponse::_internal_set_server_time_ms(uint64_t value) {
 }
 inline void HeartbeatResponse::set_server_time_ms(uint64_t value) {
   _internal_set_server_time_ms(value);
-  // @@protoc_insertion_point(field_set:client.login.v1.HeartbeatResponse.server_time_ms)
+  // @@protoc_insertion_point(field_set:pb.HeartbeatResponse.server_time_ms)
 }
 
 // -------------------------------------------------------------------
@@ -1684,7 +1678,7 @@ inline void KickNotification::clear_reason() {
   _impl_.reason_.ClearToEmpty();
 }
 inline const std::string& KickNotification::reason() const {
-  // @@protoc_insertion_point(field_get:client.login.v1.KickNotification.reason)
+  // @@protoc_insertion_point(field_get:pb.KickNotification.reason)
   return _internal_reason();
 }
 template <typename ArgT0, typename... ArgT>
@@ -1692,11 +1686,11 @@ inline PROTOBUF_ALWAYS_INLINE
 void KickNotification::set_reason(ArgT0&& arg0, ArgT... args) {
  
  _impl_.reason_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:client.login.v1.KickNotification.reason)
+  // @@protoc_insertion_point(field_set:pb.KickNotification.reason)
 }
 inline std::string* KickNotification::mutable_reason() {
   std::string* _s = _internal_mutable_reason();
-  // @@protoc_insertion_point(field_mutable:client.login.v1.KickNotification.reason)
+  // @@protoc_insertion_point(field_mutable:pb.KickNotification.reason)
   return _s;
 }
 inline const std::string& KickNotification::_internal_reason() const {
@@ -1711,7 +1705,7 @@ inline std::string* KickNotification::_internal_mutable_reason() {
   return _impl_.reason_.Mutable(GetArenaForAllocation());
 }
 inline std::string* KickNotification::release_reason() {
-  // @@protoc_insertion_point(field_release:client.login.v1.KickNotification.reason)
+  // @@protoc_insertion_point(field_release:pb.KickNotification.reason)
   return _impl_.reason_.Release();
 }
 inline void KickNotification::set_allocated_reason(std::string* reason) {
@@ -1726,7 +1720,7 @@ inline void KickNotification::set_allocated_reason(std::string* reason) {
     _impl_.reason_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:client.login.v1.KickNotification.reason)
+  // @@protoc_insertion_point(field_set_allocated:pb.KickNotification.reason)
 }
 
 #ifdef __GNUC__
@@ -1743,9 +1737,7 @@ inline void KickNotification::set_allocated_reason(std::string* reason) {
 
 // @@protoc_insertion_point(namespace_scope)
 
-}  // namespace v1
-}  // namespace login
-}  // namespace client
+}  // namespace pb
 
 // @@protoc_insertion_point(global_scope)
 

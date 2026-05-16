@@ -20,9 +20,7 @@ PROTOBUF_PRAGMA_INIT_SEG
 namespace _pb = ::PROTOBUF_NAMESPACE_ID;
 namespace _pbi = _pb::internal;
 
-namespace client {
-namespace common {
-namespace v1 {
+namespace pb {
 PROTOBUF_CONSTEXPR RequestHeader::RequestHeader(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.sequence_)*/uint64_t{0u}
@@ -54,59 +52,57 @@ struct ResponseHeaderDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ResponseHeaderDefaultTypeInternal _ResponseHeader_default_instance_;
-}  // namespace v1
-}  // namespace common
-}  // namespace client
+}  // namespace pb
 static ::_pb::Metadata file_level_metadata_common_2eproto[2];
 static const ::_pb::EnumDescriptor* file_level_enum_descriptors_common_2eproto[1];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_common_2eproto = nullptr;
 
 const uint32_t TableStruct_common_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::client::common::v1::RequestHeader, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::pb::RequestHeader, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::client::common::v1::RequestHeader, _impl_.message_id_),
-  PROTOBUF_FIELD_OFFSET(::client::common::v1::RequestHeader, _impl_.sequence_),
-  PROTOBUF_FIELD_OFFSET(::client::common::v1::RequestHeader, _impl_.timestamp_ms_),
+  PROTOBUF_FIELD_OFFSET(::pb::RequestHeader, _impl_.message_id_),
+  PROTOBUF_FIELD_OFFSET(::pb::RequestHeader, _impl_.sequence_),
+  PROTOBUF_FIELD_OFFSET(::pb::RequestHeader, _impl_.timestamp_ms_),
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::client::common::v1::ResponseHeader, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::pb::ResponseHeader, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::client::common::v1::ResponseHeader, _impl_.message_id_),
-  PROTOBUF_FIELD_OFFSET(::client::common::v1::ResponseHeader, _impl_.sequence_),
-  PROTOBUF_FIELD_OFFSET(::client::common::v1::ResponseHeader, _impl_.error_code_),
-  PROTOBUF_FIELD_OFFSET(::client::common::v1::ResponseHeader, _impl_.error_message_),
+  PROTOBUF_FIELD_OFFSET(::pb::ResponseHeader, _impl_.message_id_),
+  PROTOBUF_FIELD_OFFSET(::pb::ResponseHeader, _impl_.sequence_),
+  PROTOBUF_FIELD_OFFSET(::pb::ResponseHeader, _impl_.error_code_),
+  PROTOBUF_FIELD_OFFSET(::pb::ResponseHeader, _impl_.error_message_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  { 0, -1, -1, sizeof(::client::common::v1::RequestHeader)},
-  { 9, -1, -1, sizeof(::client::common::v1::ResponseHeader)},
+  { 0, -1, -1, sizeof(::pb::RequestHeader)},
+  { 9, -1, -1, sizeof(::pb::ResponseHeader)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
-  &::client::common::v1::_RequestHeader_default_instance_._instance,
-  &::client::common::v1::_ResponseHeader_default_instance_._instance,
+  &::pb::_RequestHeader_default_instance_._instance,
+  &::pb::_ResponseHeader_default_instance_._instance,
 };
 
 const char descriptor_table_protodef_common_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\014common.proto\022\020client.common.v1\"K\n\rRequ"
-  "estHeader\022\022\n\nmessage_id\030\001 \001(\r\022\020\n\010sequenc"
-  "e\030\002 \001(\004\022\024\n\014timestamp_ms\030\003 \001(\004\"~\n\016Respons"
-  "eHeader\022\022\n\nmessage_id\030\001 \001(\r\022\020\n\010sequence\030"
-  "\002 \001(\004\022/\n\nerror_code\030\003 \001(\0162\033.client.commo"
-  "n.v1.ErrorCode\022\025\n\rerror_message\030\004 \001(\t*\220\001"
-  "\n\tErrorCode\022\032\n\026ERROR_CODE_UNSPECIFIED\020\000\022"
-  "\021\n\rERROR_CODE_OK\020\001\022\036\n\032ERROR_CODE_INVALID"
-  "_REQUEST\020\002\022\033\n\027ERROR_CODE_UNAUTHORIZED\020\003\022"
-  "\027\n\023ERROR_CODE_INTERNAL\020\004b\006proto3"
+  "\n\014common.proto\022\002pb\"K\n\rRequestHeader\022\022\n\nm"
+  "essage_id\030\001 \001(\r\022\020\n\010sequence\030\002 \001(\004\022\024\n\014tim"
+  "estamp_ms\030\003 \001(\004\"p\n\016ResponseHeader\022\022\n\nmes"
+  "sage_id\030\001 \001(\r\022\020\n\010sequence\030\002 \001(\004\022!\n\nerror"
+  "_code\030\003 \001(\0162\r.pb.ErrorCode\022\025\n\rerror_mess"
+  "age\030\004 \001(\t*\220\001\n\tErrorCode\022\032\n\026ERROR_CODE_UN"
+  "SPECIFIED\020\000\022\021\n\rERROR_CODE_OK\020\001\022\036\n\032ERROR_"
+  "CODE_INVALID_REQUEST\020\002\022\033\n\027ERROR_CODE_UNA"
+  "UTHORIZED\020\003\022\027\n\023ERROR_CODE_INTERNAL\020\004b\006pr"
+  "oto3"
   ;
 static ::_pbi::once_flag descriptor_table_common_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_common_2eproto = {
-    false, false, 392, descriptor_table_protodef_common_2eproto,
+    false, false, 364, descriptor_table_protodef_common_2eproto,
     "common.proto",
     &descriptor_table_common_2eproto_once, nullptr, 0, 2,
     schemas, file_default_instances, TableStruct_common_2eproto::offsets,
@@ -119,9 +115,7 @@ PROTOBUF_ATTRIBUTE_WEAK const ::_pbi::DescriptorTable* descriptor_table_common_2
 
 // Force running AddDescriptors() at dynamic initialization time.
 PROTOBUF_ATTRIBUTE_INIT_PRIORITY2 static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_common_2eproto(&descriptor_table_common_2eproto);
-namespace client {
-namespace common {
-namespace v1 {
+namespace pb {
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* ErrorCode_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_common_2eproto);
   return file_level_enum_descriptors_common_2eproto[0];
@@ -150,7 +144,7 @@ RequestHeader::RequestHeader(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:client.common.v1.RequestHeader)
+  // @@protoc_insertion_point(arena_constructor:pb.RequestHeader)
 }
 RequestHeader::RequestHeader(const RequestHeader& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
@@ -165,7 +159,7 @@ RequestHeader::RequestHeader(const RequestHeader& from)
   ::memcpy(&_impl_.sequence_, &from._impl_.sequence_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.message_id_) -
     reinterpret_cast<char*>(&_impl_.sequence_)) + sizeof(_impl_.message_id_));
-  // @@protoc_insertion_point(copy_constructor:client.common.v1.RequestHeader)
+  // @@protoc_insertion_point(copy_constructor:pb.RequestHeader)
 }
 
 inline void RequestHeader::SharedCtor(
@@ -181,7 +175,7 @@ inline void RequestHeader::SharedCtor(
 }
 
 RequestHeader::~RequestHeader() {
-  // @@protoc_insertion_point(destructor:client.common.v1.RequestHeader)
+  // @@protoc_insertion_point(destructor:pb.RequestHeader)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
   (void)arena;
     return;
@@ -198,7 +192,7 @@ void RequestHeader::SetCachedSize(int size) const {
 }
 
 void RequestHeader::Clear() {
-// @@protoc_insertion_point(message_clear_start:client.common.v1.RequestHeader)
+// @@protoc_insertion_point(message_clear_start:pb.RequestHeader)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -264,7 +258,7 @@ failure:
 
 uint8_t* RequestHeader::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:client.common.v1.RequestHeader)
+  // @@protoc_insertion_point(serialize_to_array_start:pb.RequestHeader)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -290,12 +284,12 @@ uint8_t* RequestHeader::_InternalSerialize(
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:client.common.v1.RequestHeader)
+  // @@protoc_insertion_point(serialize_to_array_end:pb.RequestHeader)
   return target;
 }
 
 size_t RequestHeader::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:client.common.v1.RequestHeader)
+// @@protoc_insertion_point(message_byte_size_start:pb.RequestHeader)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -330,7 +324,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*RequestHeader::GetClassData() 
 void RequestHeader::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
   auto* const _this = static_cast<RequestHeader*>(&to_msg);
   auto& from = static_cast<const RequestHeader&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:client.common.v1.RequestHeader)
+  // @@protoc_insertion_point(class_specific_merge_from_start:pb.RequestHeader)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
@@ -348,7 +342,7 @@ void RequestHeader::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::
 }
 
 void RequestHeader::CopyFrom(const RequestHeader& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:client.common.v1.RequestHeader)
+// @@protoc_insertion_point(class_specific_copy_from_start:pb.RequestHeader)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -385,7 +379,7 @@ ResponseHeader::ResponseHeader(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:client.common.v1.ResponseHeader)
+  // @@protoc_insertion_point(arena_constructor:pb.ResponseHeader)
 }
 ResponseHeader::ResponseHeader(const ResponseHeader& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
@@ -409,7 +403,7 @@ ResponseHeader::ResponseHeader(const ResponseHeader& from)
   ::memcpy(&_impl_.sequence_, &from._impl_.sequence_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.error_code_) -
     reinterpret_cast<char*>(&_impl_.sequence_)) + sizeof(_impl_.error_code_));
-  // @@protoc_insertion_point(copy_constructor:client.common.v1.ResponseHeader)
+  // @@protoc_insertion_point(copy_constructor:pb.ResponseHeader)
 }
 
 inline void ResponseHeader::SharedCtor(
@@ -430,7 +424,7 @@ inline void ResponseHeader::SharedCtor(
 }
 
 ResponseHeader::~ResponseHeader() {
-  // @@protoc_insertion_point(destructor:client.common.v1.ResponseHeader)
+  // @@protoc_insertion_point(destructor:pb.ResponseHeader)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
   (void)arena;
     return;
@@ -448,7 +442,7 @@ void ResponseHeader::SetCachedSize(int size) const {
 }
 
 void ResponseHeader::Clear() {
-// @@protoc_insertion_point(message_clear_start:client.common.v1.ResponseHeader)
+// @@protoc_insertion_point(message_clear_start:pb.ResponseHeader)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -482,12 +476,12 @@ const char* ResponseHeader::_InternalParse(const char* ptr, ::_pbi::ParseContext
         } else
           goto handle_unusual;
         continue;
-      // .client.common.v1.ErrorCode error_code = 3;
+      // .pb.ErrorCode error_code = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
           uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
-          _internal_set_error_code(static_cast<::client::common::v1::ErrorCode>(val));
+          _internal_set_error_code(static_cast<::pb::ErrorCode>(val));
         } else
           goto handle_unusual;
         continue;
@@ -497,7 +491,7 @@ const char* ResponseHeader::_InternalParse(const char* ptr, ::_pbi::ParseContext
           auto str = _internal_mutable_error_message();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "client.common.v1.ResponseHeader.error_message"));
+          CHK_(::_pbi::VerifyUTF8(str, "pb.ResponseHeader.error_message"));
         } else
           goto handle_unusual;
         continue;
@@ -526,7 +520,7 @@ failure:
 
 uint8_t* ResponseHeader::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:client.common.v1.ResponseHeader)
+  // @@protoc_insertion_point(serialize_to_array_start:pb.ResponseHeader)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -542,7 +536,7 @@ uint8_t* ResponseHeader::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteUInt64ToArray(2, this->_internal_sequence(), target);
   }
 
-  // .client.common.v1.ErrorCode error_code = 3;
+  // .pb.ErrorCode error_code = 3;
   if (this->_internal_error_code() != 0) {
     target = stream->EnsureSpace(target);
     target = ::_pbi::WireFormatLite::WriteEnumToArray(
@@ -554,7 +548,7 @@ uint8_t* ResponseHeader::_InternalSerialize(
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_error_message().data(), static_cast<int>(this->_internal_error_message().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "client.common.v1.ResponseHeader.error_message");
+      "pb.ResponseHeader.error_message");
     target = stream->WriteStringMaybeAliased(
         4, this->_internal_error_message(), target);
   }
@@ -563,12 +557,12 @@ uint8_t* ResponseHeader::_InternalSerialize(
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:client.common.v1.ResponseHeader)
+  // @@protoc_insertion_point(serialize_to_array_end:pb.ResponseHeader)
   return target;
 }
 
 size_t ResponseHeader::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:client.common.v1.ResponseHeader)
+// @@protoc_insertion_point(message_byte_size_start:pb.ResponseHeader)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -592,7 +586,7 @@ size_t ResponseHeader::ByteSizeLong() const {
     total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_message_id());
   }
 
-  // .client.common.v1.ErrorCode error_code = 3;
+  // .pb.ErrorCode error_code = 3;
   if (this->_internal_error_code() != 0) {
     total_size += 1 +
       ::_pbi::WireFormatLite::EnumSize(this->_internal_error_code());
@@ -611,7 +605,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ResponseHeader::GetClassData()
 void ResponseHeader::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
   auto* const _this = static_cast<ResponseHeader*>(&to_msg);
   auto& from = static_cast<const ResponseHeader&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:client.common.v1.ResponseHeader)
+  // @@protoc_insertion_point(class_specific_merge_from_start:pb.ResponseHeader)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
@@ -632,7 +626,7 @@ void ResponseHeader::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const :
 }
 
 void ResponseHeader::CopyFrom(const ResponseHeader& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:client.common.v1.ResponseHeader)
+// @@protoc_insertion_point(class_specific_copy_from_start:pb.ResponseHeader)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -666,17 +660,15 @@ void ResponseHeader::InternalSwap(ResponseHeader* other) {
 }
 
 // @@protoc_insertion_point(namespace_scope)
-}  // namespace v1
-}  // namespace common
-}  // namespace client
+}  // namespace pb
 PROTOBUF_NAMESPACE_OPEN
-template<> PROTOBUF_NOINLINE ::client::common::v1::RequestHeader*
-Arena::CreateMaybeMessage< ::client::common::v1::RequestHeader >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::client::common::v1::RequestHeader >(arena);
+template<> PROTOBUF_NOINLINE ::pb::RequestHeader*
+Arena::CreateMaybeMessage< ::pb::RequestHeader >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::pb::RequestHeader >(arena);
 }
-template<> PROTOBUF_NOINLINE ::client::common::v1::ResponseHeader*
-Arena::CreateMaybeMessage< ::client::common::v1::ResponseHeader >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::client::common::v1::ResponseHeader >(arena);
+template<> PROTOBUF_NOINLINE ::pb::ResponseHeader*
+Arena::CreateMaybeMessage< ::pb::ResponseHeader >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::pb::ResponseHeader >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 

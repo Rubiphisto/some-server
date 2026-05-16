@@ -4,6 +4,8 @@
 #include "../../framework/ipc/base/envelope.h"
 #include "../../framework/ipc/base/result.h"
 
+#include <player.pb.h>
+
 #include <cstdint>
 #include <mutex>
 #include <string>
@@ -30,7 +32,9 @@ public:
     {
     }
 
-    ipc::Result HandleClientPlayerMessage(std::uint64_t connection_id, const std::string& payload);
+    ipc::Result HandleClientPlayerMessage(
+        std::uint64_t connection_id,
+        const pb::PlayerMessageRequest& request);
     ipc::DispatchResult HandleProcessEnvelope(const ipc::ReceiverAddress& target, const ipc::Envelope& envelope);
 
 private:

@@ -770,12 +770,50 @@
   - `proto/game/` 当前已进一步收平为单目录：
     - `common.proto`
     - `login.proto`
+    - `message_ids.proto`
     - `player.proto`
     - `player_data.proto`
   - `src/protocol/game/pb/` 当前也已收平为单目录生成产物
   - 已完成验证：
     - `cmake --build build --target game_proto gate game sim_client -j 4`
     - `tools/sim_client/run_regression.sh reconnect_after_disconnect` -> `ok`
+- 已新增统一协议号与公共 protobuf 分发基础模块：
+  - 统一协议号新增到：
+    - `proto/game/message_ids.proto`
+  - 公共应用层分发模块新增到：
+    - `src/common/protocol/protobuf_dispatcher.h`
+  - 当前 `gate` 已切到：
+    - 统一协议号驱动
+    - 应用层注册式 decode 后分发
+    - 不再在客户端入口手写 `if / else if` + `ParseFromString`
+  - 当前 `game` 玩家消息分发已切到：
+    - 统一协议号驱动
+    - 请求 protobuf decode
+    - typed handler 调用
+    - 响应 protobuf encode
+  - `sim_client` 也已改为使用统一协议号定义
+  - 已完成验证：
+    - `cmake --build build --target game_proto gate game sim_client -j 4`
+    - `tools/sim_client/run_regression.sh reconnect_after_disconnect` -> `ok`
+    - 手工联调：
+      - `relay + game + gate + sim_client`
+      - `sim_client scenario_run login_then_echo`
+      - `sim_client player_echo proto-dispatch-check`
+      - 返回结果：
+        - `last_login_ok=true`
+        - `last_player_response_message_id=3101`
+        - `last_echo_text=proto-dispatch-check`
+- 已将 `proto/game/*` 的 package 收敛为统一命名空间：
+  - 当前统一 package：
+    - `pb`
+  - 不再拆分：
+    - `client.common.v1`
+    - `client.login.v1`
+    - `client.game.v1`
+    - `some_server.player.v1`
+    - `some_server.game.protocol.v1`
+  - 统一协议号、网络消息、玩家数据结构当前都归在：
+    - `pb`
 
 ## 当前总体进度判断
 

@@ -44,7 +44,7 @@ void Application::RegisterRuntimeCommands()
             const auto protocol = mProtocolService->Snapshot();
             const auto scenario = mScenarioService->Snapshot();
             spdlog::info(
-                "sim_client status: target={}:{} connected={} connect_attempts={} disconnect_count={} last_connect_ms={} last_disconnect_ms={} sent_frames={} received_frames={} configured_platform={} configured_account_id={} configured_channel={} configured_client_version={} login_message_id={} heartbeat_message_id={} kick_notification_message_id={} player_message_request_message_id={} player_message_response_message_id={} player_push_message_id={} encoded_login_bytes={} encoded_heartbeat_bytes={} encoded_player_message_bytes={} received_login_response_bytes={} last_login_player_id={} last_login_ok={} last_login_error_code={} last_login_error_message={} last_kick_reason={} last_player_response_message_id={} last_player_response_error_code={} last_player_response_error_message={} last_player_response_payload={} last_echo_text={} last_rename_display_name={} last_push_message_id={} last_push_payload={} last_profile_push_display_name={} last_scenario={} scenario_runs={}",
+                "sim_client status: target={}:{} connected={} connect_attempts={} disconnect_count={} last_connect_ms={} last_disconnect_ms={} sent_frames={} received_frames={} configured_platform={} configured_account_id={} configured_channel={} configured_client_version={} encoded_login_bytes={} encoded_heartbeat_bytes={} encoded_player_message_bytes={} received_login_response_bytes={} last_login_player_id={} last_login_ok={} last_login_error_code={} last_login_error_message={} last_kick_reason={} last_player_response_message_id={} last_player_response_error_code={} last_player_response_error_message={} last_player_response_payload={} last_echo_text={} last_rename_display_name={} last_push_message_id={} last_push_payload={} last_profile_push_display_name={} last_scenario={} scenario_runs={}",
                 connection.host,
                 connection.port,
                 connection.connected,
@@ -58,12 +58,6 @@ void Application::RegisterRuntimeCommands()
                 protocol.configured_account_id.empty() ? "none" : protocol.configured_account_id,
                 protocol.configured_channel.empty() ? "none" : protocol.configured_channel,
                 protocol.configured_client_version,
-                protocol.login_message_id,
-                protocol.heartbeat_message_id,
-                protocol.kick_notification_message_id,
-                protocol.player_message_request_message_id,
-                protocol.player_message_response_message_id,
-                protocol.player_push_message_id,
                 protocol.encoded_login_bytes,
                 protocol.encoded_heartbeat_bytes,
                 protocol.encoded_player_message_bytes,

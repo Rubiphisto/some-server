@@ -45,9 +45,7 @@ struct TableStruct_player_2eproto {
   static const uint32_t offsets[];
 };
 extern const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_player_2eproto;
-namespace client {
-namespace game {
-namespace v1 {
+namespace pb {
 class PlayerEchoRequest;
 struct PlayerEchoRequestDefaultTypeInternal;
 extern PlayerEchoRequestDefaultTypeInternal _PlayerEchoRequest_default_instance_;
@@ -72,27 +70,23 @@ extern RenamePlayerRequestDefaultTypeInternal _RenamePlayerRequest_default_insta
 class RenamePlayerResponse;
 struct RenamePlayerResponseDefaultTypeInternal;
 extern RenamePlayerResponseDefaultTypeInternal _RenamePlayerResponse_default_instance_;
-}  // namespace v1
-}  // namespace game
-}  // namespace client
+}  // namespace pb
 PROTOBUF_NAMESPACE_OPEN
-template<> ::client::game::v1::PlayerEchoRequest* Arena::CreateMaybeMessage<::client::game::v1::PlayerEchoRequest>(Arena*);
-template<> ::client::game::v1::PlayerEchoResponse* Arena::CreateMaybeMessage<::client::game::v1::PlayerEchoResponse>(Arena*);
-template<> ::client::game::v1::PlayerMessageRequest* Arena::CreateMaybeMessage<::client::game::v1::PlayerMessageRequest>(Arena*);
-template<> ::client::game::v1::PlayerMessageResponse* Arena::CreateMaybeMessage<::client::game::v1::PlayerMessageResponse>(Arena*);
-template<> ::client::game::v1::PlayerProfilePush* Arena::CreateMaybeMessage<::client::game::v1::PlayerProfilePush>(Arena*);
-template<> ::client::game::v1::PlayerPushMessage* Arena::CreateMaybeMessage<::client::game::v1::PlayerPushMessage>(Arena*);
-template<> ::client::game::v1::RenamePlayerRequest* Arena::CreateMaybeMessage<::client::game::v1::RenamePlayerRequest>(Arena*);
-template<> ::client::game::v1::RenamePlayerResponse* Arena::CreateMaybeMessage<::client::game::v1::RenamePlayerResponse>(Arena*);
+template<> ::pb::PlayerEchoRequest* Arena::CreateMaybeMessage<::pb::PlayerEchoRequest>(Arena*);
+template<> ::pb::PlayerEchoResponse* Arena::CreateMaybeMessage<::pb::PlayerEchoResponse>(Arena*);
+template<> ::pb::PlayerMessageRequest* Arena::CreateMaybeMessage<::pb::PlayerMessageRequest>(Arena*);
+template<> ::pb::PlayerMessageResponse* Arena::CreateMaybeMessage<::pb::PlayerMessageResponse>(Arena*);
+template<> ::pb::PlayerProfilePush* Arena::CreateMaybeMessage<::pb::PlayerProfilePush>(Arena*);
+template<> ::pb::PlayerPushMessage* Arena::CreateMaybeMessage<::pb::PlayerPushMessage>(Arena*);
+template<> ::pb::RenamePlayerRequest* Arena::CreateMaybeMessage<::pb::RenamePlayerRequest>(Arena*);
+template<> ::pb::RenamePlayerResponse* Arena::CreateMaybeMessage<::pb::RenamePlayerResponse>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
-namespace client {
-namespace game {
-namespace v1 {
+namespace pb {
 
 // ===================================================================
 
 class PlayerMessageRequest final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:client.game.v1.PlayerMessageRequest) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.PlayerMessageRequest) */ {
  public:
   inline PlayerMessageRequest() : PlayerMessageRequest(nullptr) {}
   ~PlayerMessageRequest() override;
@@ -195,7 +189,7 @@ class PlayerMessageRequest final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "client.game.v1.PlayerMessageRequest";
+    return "pb.PlayerMessageRequest";
   }
   protected:
   explicit PlayerMessageRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -229,25 +223,25 @@ class PlayerMessageRequest final :
   std::string* _internal_mutable_payload();
   public:
 
-  // .client.common.v1.RequestHeader header = 1;
+  // .pb.RequestHeader header = 1;
   bool has_header() const;
   private:
   bool _internal_has_header() const;
   public:
   void clear_header();
-  const ::client::common::v1::RequestHeader& header() const;
-  PROTOBUF_NODISCARD ::client::common::v1::RequestHeader* release_header();
-  ::client::common::v1::RequestHeader* mutable_header();
-  void set_allocated_header(::client::common::v1::RequestHeader* header);
+  const ::pb::RequestHeader& header() const;
+  PROTOBUF_NODISCARD ::pb::RequestHeader* release_header();
+  ::pb::RequestHeader* mutable_header();
+  void set_allocated_header(::pb::RequestHeader* header);
   private:
-  const ::client::common::v1::RequestHeader& _internal_header() const;
-  ::client::common::v1::RequestHeader* _internal_mutable_header();
+  const ::pb::RequestHeader& _internal_header() const;
+  ::pb::RequestHeader* _internal_mutable_header();
   public:
   void unsafe_arena_set_allocated_header(
-      ::client::common::v1::RequestHeader* header);
-  ::client::common::v1::RequestHeader* unsafe_arena_release_header();
+      ::pb::RequestHeader* header);
+  ::pb::RequestHeader* unsafe_arena_release_header();
 
-  // @@protoc_insertion_point(class_scope:client.game.v1.PlayerMessageRequest)
+  // @@protoc_insertion_point(class_scope:pb.PlayerMessageRequest)
  private:
   class _Internal;
 
@@ -256,7 +250,7 @@ class PlayerMessageRequest final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr payload_;
-    ::client::common::v1::RequestHeader* header_;
+    ::pb::RequestHeader* header_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -265,7 +259,7 @@ class PlayerMessageRequest final :
 // -------------------------------------------------------------------
 
 class PlayerMessageResponse final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:client.game.v1.PlayerMessageResponse) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.PlayerMessageResponse) */ {
  public:
   inline PlayerMessageResponse() : PlayerMessageResponse(nullptr) {}
   ~PlayerMessageResponse() override;
@@ -368,7 +362,7 @@ class PlayerMessageResponse final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "client.game.v1.PlayerMessageResponse";
+    return "pb.PlayerMessageResponse";
   }
   protected:
   explicit PlayerMessageResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -402,25 +396,25 @@ class PlayerMessageResponse final :
   std::string* _internal_mutable_payload();
   public:
 
-  // .client.common.v1.ResponseHeader header = 1;
+  // .pb.ResponseHeader header = 1;
   bool has_header() const;
   private:
   bool _internal_has_header() const;
   public:
   void clear_header();
-  const ::client::common::v1::ResponseHeader& header() const;
-  PROTOBUF_NODISCARD ::client::common::v1::ResponseHeader* release_header();
-  ::client::common::v1::ResponseHeader* mutable_header();
-  void set_allocated_header(::client::common::v1::ResponseHeader* header);
+  const ::pb::ResponseHeader& header() const;
+  PROTOBUF_NODISCARD ::pb::ResponseHeader* release_header();
+  ::pb::ResponseHeader* mutable_header();
+  void set_allocated_header(::pb::ResponseHeader* header);
   private:
-  const ::client::common::v1::ResponseHeader& _internal_header() const;
-  ::client::common::v1::ResponseHeader* _internal_mutable_header();
+  const ::pb::ResponseHeader& _internal_header() const;
+  ::pb::ResponseHeader* _internal_mutable_header();
   public:
   void unsafe_arena_set_allocated_header(
-      ::client::common::v1::ResponseHeader* header);
-  ::client::common::v1::ResponseHeader* unsafe_arena_release_header();
+      ::pb::ResponseHeader* header);
+  ::pb::ResponseHeader* unsafe_arena_release_header();
 
-  // @@protoc_insertion_point(class_scope:client.game.v1.PlayerMessageResponse)
+  // @@protoc_insertion_point(class_scope:pb.PlayerMessageResponse)
  private:
   class _Internal;
 
@@ -429,7 +423,7 @@ class PlayerMessageResponse final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr payload_;
-    ::client::common::v1::ResponseHeader* header_;
+    ::pb::ResponseHeader* header_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -438,7 +432,7 @@ class PlayerMessageResponse final :
 // -------------------------------------------------------------------
 
 class PlayerPushMessage final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:client.game.v1.PlayerPushMessage) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.PlayerPushMessage) */ {
  public:
   inline PlayerPushMessage() : PlayerPushMessage(nullptr) {}
   ~PlayerPushMessage() override;
@@ -541,7 +535,7 @@ class PlayerPushMessage final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "client.game.v1.PlayerPushMessage";
+    return "pb.PlayerPushMessage";
   }
   protected:
   explicit PlayerPushMessage(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -584,7 +578,7 @@ class PlayerPushMessage final :
   void _internal_set_message_id(uint32_t value);
   public:
 
-  // @@protoc_insertion_point(class_scope:client.game.v1.PlayerPushMessage)
+  // @@protoc_insertion_point(class_scope:pb.PlayerPushMessage)
  private:
   class _Internal;
 
@@ -602,7 +596,7 @@ class PlayerPushMessage final :
 // -------------------------------------------------------------------
 
 class PlayerEchoRequest final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:client.game.v1.PlayerEchoRequest) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.PlayerEchoRequest) */ {
  public:
   inline PlayerEchoRequest() : PlayerEchoRequest(nullptr) {}
   ~PlayerEchoRequest() override;
@@ -705,7 +699,7 @@ class PlayerEchoRequest final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "client.game.v1.PlayerEchoRequest";
+    return "pb.PlayerEchoRequest";
   }
   protected:
   explicit PlayerEchoRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -738,7 +732,7 @@ class PlayerEchoRequest final :
   std::string* _internal_mutable_text();
   public:
 
-  // @@protoc_insertion_point(class_scope:client.game.v1.PlayerEchoRequest)
+  // @@protoc_insertion_point(class_scope:pb.PlayerEchoRequest)
  private:
   class _Internal;
 
@@ -755,7 +749,7 @@ class PlayerEchoRequest final :
 // -------------------------------------------------------------------
 
 class PlayerEchoResponse final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:client.game.v1.PlayerEchoResponse) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.PlayerEchoResponse) */ {
  public:
   inline PlayerEchoResponse() : PlayerEchoResponse(nullptr) {}
   ~PlayerEchoResponse() override;
@@ -858,7 +852,7 @@ class PlayerEchoResponse final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "client.game.v1.PlayerEchoResponse";
+    return "pb.PlayerEchoResponse";
   }
   protected:
   explicit PlayerEchoResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -926,7 +920,7 @@ class PlayerEchoResponse final :
   void _internal_set_login_count(uint64_t value);
   public:
 
-  // @@protoc_insertion_point(class_scope:client.game.v1.PlayerEchoResponse)
+  // @@protoc_insertion_point(class_scope:pb.PlayerEchoResponse)
  private:
   class _Internal;
 
@@ -946,7 +940,7 @@ class PlayerEchoResponse final :
 // -------------------------------------------------------------------
 
 class RenamePlayerRequest final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:client.game.v1.RenamePlayerRequest) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.RenamePlayerRequest) */ {
  public:
   inline RenamePlayerRequest() : RenamePlayerRequest(nullptr) {}
   ~RenamePlayerRequest() override;
@@ -1049,7 +1043,7 @@ class RenamePlayerRequest final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "client.game.v1.RenamePlayerRequest";
+    return "pb.RenamePlayerRequest";
   }
   protected:
   explicit RenamePlayerRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -1082,7 +1076,7 @@ class RenamePlayerRequest final :
   std::string* _internal_mutable_display_name();
   public:
 
-  // @@protoc_insertion_point(class_scope:client.game.v1.RenamePlayerRequest)
+  // @@protoc_insertion_point(class_scope:pb.RenamePlayerRequest)
  private:
   class _Internal;
 
@@ -1099,7 +1093,7 @@ class RenamePlayerRequest final :
 // -------------------------------------------------------------------
 
 class RenamePlayerResponse final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:client.game.v1.RenamePlayerResponse) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.RenamePlayerResponse) */ {
  public:
   inline RenamePlayerResponse() : RenamePlayerResponse(nullptr) {}
   ~RenamePlayerResponse() override;
@@ -1202,7 +1196,7 @@ class RenamePlayerResponse final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "client.game.v1.RenamePlayerResponse";
+    return "pb.RenamePlayerResponse";
   }
   protected:
   explicit RenamePlayerResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -1245,7 +1239,7 @@ class RenamePlayerResponse final :
   void _internal_set_player_id(uint64_t value);
   public:
 
-  // @@protoc_insertion_point(class_scope:client.game.v1.RenamePlayerResponse)
+  // @@protoc_insertion_point(class_scope:pb.RenamePlayerResponse)
  private:
   class _Internal;
 
@@ -1263,7 +1257,7 @@ class RenamePlayerResponse final :
 // -------------------------------------------------------------------
 
 class PlayerProfilePush final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:client.game.v1.PlayerProfilePush) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.PlayerProfilePush) */ {
  public:
   inline PlayerProfilePush() : PlayerProfilePush(nullptr) {}
   ~PlayerProfilePush() override;
@@ -1366,7 +1360,7 @@ class PlayerProfilePush final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "client.game.v1.PlayerProfilePush";
+    return "pb.PlayerProfilePush";
   }
   protected:
   explicit PlayerProfilePush(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -1429,7 +1423,7 @@ class PlayerProfilePush final :
   void _internal_set_level(uint32_t value);
   public:
 
-  // @@protoc_insertion_point(class_scope:client.game.v1.PlayerProfilePush)
+  // @@protoc_insertion_point(class_scope:pb.PlayerProfilePush)
  private:
   class _Internal;
 
@@ -1457,24 +1451,24 @@ class PlayerProfilePush final :
 #endif  // __GNUC__
 // PlayerMessageRequest
 
-// .client.common.v1.RequestHeader header = 1;
+// .pb.RequestHeader header = 1;
 inline bool PlayerMessageRequest::_internal_has_header() const {
   return this != internal_default_instance() && _impl_.header_ != nullptr;
 }
 inline bool PlayerMessageRequest::has_header() const {
   return _internal_has_header();
 }
-inline const ::client::common::v1::RequestHeader& PlayerMessageRequest::_internal_header() const {
-  const ::client::common::v1::RequestHeader* p = _impl_.header_;
-  return p != nullptr ? *p : reinterpret_cast<const ::client::common::v1::RequestHeader&>(
-      ::client::common::v1::_RequestHeader_default_instance_);
+inline const ::pb::RequestHeader& PlayerMessageRequest::_internal_header() const {
+  const ::pb::RequestHeader* p = _impl_.header_;
+  return p != nullptr ? *p : reinterpret_cast<const ::pb::RequestHeader&>(
+      ::pb::_RequestHeader_default_instance_);
 }
-inline const ::client::common::v1::RequestHeader& PlayerMessageRequest::header() const {
-  // @@protoc_insertion_point(field_get:client.game.v1.PlayerMessageRequest.header)
+inline const ::pb::RequestHeader& PlayerMessageRequest::header() const {
+  // @@protoc_insertion_point(field_get:pb.PlayerMessageRequest.header)
   return _internal_header();
 }
 inline void PlayerMessageRequest::unsafe_arena_set_allocated_header(
-    ::client::common::v1::RequestHeader* header) {
+    ::pb::RequestHeader* header) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.header_);
   }
@@ -1484,11 +1478,11 @@ inline void PlayerMessageRequest::unsafe_arena_set_allocated_header(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:client.game.v1.PlayerMessageRequest.header)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:pb.PlayerMessageRequest.header)
 }
-inline ::client::common::v1::RequestHeader* PlayerMessageRequest::release_header() {
+inline ::pb::RequestHeader* PlayerMessageRequest::release_header() {
   
-  ::client::common::v1::RequestHeader* temp = _impl_.header_;
+  ::pb::RequestHeader* temp = _impl_.header_;
   _impl_.header_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
@@ -1501,27 +1495,27 @@ inline ::client::common::v1::RequestHeader* PlayerMessageRequest::release_header
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::client::common::v1::RequestHeader* PlayerMessageRequest::unsafe_arena_release_header() {
-  // @@protoc_insertion_point(field_release:client.game.v1.PlayerMessageRequest.header)
+inline ::pb::RequestHeader* PlayerMessageRequest::unsafe_arena_release_header() {
+  // @@protoc_insertion_point(field_release:pb.PlayerMessageRequest.header)
   
-  ::client::common::v1::RequestHeader* temp = _impl_.header_;
+  ::pb::RequestHeader* temp = _impl_.header_;
   _impl_.header_ = nullptr;
   return temp;
 }
-inline ::client::common::v1::RequestHeader* PlayerMessageRequest::_internal_mutable_header() {
+inline ::pb::RequestHeader* PlayerMessageRequest::_internal_mutable_header() {
   
   if (_impl_.header_ == nullptr) {
-    auto* p = CreateMaybeMessage<::client::common::v1::RequestHeader>(GetArenaForAllocation());
+    auto* p = CreateMaybeMessage<::pb::RequestHeader>(GetArenaForAllocation());
     _impl_.header_ = p;
   }
   return _impl_.header_;
 }
-inline ::client::common::v1::RequestHeader* PlayerMessageRequest::mutable_header() {
-  ::client::common::v1::RequestHeader* _msg = _internal_mutable_header();
-  // @@protoc_insertion_point(field_mutable:client.game.v1.PlayerMessageRequest.header)
+inline ::pb::RequestHeader* PlayerMessageRequest::mutable_header() {
+  ::pb::RequestHeader* _msg = _internal_mutable_header();
+  // @@protoc_insertion_point(field_mutable:pb.PlayerMessageRequest.header)
   return _msg;
 }
-inline void PlayerMessageRequest::set_allocated_header(::client::common::v1::RequestHeader* header) {
+inline void PlayerMessageRequest::set_allocated_header(::pb::RequestHeader* header) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.header_);
@@ -1539,7 +1533,7 @@ inline void PlayerMessageRequest::set_allocated_header(::client::common::v1::Req
     
   }
   _impl_.header_ = header;
-  // @@protoc_insertion_point(field_set_allocated:client.game.v1.PlayerMessageRequest.header)
+  // @@protoc_insertion_point(field_set_allocated:pb.PlayerMessageRequest.header)
 }
 
 // bytes payload = 2;
@@ -1547,7 +1541,7 @@ inline void PlayerMessageRequest::clear_payload() {
   _impl_.payload_.ClearToEmpty();
 }
 inline const std::string& PlayerMessageRequest::payload() const {
-  // @@protoc_insertion_point(field_get:client.game.v1.PlayerMessageRequest.payload)
+  // @@protoc_insertion_point(field_get:pb.PlayerMessageRequest.payload)
   return _internal_payload();
 }
 template <typename ArgT0, typename... ArgT>
@@ -1555,11 +1549,11 @@ inline PROTOBUF_ALWAYS_INLINE
 void PlayerMessageRequest::set_payload(ArgT0&& arg0, ArgT... args) {
  
  _impl_.payload_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:client.game.v1.PlayerMessageRequest.payload)
+  // @@protoc_insertion_point(field_set:pb.PlayerMessageRequest.payload)
 }
 inline std::string* PlayerMessageRequest::mutable_payload() {
   std::string* _s = _internal_mutable_payload();
-  // @@protoc_insertion_point(field_mutable:client.game.v1.PlayerMessageRequest.payload)
+  // @@protoc_insertion_point(field_mutable:pb.PlayerMessageRequest.payload)
   return _s;
 }
 inline const std::string& PlayerMessageRequest::_internal_payload() const {
@@ -1574,7 +1568,7 @@ inline std::string* PlayerMessageRequest::_internal_mutable_payload() {
   return _impl_.payload_.Mutable(GetArenaForAllocation());
 }
 inline std::string* PlayerMessageRequest::release_payload() {
-  // @@protoc_insertion_point(field_release:client.game.v1.PlayerMessageRequest.payload)
+  // @@protoc_insertion_point(field_release:pb.PlayerMessageRequest.payload)
   return _impl_.payload_.Release();
 }
 inline void PlayerMessageRequest::set_allocated_payload(std::string* payload) {
@@ -1589,31 +1583,31 @@ inline void PlayerMessageRequest::set_allocated_payload(std::string* payload) {
     _impl_.payload_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:client.game.v1.PlayerMessageRequest.payload)
+  // @@protoc_insertion_point(field_set_allocated:pb.PlayerMessageRequest.payload)
 }
 
 // -------------------------------------------------------------------
 
 // PlayerMessageResponse
 
-// .client.common.v1.ResponseHeader header = 1;
+// .pb.ResponseHeader header = 1;
 inline bool PlayerMessageResponse::_internal_has_header() const {
   return this != internal_default_instance() && _impl_.header_ != nullptr;
 }
 inline bool PlayerMessageResponse::has_header() const {
   return _internal_has_header();
 }
-inline const ::client::common::v1::ResponseHeader& PlayerMessageResponse::_internal_header() const {
-  const ::client::common::v1::ResponseHeader* p = _impl_.header_;
-  return p != nullptr ? *p : reinterpret_cast<const ::client::common::v1::ResponseHeader&>(
-      ::client::common::v1::_ResponseHeader_default_instance_);
+inline const ::pb::ResponseHeader& PlayerMessageResponse::_internal_header() const {
+  const ::pb::ResponseHeader* p = _impl_.header_;
+  return p != nullptr ? *p : reinterpret_cast<const ::pb::ResponseHeader&>(
+      ::pb::_ResponseHeader_default_instance_);
 }
-inline const ::client::common::v1::ResponseHeader& PlayerMessageResponse::header() const {
-  // @@protoc_insertion_point(field_get:client.game.v1.PlayerMessageResponse.header)
+inline const ::pb::ResponseHeader& PlayerMessageResponse::header() const {
+  // @@protoc_insertion_point(field_get:pb.PlayerMessageResponse.header)
   return _internal_header();
 }
 inline void PlayerMessageResponse::unsafe_arena_set_allocated_header(
-    ::client::common::v1::ResponseHeader* header) {
+    ::pb::ResponseHeader* header) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.header_);
   }
@@ -1623,11 +1617,11 @@ inline void PlayerMessageResponse::unsafe_arena_set_allocated_header(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:client.game.v1.PlayerMessageResponse.header)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:pb.PlayerMessageResponse.header)
 }
-inline ::client::common::v1::ResponseHeader* PlayerMessageResponse::release_header() {
+inline ::pb::ResponseHeader* PlayerMessageResponse::release_header() {
   
-  ::client::common::v1::ResponseHeader* temp = _impl_.header_;
+  ::pb::ResponseHeader* temp = _impl_.header_;
   _impl_.header_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
@@ -1640,27 +1634,27 @@ inline ::client::common::v1::ResponseHeader* PlayerMessageResponse::release_head
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::client::common::v1::ResponseHeader* PlayerMessageResponse::unsafe_arena_release_header() {
-  // @@protoc_insertion_point(field_release:client.game.v1.PlayerMessageResponse.header)
+inline ::pb::ResponseHeader* PlayerMessageResponse::unsafe_arena_release_header() {
+  // @@protoc_insertion_point(field_release:pb.PlayerMessageResponse.header)
   
-  ::client::common::v1::ResponseHeader* temp = _impl_.header_;
+  ::pb::ResponseHeader* temp = _impl_.header_;
   _impl_.header_ = nullptr;
   return temp;
 }
-inline ::client::common::v1::ResponseHeader* PlayerMessageResponse::_internal_mutable_header() {
+inline ::pb::ResponseHeader* PlayerMessageResponse::_internal_mutable_header() {
   
   if (_impl_.header_ == nullptr) {
-    auto* p = CreateMaybeMessage<::client::common::v1::ResponseHeader>(GetArenaForAllocation());
+    auto* p = CreateMaybeMessage<::pb::ResponseHeader>(GetArenaForAllocation());
     _impl_.header_ = p;
   }
   return _impl_.header_;
 }
-inline ::client::common::v1::ResponseHeader* PlayerMessageResponse::mutable_header() {
-  ::client::common::v1::ResponseHeader* _msg = _internal_mutable_header();
-  // @@protoc_insertion_point(field_mutable:client.game.v1.PlayerMessageResponse.header)
+inline ::pb::ResponseHeader* PlayerMessageResponse::mutable_header() {
+  ::pb::ResponseHeader* _msg = _internal_mutable_header();
+  // @@protoc_insertion_point(field_mutable:pb.PlayerMessageResponse.header)
   return _msg;
 }
-inline void PlayerMessageResponse::set_allocated_header(::client::common::v1::ResponseHeader* header) {
+inline void PlayerMessageResponse::set_allocated_header(::pb::ResponseHeader* header) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.header_);
@@ -1678,7 +1672,7 @@ inline void PlayerMessageResponse::set_allocated_header(::client::common::v1::Re
     
   }
   _impl_.header_ = header;
-  // @@protoc_insertion_point(field_set_allocated:client.game.v1.PlayerMessageResponse.header)
+  // @@protoc_insertion_point(field_set_allocated:pb.PlayerMessageResponse.header)
 }
 
 // bytes payload = 2;
@@ -1686,7 +1680,7 @@ inline void PlayerMessageResponse::clear_payload() {
   _impl_.payload_.ClearToEmpty();
 }
 inline const std::string& PlayerMessageResponse::payload() const {
-  // @@protoc_insertion_point(field_get:client.game.v1.PlayerMessageResponse.payload)
+  // @@protoc_insertion_point(field_get:pb.PlayerMessageResponse.payload)
   return _internal_payload();
 }
 template <typename ArgT0, typename... ArgT>
@@ -1694,11 +1688,11 @@ inline PROTOBUF_ALWAYS_INLINE
 void PlayerMessageResponse::set_payload(ArgT0&& arg0, ArgT... args) {
  
  _impl_.payload_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:client.game.v1.PlayerMessageResponse.payload)
+  // @@protoc_insertion_point(field_set:pb.PlayerMessageResponse.payload)
 }
 inline std::string* PlayerMessageResponse::mutable_payload() {
   std::string* _s = _internal_mutable_payload();
-  // @@protoc_insertion_point(field_mutable:client.game.v1.PlayerMessageResponse.payload)
+  // @@protoc_insertion_point(field_mutable:pb.PlayerMessageResponse.payload)
   return _s;
 }
 inline const std::string& PlayerMessageResponse::_internal_payload() const {
@@ -1713,7 +1707,7 @@ inline std::string* PlayerMessageResponse::_internal_mutable_payload() {
   return _impl_.payload_.Mutable(GetArenaForAllocation());
 }
 inline std::string* PlayerMessageResponse::release_payload() {
-  // @@protoc_insertion_point(field_release:client.game.v1.PlayerMessageResponse.payload)
+  // @@protoc_insertion_point(field_release:pb.PlayerMessageResponse.payload)
   return _impl_.payload_.Release();
 }
 inline void PlayerMessageResponse::set_allocated_payload(std::string* payload) {
@@ -1728,7 +1722,7 @@ inline void PlayerMessageResponse::set_allocated_payload(std::string* payload) {
     _impl_.payload_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:client.game.v1.PlayerMessageResponse.payload)
+  // @@protoc_insertion_point(field_set_allocated:pb.PlayerMessageResponse.payload)
 }
 
 // -------------------------------------------------------------------
@@ -1743,7 +1737,7 @@ inline uint32_t PlayerPushMessage::_internal_message_id() const {
   return _impl_.message_id_;
 }
 inline uint32_t PlayerPushMessage::message_id() const {
-  // @@protoc_insertion_point(field_get:client.game.v1.PlayerPushMessage.message_id)
+  // @@protoc_insertion_point(field_get:pb.PlayerPushMessage.message_id)
   return _internal_message_id();
 }
 inline void PlayerPushMessage::_internal_set_message_id(uint32_t value) {
@@ -1752,7 +1746,7 @@ inline void PlayerPushMessage::_internal_set_message_id(uint32_t value) {
 }
 inline void PlayerPushMessage::set_message_id(uint32_t value) {
   _internal_set_message_id(value);
-  // @@protoc_insertion_point(field_set:client.game.v1.PlayerPushMessage.message_id)
+  // @@protoc_insertion_point(field_set:pb.PlayerPushMessage.message_id)
 }
 
 // bytes payload = 2;
@@ -1760,7 +1754,7 @@ inline void PlayerPushMessage::clear_payload() {
   _impl_.payload_.ClearToEmpty();
 }
 inline const std::string& PlayerPushMessage::payload() const {
-  // @@protoc_insertion_point(field_get:client.game.v1.PlayerPushMessage.payload)
+  // @@protoc_insertion_point(field_get:pb.PlayerPushMessage.payload)
   return _internal_payload();
 }
 template <typename ArgT0, typename... ArgT>
@@ -1768,11 +1762,11 @@ inline PROTOBUF_ALWAYS_INLINE
 void PlayerPushMessage::set_payload(ArgT0&& arg0, ArgT... args) {
  
  _impl_.payload_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:client.game.v1.PlayerPushMessage.payload)
+  // @@protoc_insertion_point(field_set:pb.PlayerPushMessage.payload)
 }
 inline std::string* PlayerPushMessage::mutable_payload() {
   std::string* _s = _internal_mutable_payload();
-  // @@protoc_insertion_point(field_mutable:client.game.v1.PlayerPushMessage.payload)
+  // @@protoc_insertion_point(field_mutable:pb.PlayerPushMessage.payload)
   return _s;
 }
 inline const std::string& PlayerPushMessage::_internal_payload() const {
@@ -1787,7 +1781,7 @@ inline std::string* PlayerPushMessage::_internal_mutable_payload() {
   return _impl_.payload_.Mutable(GetArenaForAllocation());
 }
 inline std::string* PlayerPushMessage::release_payload() {
-  // @@protoc_insertion_point(field_release:client.game.v1.PlayerPushMessage.payload)
+  // @@protoc_insertion_point(field_release:pb.PlayerPushMessage.payload)
   return _impl_.payload_.Release();
 }
 inline void PlayerPushMessage::set_allocated_payload(std::string* payload) {
@@ -1802,7 +1796,7 @@ inline void PlayerPushMessage::set_allocated_payload(std::string* payload) {
     _impl_.payload_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:client.game.v1.PlayerPushMessage.payload)
+  // @@protoc_insertion_point(field_set_allocated:pb.PlayerPushMessage.payload)
 }
 
 // -------------------------------------------------------------------
@@ -1814,7 +1808,7 @@ inline void PlayerEchoRequest::clear_text() {
   _impl_.text_.ClearToEmpty();
 }
 inline const std::string& PlayerEchoRequest::text() const {
-  // @@protoc_insertion_point(field_get:client.game.v1.PlayerEchoRequest.text)
+  // @@protoc_insertion_point(field_get:pb.PlayerEchoRequest.text)
   return _internal_text();
 }
 template <typename ArgT0, typename... ArgT>
@@ -1822,11 +1816,11 @@ inline PROTOBUF_ALWAYS_INLINE
 void PlayerEchoRequest::set_text(ArgT0&& arg0, ArgT... args) {
  
  _impl_.text_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:client.game.v1.PlayerEchoRequest.text)
+  // @@protoc_insertion_point(field_set:pb.PlayerEchoRequest.text)
 }
 inline std::string* PlayerEchoRequest::mutable_text() {
   std::string* _s = _internal_mutable_text();
-  // @@protoc_insertion_point(field_mutable:client.game.v1.PlayerEchoRequest.text)
+  // @@protoc_insertion_point(field_mutable:pb.PlayerEchoRequest.text)
   return _s;
 }
 inline const std::string& PlayerEchoRequest::_internal_text() const {
@@ -1841,7 +1835,7 @@ inline std::string* PlayerEchoRequest::_internal_mutable_text() {
   return _impl_.text_.Mutable(GetArenaForAllocation());
 }
 inline std::string* PlayerEchoRequest::release_text() {
-  // @@protoc_insertion_point(field_release:client.game.v1.PlayerEchoRequest.text)
+  // @@protoc_insertion_point(field_release:pb.PlayerEchoRequest.text)
   return _impl_.text_.Release();
 }
 inline void PlayerEchoRequest::set_allocated_text(std::string* text) {
@@ -1856,7 +1850,7 @@ inline void PlayerEchoRequest::set_allocated_text(std::string* text) {
     _impl_.text_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:client.game.v1.PlayerEchoRequest.text)
+  // @@protoc_insertion_point(field_set_allocated:pb.PlayerEchoRequest.text)
 }
 
 // -------------------------------------------------------------------
@@ -1871,7 +1865,7 @@ inline uint64_t PlayerEchoResponse::_internal_player_id() const {
   return _impl_.player_id_;
 }
 inline uint64_t PlayerEchoResponse::player_id() const {
-  // @@protoc_insertion_point(field_get:client.game.v1.PlayerEchoResponse.player_id)
+  // @@protoc_insertion_point(field_get:pb.PlayerEchoResponse.player_id)
   return _internal_player_id();
 }
 inline void PlayerEchoResponse::_internal_set_player_id(uint64_t value) {
@@ -1880,7 +1874,7 @@ inline void PlayerEchoResponse::_internal_set_player_id(uint64_t value) {
 }
 inline void PlayerEchoResponse::set_player_id(uint64_t value) {
   _internal_set_player_id(value);
-  // @@protoc_insertion_point(field_set:client.game.v1.PlayerEchoResponse.player_id)
+  // @@protoc_insertion_point(field_set:pb.PlayerEchoResponse.player_id)
 }
 
 // string text = 2;
@@ -1888,7 +1882,7 @@ inline void PlayerEchoResponse::clear_text() {
   _impl_.text_.ClearToEmpty();
 }
 inline const std::string& PlayerEchoResponse::text() const {
-  // @@protoc_insertion_point(field_get:client.game.v1.PlayerEchoResponse.text)
+  // @@protoc_insertion_point(field_get:pb.PlayerEchoResponse.text)
   return _internal_text();
 }
 template <typename ArgT0, typename... ArgT>
@@ -1896,11 +1890,11 @@ inline PROTOBUF_ALWAYS_INLINE
 void PlayerEchoResponse::set_text(ArgT0&& arg0, ArgT... args) {
  
  _impl_.text_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:client.game.v1.PlayerEchoResponse.text)
+  // @@protoc_insertion_point(field_set:pb.PlayerEchoResponse.text)
 }
 inline std::string* PlayerEchoResponse::mutable_text() {
   std::string* _s = _internal_mutable_text();
-  // @@protoc_insertion_point(field_mutable:client.game.v1.PlayerEchoResponse.text)
+  // @@protoc_insertion_point(field_mutable:pb.PlayerEchoResponse.text)
   return _s;
 }
 inline const std::string& PlayerEchoResponse::_internal_text() const {
@@ -1915,7 +1909,7 @@ inline std::string* PlayerEchoResponse::_internal_mutable_text() {
   return _impl_.text_.Mutable(GetArenaForAllocation());
 }
 inline std::string* PlayerEchoResponse::release_text() {
-  // @@protoc_insertion_point(field_release:client.game.v1.PlayerEchoResponse.text)
+  // @@protoc_insertion_point(field_release:pb.PlayerEchoResponse.text)
   return _impl_.text_.Release();
 }
 inline void PlayerEchoResponse::set_allocated_text(std::string* text) {
@@ -1930,7 +1924,7 @@ inline void PlayerEchoResponse::set_allocated_text(std::string* text) {
     _impl_.text_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:client.game.v1.PlayerEchoResponse.text)
+  // @@protoc_insertion_point(field_set_allocated:pb.PlayerEchoResponse.text)
 }
 
 // string display_name = 3;
@@ -1938,7 +1932,7 @@ inline void PlayerEchoResponse::clear_display_name() {
   _impl_.display_name_.ClearToEmpty();
 }
 inline const std::string& PlayerEchoResponse::display_name() const {
-  // @@protoc_insertion_point(field_get:client.game.v1.PlayerEchoResponse.display_name)
+  // @@protoc_insertion_point(field_get:pb.PlayerEchoResponse.display_name)
   return _internal_display_name();
 }
 template <typename ArgT0, typename... ArgT>
@@ -1946,11 +1940,11 @@ inline PROTOBUF_ALWAYS_INLINE
 void PlayerEchoResponse::set_display_name(ArgT0&& arg0, ArgT... args) {
  
  _impl_.display_name_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:client.game.v1.PlayerEchoResponse.display_name)
+  // @@protoc_insertion_point(field_set:pb.PlayerEchoResponse.display_name)
 }
 inline std::string* PlayerEchoResponse::mutable_display_name() {
   std::string* _s = _internal_mutable_display_name();
-  // @@protoc_insertion_point(field_mutable:client.game.v1.PlayerEchoResponse.display_name)
+  // @@protoc_insertion_point(field_mutable:pb.PlayerEchoResponse.display_name)
   return _s;
 }
 inline const std::string& PlayerEchoResponse::_internal_display_name() const {
@@ -1965,7 +1959,7 @@ inline std::string* PlayerEchoResponse::_internal_mutable_display_name() {
   return _impl_.display_name_.Mutable(GetArenaForAllocation());
 }
 inline std::string* PlayerEchoResponse::release_display_name() {
-  // @@protoc_insertion_point(field_release:client.game.v1.PlayerEchoResponse.display_name)
+  // @@protoc_insertion_point(field_release:pb.PlayerEchoResponse.display_name)
   return _impl_.display_name_.Release();
 }
 inline void PlayerEchoResponse::set_allocated_display_name(std::string* display_name) {
@@ -1980,7 +1974,7 @@ inline void PlayerEchoResponse::set_allocated_display_name(std::string* display_
     _impl_.display_name_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:client.game.v1.PlayerEchoResponse.display_name)
+  // @@protoc_insertion_point(field_set_allocated:pb.PlayerEchoResponse.display_name)
 }
 
 // uint64 login_count = 4;
@@ -1991,7 +1985,7 @@ inline uint64_t PlayerEchoResponse::_internal_login_count() const {
   return _impl_.login_count_;
 }
 inline uint64_t PlayerEchoResponse::login_count() const {
-  // @@protoc_insertion_point(field_get:client.game.v1.PlayerEchoResponse.login_count)
+  // @@protoc_insertion_point(field_get:pb.PlayerEchoResponse.login_count)
   return _internal_login_count();
 }
 inline void PlayerEchoResponse::_internal_set_login_count(uint64_t value) {
@@ -2000,7 +1994,7 @@ inline void PlayerEchoResponse::_internal_set_login_count(uint64_t value) {
 }
 inline void PlayerEchoResponse::set_login_count(uint64_t value) {
   _internal_set_login_count(value);
-  // @@protoc_insertion_point(field_set:client.game.v1.PlayerEchoResponse.login_count)
+  // @@protoc_insertion_point(field_set:pb.PlayerEchoResponse.login_count)
 }
 
 // -------------------------------------------------------------------
@@ -2012,7 +2006,7 @@ inline void RenamePlayerRequest::clear_display_name() {
   _impl_.display_name_.ClearToEmpty();
 }
 inline const std::string& RenamePlayerRequest::display_name() const {
-  // @@protoc_insertion_point(field_get:client.game.v1.RenamePlayerRequest.display_name)
+  // @@protoc_insertion_point(field_get:pb.RenamePlayerRequest.display_name)
   return _internal_display_name();
 }
 template <typename ArgT0, typename... ArgT>
@@ -2020,11 +2014,11 @@ inline PROTOBUF_ALWAYS_INLINE
 void RenamePlayerRequest::set_display_name(ArgT0&& arg0, ArgT... args) {
  
  _impl_.display_name_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:client.game.v1.RenamePlayerRequest.display_name)
+  // @@protoc_insertion_point(field_set:pb.RenamePlayerRequest.display_name)
 }
 inline std::string* RenamePlayerRequest::mutable_display_name() {
   std::string* _s = _internal_mutable_display_name();
-  // @@protoc_insertion_point(field_mutable:client.game.v1.RenamePlayerRequest.display_name)
+  // @@protoc_insertion_point(field_mutable:pb.RenamePlayerRequest.display_name)
   return _s;
 }
 inline const std::string& RenamePlayerRequest::_internal_display_name() const {
@@ -2039,7 +2033,7 @@ inline std::string* RenamePlayerRequest::_internal_mutable_display_name() {
   return _impl_.display_name_.Mutable(GetArenaForAllocation());
 }
 inline std::string* RenamePlayerRequest::release_display_name() {
-  // @@protoc_insertion_point(field_release:client.game.v1.RenamePlayerRequest.display_name)
+  // @@protoc_insertion_point(field_release:pb.RenamePlayerRequest.display_name)
   return _impl_.display_name_.Release();
 }
 inline void RenamePlayerRequest::set_allocated_display_name(std::string* display_name) {
@@ -2054,7 +2048,7 @@ inline void RenamePlayerRequest::set_allocated_display_name(std::string* display
     _impl_.display_name_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:client.game.v1.RenamePlayerRequest.display_name)
+  // @@protoc_insertion_point(field_set_allocated:pb.RenamePlayerRequest.display_name)
 }
 
 // -------------------------------------------------------------------
@@ -2069,7 +2063,7 @@ inline uint64_t RenamePlayerResponse::_internal_player_id() const {
   return _impl_.player_id_;
 }
 inline uint64_t RenamePlayerResponse::player_id() const {
-  // @@protoc_insertion_point(field_get:client.game.v1.RenamePlayerResponse.player_id)
+  // @@protoc_insertion_point(field_get:pb.RenamePlayerResponse.player_id)
   return _internal_player_id();
 }
 inline void RenamePlayerResponse::_internal_set_player_id(uint64_t value) {
@@ -2078,7 +2072,7 @@ inline void RenamePlayerResponse::_internal_set_player_id(uint64_t value) {
 }
 inline void RenamePlayerResponse::set_player_id(uint64_t value) {
   _internal_set_player_id(value);
-  // @@protoc_insertion_point(field_set:client.game.v1.RenamePlayerResponse.player_id)
+  // @@protoc_insertion_point(field_set:pb.RenamePlayerResponse.player_id)
 }
 
 // string display_name = 2;
@@ -2086,7 +2080,7 @@ inline void RenamePlayerResponse::clear_display_name() {
   _impl_.display_name_.ClearToEmpty();
 }
 inline const std::string& RenamePlayerResponse::display_name() const {
-  // @@protoc_insertion_point(field_get:client.game.v1.RenamePlayerResponse.display_name)
+  // @@protoc_insertion_point(field_get:pb.RenamePlayerResponse.display_name)
   return _internal_display_name();
 }
 template <typename ArgT0, typename... ArgT>
@@ -2094,11 +2088,11 @@ inline PROTOBUF_ALWAYS_INLINE
 void RenamePlayerResponse::set_display_name(ArgT0&& arg0, ArgT... args) {
  
  _impl_.display_name_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:client.game.v1.RenamePlayerResponse.display_name)
+  // @@protoc_insertion_point(field_set:pb.RenamePlayerResponse.display_name)
 }
 inline std::string* RenamePlayerResponse::mutable_display_name() {
   std::string* _s = _internal_mutable_display_name();
-  // @@protoc_insertion_point(field_mutable:client.game.v1.RenamePlayerResponse.display_name)
+  // @@protoc_insertion_point(field_mutable:pb.RenamePlayerResponse.display_name)
   return _s;
 }
 inline const std::string& RenamePlayerResponse::_internal_display_name() const {
@@ -2113,7 +2107,7 @@ inline std::string* RenamePlayerResponse::_internal_mutable_display_name() {
   return _impl_.display_name_.Mutable(GetArenaForAllocation());
 }
 inline std::string* RenamePlayerResponse::release_display_name() {
-  // @@protoc_insertion_point(field_release:client.game.v1.RenamePlayerResponse.display_name)
+  // @@protoc_insertion_point(field_release:pb.RenamePlayerResponse.display_name)
   return _impl_.display_name_.Release();
 }
 inline void RenamePlayerResponse::set_allocated_display_name(std::string* display_name) {
@@ -2128,7 +2122,7 @@ inline void RenamePlayerResponse::set_allocated_display_name(std::string* displa
     _impl_.display_name_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:client.game.v1.RenamePlayerResponse.display_name)
+  // @@protoc_insertion_point(field_set_allocated:pb.RenamePlayerResponse.display_name)
 }
 
 // -------------------------------------------------------------------
@@ -2143,7 +2137,7 @@ inline uint64_t PlayerProfilePush::_internal_player_id() const {
   return _impl_.player_id_;
 }
 inline uint64_t PlayerProfilePush::player_id() const {
-  // @@protoc_insertion_point(field_get:client.game.v1.PlayerProfilePush.player_id)
+  // @@protoc_insertion_point(field_get:pb.PlayerProfilePush.player_id)
   return _internal_player_id();
 }
 inline void PlayerProfilePush::_internal_set_player_id(uint64_t value) {
@@ -2152,7 +2146,7 @@ inline void PlayerProfilePush::_internal_set_player_id(uint64_t value) {
 }
 inline void PlayerProfilePush::set_player_id(uint64_t value) {
   _internal_set_player_id(value);
-  // @@protoc_insertion_point(field_set:client.game.v1.PlayerProfilePush.player_id)
+  // @@protoc_insertion_point(field_set:pb.PlayerProfilePush.player_id)
 }
 
 // string display_name = 2;
@@ -2160,7 +2154,7 @@ inline void PlayerProfilePush::clear_display_name() {
   _impl_.display_name_.ClearToEmpty();
 }
 inline const std::string& PlayerProfilePush::display_name() const {
-  // @@protoc_insertion_point(field_get:client.game.v1.PlayerProfilePush.display_name)
+  // @@protoc_insertion_point(field_get:pb.PlayerProfilePush.display_name)
   return _internal_display_name();
 }
 template <typename ArgT0, typename... ArgT>
@@ -2168,11 +2162,11 @@ inline PROTOBUF_ALWAYS_INLINE
 void PlayerProfilePush::set_display_name(ArgT0&& arg0, ArgT... args) {
  
  _impl_.display_name_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:client.game.v1.PlayerProfilePush.display_name)
+  // @@protoc_insertion_point(field_set:pb.PlayerProfilePush.display_name)
 }
 inline std::string* PlayerProfilePush::mutable_display_name() {
   std::string* _s = _internal_mutable_display_name();
-  // @@protoc_insertion_point(field_mutable:client.game.v1.PlayerProfilePush.display_name)
+  // @@protoc_insertion_point(field_mutable:pb.PlayerProfilePush.display_name)
   return _s;
 }
 inline const std::string& PlayerProfilePush::_internal_display_name() const {
@@ -2187,7 +2181,7 @@ inline std::string* PlayerProfilePush::_internal_mutable_display_name() {
   return _impl_.display_name_.Mutable(GetArenaForAllocation());
 }
 inline std::string* PlayerProfilePush::release_display_name() {
-  // @@protoc_insertion_point(field_release:client.game.v1.PlayerProfilePush.display_name)
+  // @@protoc_insertion_point(field_release:pb.PlayerProfilePush.display_name)
   return _impl_.display_name_.Release();
 }
 inline void PlayerProfilePush::set_allocated_display_name(std::string* display_name) {
@@ -2202,7 +2196,7 @@ inline void PlayerProfilePush::set_allocated_display_name(std::string* display_n
     _impl_.display_name_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:client.game.v1.PlayerProfilePush.display_name)
+  // @@protoc_insertion_point(field_set_allocated:pb.PlayerProfilePush.display_name)
 }
 
 // uint32 level = 3;
@@ -2213,7 +2207,7 @@ inline uint32_t PlayerProfilePush::_internal_level() const {
   return _impl_.level_;
 }
 inline uint32_t PlayerProfilePush::level() const {
-  // @@protoc_insertion_point(field_get:client.game.v1.PlayerProfilePush.level)
+  // @@protoc_insertion_point(field_get:pb.PlayerProfilePush.level)
   return _internal_level();
 }
 inline void PlayerProfilePush::_internal_set_level(uint32_t value) {
@@ -2222,7 +2216,7 @@ inline void PlayerProfilePush::_internal_set_level(uint32_t value) {
 }
 inline void PlayerProfilePush::set_level(uint32_t value) {
   _internal_set_level(value);
-  // @@protoc_insertion_point(field_set:client.game.v1.PlayerProfilePush.level)
+  // @@protoc_insertion_point(field_set:pb.PlayerProfilePush.level)
 }
 
 // uint64 login_count = 4;
@@ -2233,7 +2227,7 @@ inline uint64_t PlayerProfilePush::_internal_login_count() const {
   return _impl_.login_count_;
 }
 inline uint64_t PlayerProfilePush::login_count() const {
-  // @@protoc_insertion_point(field_get:client.game.v1.PlayerProfilePush.login_count)
+  // @@protoc_insertion_point(field_get:pb.PlayerProfilePush.login_count)
   return _internal_login_count();
 }
 inline void PlayerProfilePush::_internal_set_login_count(uint64_t value) {
@@ -2242,7 +2236,7 @@ inline void PlayerProfilePush::_internal_set_login_count(uint64_t value) {
 }
 inline void PlayerProfilePush::set_login_count(uint64_t value) {
   _internal_set_login_count(value);
-  // @@protoc_insertion_point(field_set:client.game.v1.PlayerProfilePush.login_count)
+  // @@protoc_insertion_point(field_set:pb.PlayerProfilePush.login_count)
 }
 
 #ifdef __GNUC__
@@ -2265,9 +2259,7 @@ inline void PlayerProfilePush::set_login_count(uint64_t value) {
 
 // @@protoc_insertion_point(namespace_scope)
 
-}  // namespace v1
-}  // namespace game
-}  // namespace client
+}  // namespace pb
 
 // @@protoc_insertion_point(global_scope)
 

@@ -2,15 +2,16 @@
 
 #include <common.pb.h>
 #include <login.pb.h>
+#include <message_ids.pb.h>
 
 GateProtocolEncodeResult GateProtocolService::EncodeLoginResponse(
     const std::uint64_t player_id,
     const bool is_reconnect,
-    const client::common::v1::ErrorCode error_code,
+    const pb::ErrorCode error_code,
     const std::string_view error_message)
 {
-    client::login::v1::LoginResponse response;
-    response.mutable_header()->set_message_id(kLoginResponseMessageId);
+    pb::LoginResponse response;
+    response.mutable_header()->set_message_id(pb::MESSAGE_ID_LOGIN_RESPONSE);
     response.mutable_header()->set_sequence(1);
     response.mutable_header()->set_error_code(error_code);
     response.mutable_header()->set_error_message(std::string{error_message});
@@ -27,7 +28,7 @@ GateProtocolEncodeResult GateProtocolService::EncodeLoginResponse(
     mSnapshot.encoded_login_response_bytes = payload.size();
     return GateProtocolEncodeResult{
         .ok = true,
-        .message_id = kLoginResponseMessageId,
+        .message_id = pb::MESSAGE_ID_LOGIN_RESPONSE,
         .encoded_size = payload.size(),
         .payload = std::move(payload),
         .message = "OK"};
@@ -35,10 +36,10 @@ GateProtocolEncodeResult GateProtocolService::EncodeLoginResponse(
 
 GateProtocolEncodeResult GateProtocolService::EncodeHeartbeatResponse(const std::uint64_t server_time_ms)
 {
-    client::login::v1::HeartbeatResponse response;
-    response.mutable_header()->set_message_id(kHeartbeatResponseMessageId);
+    pb::HeartbeatResponse response;
+    response.mutable_header()->set_message_id(pb::MESSAGE_ID_HEARTBEAT_RESPONSE);
     response.mutable_header()->set_sequence(1);
-    response.mutable_header()->set_error_code(client::common::v1::ERROR_CODE_OK);
+    response.mutable_header()->set_error_code(pb::ERROR_CODE_OK);
     response.set_server_time_ms(server_time_ms);
 
     std::string payload;
@@ -51,7 +52,7 @@ GateProtocolEncodeResult GateProtocolService::EncodeHeartbeatResponse(const std:
     mSnapshot.encoded_heartbeat_response_bytes = payload.size();
     return GateProtocolEncodeResult{
         .ok = true,
-        .message_id = kHeartbeatResponseMessageId,
+        .message_id = pb::MESSAGE_ID_HEARTBEAT_RESPONSE,
         .encoded_size = payload.size(),
         .payload = std::move(payload),
         .message = "OK"};
@@ -59,7 +60,7 @@ GateProtocolEncodeResult GateProtocolService::EncodeHeartbeatResponse(const std:
 
 GateProtocolEncodeResult GateProtocolService::EncodeKickNotification(const std::string_view reason)
 {
-    client::login::v1::KickNotification notification;
+    pb::KickNotification notification;
     notification.set_reason(std::string{reason});
 
     std::string payload;
@@ -72,7 +73,7 @@ GateProtocolEncodeResult GateProtocolService::EncodeKickNotification(const std::
     mSnapshot.encoded_kick_notification_bytes = payload.size();
     return GateProtocolEncodeResult{
         .ok = true,
-        .message_id = kKickNotificationMessageId,
+        .message_id = pb::MESSAGE_ID_KICK_NOTIFICATION,
         .encoded_size = payload.size(),
         .payload = std::move(payload),
         .message = "OK"};
@@ -81,10 +82,10 @@ GateProtocolEncodeResult GateProtocolService::EncodeKickNotification(const std::
 GateProtocolEncodeResult GateProtocolService::EncodePlayerMessageResponse(
     const std::uint32_t message_id,
     const std::string_view payload,
-    const client::common::v1::ErrorCode error_code,
+    const pb::ErrorCode error_code,
     const std::string_view error_message)
 {
-    client::game::v1::PlayerMessageResponse response;
+    pb::PlayerMessageResponse response;
     response.mutable_header()->set_message_id(message_id);
     response.mutable_header()->set_sequence(1);
     response.mutable_header()->set_error_code(error_code);
@@ -101,7 +102,7 @@ GateProtocolEncodeResult GateProtocolService::EncodePlayerMessageResponse(
     mSnapshot.encoded_player_message_response_bytes = bytes.size();
     return GateProtocolEncodeResult{
         .ok = true,
-        .message_id = kPlayerMessageResponseMessageId,
+        .message_id = pb::MESSAGE_ID_PLAYER_MESSAGE_RESPONSE,
         .encoded_size = bytes.size(),
         .payload = std::move(bytes),
         .message = "OK"};
@@ -111,7 +112,7 @@ GateProtocolEncodeResult GateProtocolService::EncodePlayerPushMessage(
     const std::uint32_t message_id,
     const std::string_view payload)
 {
-    client::game::v1::PlayerPushMessage push;
+    pb::PlayerPushMessage push;
     push.set_message_id(message_id);
     push.set_payload(std::string{payload});
 
@@ -125,30 +126,10 @@ GateProtocolEncodeResult GateProtocolService::EncodePlayerPushMessage(
     mSnapshot.encoded_player_push_bytes = bytes.size();
     return GateProtocolEncodeResult{
         .ok = true,
-        .message_id = kPlayerPushMessageId,
+        .message_id = pb::MESSAGE_ID_PLAYER_PUSH,
         .encoded_size = bytes.size(),
         .payload = std::move(bytes),
         .message = "OK"};
-}
-
-std::optional<GateDecodedLoginRequest> GateProtocolService::DecodeLoginRequest(const std::string& payload) const
-{
-    GateDecodedLoginRequest decoded;
-    if (!decoded.message.ParseFromString(payload))
-    {
-        return std::nullopt;
-    }
-    return decoded;
-}
-
-std::optional<GateDecodedPlayerMessageRequest> GateProtocolService::DecodePlayerMessageRequest(const std::string& payload) const
-{
-    GateDecodedPlayerMessageRequest decoded;
-    if (!decoded.message.ParseFromString(payload))
-    {
-        return std::nullopt;
-    }
-    return decoded;
 }
 
 GateProtocolSnapshot GateProtocolService::Snapshot() const

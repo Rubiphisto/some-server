@@ -9,6 +9,7 @@
 #include <ipc/gate_game/v1/common.pb.h>
 #include <ipc/gate_game/v1/player_message.pb.h>
 #include <ipc/gate_game/v1/push.pb.h>
+#include <message_ids.pb.h>
 
 #include "../../framework/ipc/messaging/payload_registry.h"
 
@@ -55,26 +56,21 @@ ipc::DispatchResult GamePlayerMessageService::HandleProcessEnvelope(const ipc::R
     }
     else
     {
-        const auto it = mHandlers.find(request.message_id());
-        if (it == mHandlers.end())
+        std::string response_payload;
+        const auto result = mDispatcher.Dispatch(
+            request.message_id(),
+            request.payload_bytes(),
+            response_payload,
+            request.player_id());
+        if (!result.ok)
         {
             response.set_result_code(some_server::ipc::gate_game::v1::RESULT_CODE_INVALID_ARGUMENT);
-            response.set_error_message("unsupported player message id");
+            response.set_error_message(result.message);
         }
         else
         {
-            std::string response_payload;
-            const auto result = it->second(request.player_id(), request.payload_bytes(), response_payload);
-            if (!result.ok)
-            {
-                response.set_result_code(some_server::ipc::gate_game::v1::RESULT_CODE_INVALID_ARGUMENT);
-                response.set_error_message(result.message);
-            }
-            else
-            {
-                response.set_result_code(some_server::ipc::gate_game::v1::RESULT_CODE_OK);
-                response.set_response_payload_bytes(std::move(response_payload));
-            }
+            response.set_result_code(some_server::ipc::gate_game::v1::RESULT_CODE_OK);
+            response.set_response_payload_bytes(std::move(response_payload));
         }
     }
 
@@ -126,38 +122,38 @@ ipc::Result GamePlayerMessageService::PushProfileToPlayer(const std::uint64_t pl
     {
         return ipc::Result::Failure("failed to build player profile push payload");
     }
-    return PushToPlayer(player_id, kPlayerProfilePushMessageId, *payload);
+    return PushToPlayer(player_id, pb::MESSAGE_ID_PLAYER_PROFILE_PUSH, *payload);
 }
 
 void GamePlayerMessageService::RegisterBuiltinHandlers()
 {
-    RegisterHandler<client::game::v1::PlayerEchoRequest, client::game::v1::PlayerEchoResponse>(
-        kEchoMessageId,
+    RegisterHandler<pb::PlayerEchoRequest, pb::PlayerEchoResponse>(
+        pb::MESSAGE_ID_PLAYER_ECHO_REQUEST,
         [this](
             const std::uint64_t player_id,
-            const client::game::v1::PlayerEchoRequest& request,
-            client::game::v1::PlayerEchoResponse& response) { return HandleEcho(player_id, request, response); });
+            const pb::PlayerEchoRequest& request,
+            pb::PlayerEchoResponse& response) { return HandleEcho(player_id, request, response); });
 
-    RegisterHandler<client::game::v1::RenamePlayerRequest, client::game::v1::RenamePlayerResponse>(
-        kRenamePlayerMessageId,
+    RegisterHandler<pb::RenamePlayerRequest, pb::RenamePlayerResponse>(
+        pb::MESSAGE_ID_PLAYER_RENAME_REQUEST,
         [this](
             const std::uint64_t player_id,
-            const client::game::v1::RenamePlayerRequest& request,
-            client::game::v1::RenamePlayerResponse& response) { return HandleRename(player_id, request, response); });
+            const pb::RenamePlayerRequest& request,
+            pb::RenamePlayerResponse& response) { return HandleRename(player_id, request, response); });
 }
 
 ipc::Result GamePlayerMessageService::HandleEcho(
     const std::uint64_t player_id,
-    const client::game::v1::PlayerEchoRequest& request,
-    client::game::v1::PlayerEchoResponse& response)
+    const pb::PlayerEchoRequest& request,
+    pb::PlayerEchoResponse& response)
 {
     return mRuntimeService->HandleEcho(player_id, request, response);
 }
 
 ipc::Result GamePlayerMessageService::HandleRename(
     const std::uint64_t player_id,
-    const client::game::v1::RenamePlayerRequest& request,
-    client::game::v1::RenamePlayerResponse& response)
+    const pb::RenamePlayerRequest& request,
+    pb::RenamePlayerResponse& response)
 {
     return mRuntimeService->HandleRename(player_id, request, response);
 }

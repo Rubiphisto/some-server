@@ -990,14 +990,13 @@ tools/ipc_proto/
 
 建议：
 
-- 客户端协议使用独立 package / namespace
+- 业务层 `proto/game/*` 使用统一 package / namespace
 - IPC 协议使用独立 package / namespace
 
 例如：
 
 ```text
-client.login.v1
-client.game.v1
+pb
 ipc.control.v1
 ipc.gate_game.v1
 ```

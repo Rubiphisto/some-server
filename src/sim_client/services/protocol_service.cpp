@@ -3,16 +3,17 @@
 #include <common.pb.h>
 #include <google/protobuf/message.h>
 #include <login.pb.h>
+#include <message_ids.pb.h>
 #include <player.pb.h>
 
 namespace
 {
-constexpr std::uint32_t kPlayerMessageRequestFrameId = 3001;
-constexpr std::uint32_t kPlayerMessageResponseFrameId = 3002;
-constexpr std::uint32_t kPlayerPushFrameId = 3003;
-constexpr std::uint32_t kEchoMessageId = 3101;
-constexpr std::uint32_t kRenamePlayerMessageId = 3102;
-constexpr std::uint32_t kPlayerProfilePushMessageId = 5101;
+constexpr std::uint32_t kPlayerMessageRequestFrameId = pb::MESSAGE_ID_PLAYER_MESSAGE_REQUEST;
+constexpr std::uint32_t kPlayerMessageResponseFrameId = pb::MESSAGE_ID_PLAYER_MESSAGE_RESPONSE;
+constexpr std::uint32_t kPlayerPushFrameId = pb::MESSAGE_ID_PLAYER_PUSH;
+constexpr std::uint32_t kEchoMessageId = pb::MESSAGE_ID_PLAYER_ECHO_REQUEST;
+constexpr std::uint32_t kRenamePlayerMessageId = pb::MESSAGE_ID_PLAYER_RENAME_REQUEST;
+constexpr std::uint32_t kPlayerProfilePushMessageId = pb::MESSAGE_ID_PLAYER_PROFILE_PUSH;
 
 std::optional<SimClientProtocolFrame> BuildTypedPlayerFrame(
     const std::uint32_t message_id,
@@ -24,7 +25,7 @@ std::optional<SimClientProtocolFrame> BuildTypedPlayerFrame(
         return std::nullopt;
     }
 
-    client::game::v1::PlayerMessageRequest request;
+    pb::PlayerMessageRequest request;
     request.mutable_header()->set_message_id(message_id);
     request.mutable_header()->set_sequence(3);
     request.mutable_header()->set_timestamp_ms(3);
@@ -88,8 +89,8 @@ ipc::Result ProtocolService::ResetRuntimeState()
 
 ProtocolEncodeResult ProtocolService::EncodeDefaultLogin()
 {
-    client::login::v1::LoginRequest request;
-    request.mutable_header()->set_message_id(1001);
+    pb::LoginRequest request;
+    request.mutable_header()->set_message_id(pb::MESSAGE_ID_LOGIN_REQUEST);
     request.mutable_header()->set_sequence(1);
     request.mutable_header()->set_timestamp_ms(1);
     request.set_platform(mConfiguration.default_platform);
@@ -108,15 +109,15 @@ ProtocolEncodeResult ProtocolService::EncodeDefaultLogin()
     mSnapshot.encoded_login_bytes = payload.size();
     return ProtocolEncodeResult{
         .ok = true,
-        .message_id = 1001,
+        .message_id = pb::MESSAGE_ID_LOGIN_REQUEST,
         .encoded_size = payload.size(),
         .message = "OK"};
 }
 
 ProtocolEncodeResult ProtocolService::EncodeHeartbeat()
 {
-    client::login::v1::HeartbeatRequest request;
-    request.mutable_header()->set_message_id(1002);
+    pb::HeartbeatRequest request;
+    request.mutable_header()->set_message_id(pb::MESSAGE_ID_HEARTBEAT_REQUEST);
     request.mutable_header()->set_sequence(2);
     request.mutable_header()->set_timestamp_ms(2);
 
@@ -130,7 +131,7 @@ ProtocolEncodeResult ProtocolService::EncodeHeartbeat()
     mSnapshot.encoded_heartbeat_bytes = payload.size();
     return ProtocolEncodeResult{
         .ok = true,
-        .message_id = 1002,
+        .message_id = pb::MESSAGE_ID_HEARTBEAT_REQUEST,
         .encoded_size = payload.size(),
         .message = "OK"};
 }
@@ -142,7 +143,7 @@ ProtocolEncodeResult ProtocolService::EncodePlayerMessage(const std::string_view
 
 ProtocolEncodeResult ProtocolService::EncodeEchoRequest(const std::string_view text)
 {
-    client::game::v1::PlayerEchoRequest request;
+    pb::PlayerEchoRequest request;
     request.set_text(std::string{text});
 
     const auto frame = BuildTypedPlayerFrame(kEchoMessageId, request);
@@ -162,7 +163,7 @@ ProtocolEncodeResult ProtocolService::EncodeEchoRequest(const std::string_view t
 
 ProtocolEncodeResult ProtocolService::EncodeRenameRequest(const std::string_view display_name)
 {
-    client::game::v1::RenamePlayerRequest request;
+    pb::RenamePlayerRequest request;
     request.set_display_name(std::string{display_name});
 
     const auto frame = BuildTypedPlayerFrame(kRenamePlayerMessageId, request);
@@ -194,8 +195,8 @@ std::optional<SimClientProtocolFrame> ProtocolService::BuildDefaultLoginFrame()
         return std::nullopt;
     }
 
-    client::login::v1::LoginRequest request;
-    request.mutable_header()->set_message_id(1001);
+    pb::LoginRequest request;
+    request.mutable_header()->set_message_id(pb::MESSAGE_ID_LOGIN_REQUEST);
     request.mutable_header()->set_sequence(1);
     request.mutable_header()->set_timestamp_ms(1);
     request.set_platform(mConfiguration.default_platform);
@@ -205,7 +206,7 @@ std::optional<SimClientProtocolFrame> ProtocolService::BuildDefaultLoginFrame()
     request.set_channel(mConfiguration.default_channel);
 
     SimClientProtocolFrame frame;
-    frame.message_id = 1001;
+    frame.message_id = pb::MESSAGE_ID_LOGIN_REQUEST;
     if (!request.SerializeToString(&frame.payload))
     {
         return std::nullopt;
@@ -221,13 +222,13 @@ std::optional<SimClientProtocolFrame> ProtocolService::BuildHeartbeatFrame()
         return std::nullopt;
     }
 
-    client::login::v1::HeartbeatRequest request;
-    request.mutable_header()->set_message_id(1002);
+    pb::HeartbeatRequest request;
+    request.mutable_header()->set_message_id(pb::MESSAGE_ID_HEARTBEAT_REQUEST);
     request.mutable_header()->set_sequence(2);
     request.mutable_header()->set_timestamp_ms(2);
 
     SimClientProtocolFrame frame;
-    frame.message_id = 1002;
+    frame.message_id = pb::MESSAGE_ID_HEARTBEAT_REQUEST;
     if (!request.SerializeToString(&frame.payload))
     {
         return std::nullopt;
@@ -248,7 +249,7 @@ std::optional<SimClientProtocolFrame> ProtocolService::BuildEchoFrame(const std:
         return std::nullopt;
     }
 
-    client::game::v1::PlayerEchoRequest request;
+    pb::PlayerEchoRequest request;
     request.set_text(std::string{text});
     return BuildTypedPlayerFrame(kEchoMessageId, request);
 }
@@ -261,16 +262,16 @@ std::optional<SimClientProtocolFrame> ProtocolService::BuildRenameFrame(const st
         return std::nullopt;
     }
 
-    client::game::v1::RenamePlayerRequest request;
+    pb::RenamePlayerRequest request;
     request.set_display_name(std::string{display_name});
     return BuildTypedPlayerFrame(kRenamePlayerMessageId, request);
 }
 
 ipc::Result ProtocolService::HandleFrame(const std::uint32_t message_id, const std::string& payload)
 {
-    if (message_id == 2001)
+    if (message_id == pb::MESSAGE_ID_LOGIN_RESPONSE)
     {
-        client::login::v1::LoginResponse response;
+        pb::LoginResponse response;
         if (!response.ParseFromString(payload))
         {
             return ipc::Result::Failure("failed to parse LoginResponse");
@@ -278,15 +279,15 @@ ipc::Result ProtocolService::HandleFrame(const std::uint32_t message_id, const s
         std::scoped_lock lock(mMutex);
         mSnapshot.received_login_response_bytes = payload.size();
         mSnapshot.last_login_player_id = response.player_id();
-        mSnapshot.last_login_ok = response.header().error_code() == client::common::v1::ERROR_CODE_OK;
+        mSnapshot.last_login_ok = response.header().error_code() == pb::ERROR_CODE_OK;
         mSnapshot.last_login_error_code = static_cast<std::uint32_t>(response.header().error_code());
         mSnapshot.last_login_error_message = response.header().error_message();
         return ipc::Result::Success();
     }
 
-    if (message_id == 2002)
+    if (message_id == pb::MESSAGE_ID_HEARTBEAT_RESPONSE)
     {
-        client::login::v1::HeartbeatResponse response;
+        pb::HeartbeatResponse response;
         if (!response.ParseFromString(payload))
         {
             return ipc::Result::Failure("failed to parse HeartbeatResponse");
@@ -294,9 +295,9 @@ ipc::Result ProtocolService::HandleFrame(const std::uint32_t message_id, const s
         return ipc::Result::Success();
     }
 
-    if (message_id == 2003)
+    if (message_id == pb::MESSAGE_ID_KICK_NOTIFICATION)
     {
-        client::login::v1::KickNotification notification;
+        pb::KickNotification notification;
         if (!notification.ParseFromString(payload))
         {
             return ipc::Result::Failure("failed to parse KickNotification");
@@ -308,7 +309,7 @@ ipc::Result ProtocolService::HandleFrame(const std::uint32_t message_id, const s
 
     if (message_id == kPlayerMessageResponseFrameId)
     {
-        client::game::v1::PlayerMessageResponse response;
+        pb::PlayerMessageResponse response;
         if (!response.ParseFromString(payload))
         {
             return ipc::Result::Failure("failed to parse PlayerMessageResponse");
@@ -322,7 +323,7 @@ ipc::Result ProtocolService::HandleFrame(const std::uint32_t message_id, const s
 
         if (response.header().message_id() == kEchoMessageId)
         {
-            client::game::v1::PlayerEchoResponse echo;
+            pb::PlayerEchoResponse echo;
             if (!echo.ParseFromString(response.payload()))
             {
                 return ipc::Result::Failure("failed to parse PlayerEchoResponse");
@@ -332,7 +333,7 @@ ipc::Result ProtocolService::HandleFrame(const std::uint32_t message_id, const s
         }
         else if (response.header().message_id() == kRenamePlayerMessageId)
         {
-            client::game::v1::RenamePlayerResponse rename;
+            pb::RenamePlayerResponse rename;
             if (!rename.ParseFromString(response.payload()))
             {
                 return ipc::Result::Failure("failed to parse RenamePlayerResponse");
@@ -345,7 +346,7 @@ ipc::Result ProtocolService::HandleFrame(const std::uint32_t message_id, const s
 
     if (message_id == kPlayerPushFrameId)
     {
-        client::game::v1::PlayerPushMessage push;
+        pb::PlayerPushMessage push;
         if (!push.ParseFromString(payload))
         {
             return ipc::Result::Failure("failed to parse PlayerPushMessage");
@@ -357,7 +358,7 @@ ipc::Result ProtocolService::HandleFrame(const std::uint32_t message_id, const s
 
         if (push.message_id() == kPlayerProfilePushMessageId)
         {
-            client::game::v1::PlayerProfilePush profile;
+            pb::PlayerProfilePush profile;
             if (!profile.ParseFromString(push.payload()))
             {
                 return ipc::Result::Failure("failed to parse PlayerProfilePush");

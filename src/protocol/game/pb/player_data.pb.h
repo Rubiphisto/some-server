@@ -44,9 +44,7 @@ struct TableStruct_player_5fdata_2eproto {
   static const uint32_t offsets[];
 };
 extern const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_player_5fdata_2eproto;
-namespace some_server {
-namespace player {
-namespace v1 {
+namespace pb {
 class PlayerBaseData;
 struct PlayerBaseDataDefaultTypeInternal;
 extern PlayerBaseDataDefaultTypeInternal _PlayerBaseData_default_instance_;
@@ -59,23 +57,19 @@ extern PlayerDataDefaultTypeInternal _PlayerData_default_instance_;
 class PlayerExtensionsData;
 struct PlayerExtensionsDataDefaultTypeInternal;
 extern PlayerExtensionsDataDefaultTypeInternal _PlayerExtensionsData_default_instance_;
-}  // namespace v1
-}  // namespace player
-}  // namespace some_server
+}  // namespace pb
 PROTOBUF_NAMESPACE_OPEN
-template<> ::some_server::player::v1::PlayerBaseData* Arena::CreateMaybeMessage<::some_server::player::v1::PlayerBaseData>(Arena*);
-template<> ::some_server::player::v1::PlayerCoreData* Arena::CreateMaybeMessage<::some_server::player::v1::PlayerCoreData>(Arena*);
-template<> ::some_server::player::v1::PlayerData* Arena::CreateMaybeMessage<::some_server::player::v1::PlayerData>(Arena*);
-template<> ::some_server::player::v1::PlayerExtensionsData* Arena::CreateMaybeMessage<::some_server::player::v1::PlayerExtensionsData>(Arena*);
+template<> ::pb::PlayerBaseData* Arena::CreateMaybeMessage<::pb::PlayerBaseData>(Arena*);
+template<> ::pb::PlayerCoreData* Arena::CreateMaybeMessage<::pb::PlayerCoreData>(Arena*);
+template<> ::pb::PlayerData* Arena::CreateMaybeMessage<::pb::PlayerData>(Arena*);
+template<> ::pb::PlayerExtensionsData* Arena::CreateMaybeMessage<::pb::PlayerExtensionsData>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
-namespace some_server {
-namespace player {
-namespace v1 {
+namespace pb {
 
 // ===================================================================
 
 class PlayerBaseData final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:some_server.player.v1.PlayerBaseData) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.PlayerBaseData) */ {
  public:
   inline PlayerBaseData() : PlayerBaseData(nullptr) {}
   ~PlayerBaseData() override;
@@ -178,7 +172,7 @@ class PlayerBaseData final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "some_server.player.v1.PlayerBaseData";
+    return "pb.PlayerBaseData";
   }
   protected:
   explicit PlayerBaseData(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -241,7 +235,7 @@ class PlayerBaseData final :
   void _internal_set_last_login_at_ms(uint64_t value);
   public:
 
-  // @@protoc_insertion_point(class_scope:some_server.player.v1.PlayerBaseData)
+  // @@protoc_insertion_point(class_scope:pb.PlayerBaseData)
  private:
   class _Internal;
 
@@ -261,7 +255,7 @@ class PlayerBaseData final :
 // -------------------------------------------------------------------
 
 class PlayerCoreData final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:some_server.player.v1.PlayerCoreData) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.PlayerCoreData) */ {
  public:
   inline PlayerCoreData() : PlayerCoreData(nullptr) {}
   ~PlayerCoreData() override;
@@ -364,7 +358,7 @@ class PlayerCoreData final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "some_server.player.v1.PlayerCoreData";
+    return "pb.PlayerCoreData";
   }
   protected:
   explicit PlayerCoreData(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -412,7 +406,7 @@ class PlayerCoreData final :
   void _internal_set_level(uint32_t value);
   public:
 
-  // @@protoc_insertion_point(class_scope:some_server.player.v1.PlayerCoreData)
+  // @@protoc_insertion_point(class_scope:pb.PlayerCoreData)
  private:
   class _Internal;
 
@@ -431,7 +425,7 @@ class PlayerCoreData final :
 // -------------------------------------------------------------------
 
 class PlayerExtensionsData final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:some_server.player.v1.PlayerExtensionsData) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.PlayerExtensionsData) */ {
  public:
   inline PlayerExtensionsData() : PlayerExtensionsData(nullptr) {}
   ~PlayerExtensionsData() override;
@@ -534,7 +528,7 @@ class PlayerExtensionsData final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "some_server.player.v1.PlayerExtensionsData";
+    return "pb.PlayerExtensionsData";
   }
   protected:
   explicit PlayerExtensionsData(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -567,7 +561,7 @@ class PlayerExtensionsData final :
   std::string* _internal_mutable_opaque_blob();
   public:
 
-  // @@protoc_insertion_point(class_scope:some_server.player.v1.PlayerExtensionsData)
+  // @@protoc_insertion_point(class_scope:pb.PlayerExtensionsData)
  private:
   class _Internal;
 
@@ -584,7 +578,7 @@ class PlayerExtensionsData final :
 // -------------------------------------------------------------------
 
 class PlayerData final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:some_server.player.v1.PlayerData) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.PlayerData) */ {
  public:
   inline PlayerData() : PlayerData(nullptr) {}
   ~PlayerData() override;
@@ -687,7 +681,7 @@ class PlayerData final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "some_server.player.v1.PlayerData";
+    return "pb.PlayerData";
   }
   protected:
   explicit PlayerData(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -708,61 +702,61 @@ class PlayerData final :
     kCoreFieldNumber = 2,
     kExtensionsFieldNumber = 3,
   };
-  // .some_server.player.v1.PlayerBaseData base = 1;
+  // .pb.PlayerBaseData base = 1;
   bool has_base() const;
   private:
   bool _internal_has_base() const;
   public:
   void clear_base();
-  const ::some_server::player::v1::PlayerBaseData& base() const;
-  PROTOBUF_NODISCARD ::some_server::player::v1::PlayerBaseData* release_base();
-  ::some_server::player::v1::PlayerBaseData* mutable_base();
-  void set_allocated_base(::some_server::player::v1::PlayerBaseData* base);
+  const ::pb::PlayerBaseData& base() const;
+  PROTOBUF_NODISCARD ::pb::PlayerBaseData* release_base();
+  ::pb::PlayerBaseData* mutable_base();
+  void set_allocated_base(::pb::PlayerBaseData* base);
   private:
-  const ::some_server::player::v1::PlayerBaseData& _internal_base() const;
-  ::some_server::player::v1::PlayerBaseData* _internal_mutable_base();
+  const ::pb::PlayerBaseData& _internal_base() const;
+  ::pb::PlayerBaseData* _internal_mutable_base();
   public:
   void unsafe_arena_set_allocated_base(
-      ::some_server::player::v1::PlayerBaseData* base);
-  ::some_server::player::v1::PlayerBaseData* unsafe_arena_release_base();
+      ::pb::PlayerBaseData* base);
+  ::pb::PlayerBaseData* unsafe_arena_release_base();
 
-  // .some_server.player.v1.PlayerCoreData core = 2;
+  // .pb.PlayerCoreData core = 2;
   bool has_core() const;
   private:
   bool _internal_has_core() const;
   public:
   void clear_core();
-  const ::some_server::player::v1::PlayerCoreData& core() const;
-  PROTOBUF_NODISCARD ::some_server::player::v1::PlayerCoreData* release_core();
-  ::some_server::player::v1::PlayerCoreData* mutable_core();
-  void set_allocated_core(::some_server::player::v1::PlayerCoreData* core);
+  const ::pb::PlayerCoreData& core() const;
+  PROTOBUF_NODISCARD ::pb::PlayerCoreData* release_core();
+  ::pb::PlayerCoreData* mutable_core();
+  void set_allocated_core(::pb::PlayerCoreData* core);
   private:
-  const ::some_server::player::v1::PlayerCoreData& _internal_core() const;
-  ::some_server::player::v1::PlayerCoreData* _internal_mutable_core();
+  const ::pb::PlayerCoreData& _internal_core() const;
+  ::pb::PlayerCoreData* _internal_mutable_core();
   public:
   void unsafe_arena_set_allocated_core(
-      ::some_server::player::v1::PlayerCoreData* core);
-  ::some_server::player::v1::PlayerCoreData* unsafe_arena_release_core();
+      ::pb::PlayerCoreData* core);
+  ::pb::PlayerCoreData* unsafe_arena_release_core();
 
-  // .some_server.player.v1.PlayerExtensionsData extensions = 3;
+  // .pb.PlayerExtensionsData extensions = 3;
   bool has_extensions() const;
   private:
   bool _internal_has_extensions() const;
   public:
   void clear_extensions();
-  const ::some_server::player::v1::PlayerExtensionsData& extensions() const;
-  PROTOBUF_NODISCARD ::some_server::player::v1::PlayerExtensionsData* release_extensions();
-  ::some_server::player::v1::PlayerExtensionsData* mutable_extensions();
-  void set_allocated_extensions(::some_server::player::v1::PlayerExtensionsData* extensions);
+  const ::pb::PlayerExtensionsData& extensions() const;
+  PROTOBUF_NODISCARD ::pb::PlayerExtensionsData* release_extensions();
+  ::pb::PlayerExtensionsData* mutable_extensions();
+  void set_allocated_extensions(::pb::PlayerExtensionsData* extensions);
   private:
-  const ::some_server::player::v1::PlayerExtensionsData& _internal_extensions() const;
-  ::some_server::player::v1::PlayerExtensionsData* _internal_mutable_extensions();
+  const ::pb::PlayerExtensionsData& _internal_extensions() const;
+  ::pb::PlayerExtensionsData* _internal_mutable_extensions();
   public:
   void unsafe_arena_set_allocated_extensions(
-      ::some_server::player::v1::PlayerExtensionsData* extensions);
-  ::some_server::player::v1::PlayerExtensionsData* unsafe_arena_release_extensions();
+      ::pb::PlayerExtensionsData* extensions);
+  ::pb::PlayerExtensionsData* unsafe_arena_release_extensions();
 
-  // @@protoc_insertion_point(class_scope:some_server.player.v1.PlayerData)
+  // @@protoc_insertion_point(class_scope:pb.PlayerData)
  private:
   class _Internal;
 
@@ -770,9 +764,9 @@ class PlayerData final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::some_server::player::v1::PlayerBaseData* base_;
-    ::some_server::player::v1::PlayerCoreData* core_;
-    ::some_server::player::v1::PlayerExtensionsData* extensions_;
+    ::pb::PlayerBaseData* base_;
+    ::pb::PlayerCoreData* core_;
+    ::pb::PlayerExtensionsData* extensions_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -797,7 +791,7 @@ inline uint64_t PlayerBaseData::_internal_player_id() const {
   return _impl_.player_id_;
 }
 inline uint64_t PlayerBaseData::player_id() const {
-  // @@protoc_insertion_point(field_get:some_server.player.v1.PlayerBaseData.player_id)
+  // @@protoc_insertion_point(field_get:pb.PlayerBaseData.player_id)
   return _internal_player_id();
 }
 inline void PlayerBaseData::_internal_set_player_id(uint64_t value) {
@@ -806,7 +800,7 @@ inline void PlayerBaseData::_internal_set_player_id(uint64_t value) {
 }
 inline void PlayerBaseData::set_player_id(uint64_t value) {
   _internal_set_player_id(value);
-  // @@protoc_insertion_point(field_set:some_server.player.v1.PlayerBaseData.player_id)
+  // @@protoc_insertion_point(field_set:pb.PlayerBaseData.player_id)
 }
 
 // string display_name = 2;
@@ -814,7 +808,7 @@ inline void PlayerBaseData::clear_display_name() {
   _impl_.display_name_.ClearToEmpty();
 }
 inline const std::string& PlayerBaseData::display_name() const {
-  // @@protoc_insertion_point(field_get:some_server.player.v1.PlayerBaseData.display_name)
+  // @@protoc_insertion_point(field_get:pb.PlayerBaseData.display_name)
   return _internal_display_name();
 }
 template <typename ArgT0, typename... ArgT>
@@ -822,11 +816,11 @@ inline PROTOBUF_ALWAYS_INLINE
 void PlayerBaseData::set_display_name(ArgT0&& arg0, ArgT... args) {
  
  _impl_.display_name_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:some_server.player.v1.PlayerBaseData.display_name)
+  // @@protoc_insertion_point(field_set:pb.PlayerBaseData.display_name)
 }
 inline std::string* PlayerBaseData::mutable_display_name() {
   std::string* _s = _internal_mutable_display_name();
-  // @@protoc_insertion_point(field_mutable:some_server.player.v1.PlayerBaseData.display_name)
+  // @@protoc_insertion_point(field_mutable:pb.PlayerBaseData.display_name)
   return _s;
 }
 inline const std::string& PlayerBaseData::_internal_display_name() const {
@@ -841,7 +835,7 @@ inline std::string* PlayerBaseData::_internal_mutable_display_name() {
   return _impl_.display_name_.Mutable(GetArenaForAllocation());
 }
 inline std::string* PlayerBaseData::release_display_name() {
-  // @@protoc_insertion_point(field_release:some_server.player.v1.PlayerBaseData.display_name)
+  // @@protoc_insertion_point(field_release:pb.PlayerBaseData.display_name)
   return _impl_.display_name_.Release();
 }
 inline void PlayerBaseData::set_allocated_display_name(std::string* display_name) {
@@ -856,7 +850,7 @@ inline void PlayerBaseData::set_allocated_display_name(std::string* display_name
     _impl_.display_name_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:some_server.player.v1.PlayerBaseData.display_name)
+  // @@protoc_insertion_point(field_set_allocated:pb.PlayerBaseData.display_name)
 }
 
 // uint64 created_at_ms = 3;
@@ -867,7 +861,7 @@ inline uint64_t PlayerBaseData::_internal_created_at_ms() const {
   return _impl_.created_at_ms_;
 }
 inline uint64_t PlayerBaseData::created_at_ms() const {
-  // @@protoc_insertion_point(field_get:some_server.player.v1.PlayerBaseData.created_at_ms)
+  // @@protoc_insertion_point(field_get:pb.PlayerBaseData.created_at_ms)
   return _internal_created_at_ms();
 }
 inline void PlayerBaseData::_internal_set_created_at_ms(uint64_t value) {
@@ -876,7 +870,7 @@ inline void PlayerBaseData::_internal_set_created_at_ms(uint64_t value) {
 }
 inline void PlayerBaseData::set_created_at_ms(uint64_t value) {
   _internal_set_created_at_ms(value);
-  // @@protoc_insertion_point(field_set:some_server.player.v1.PlayerBaseData.created_at_ms)
+  // @@protoc_insertion_point(field_set:pb.PlayerBaseData.created_at_ms)
 }
 
 // uint64 last_login_at_ms = 4;
@@ -887,7 +881,7 @@ inline uint64_t PlayerBaseData::_internal_last_login_at_ms() const {
   return _impl_.last_login_at_ms_;
 }
 inline uint64_t PlayerBaseData::last_login_at_ms() const {
-  // @@protoc_insertion_point(field_get:some_server.player.v1.PlayerBaseData.last_login_at_ms)
+  // @@protoc_insertion_point(field_get:pb.PlayerBaseData.last_login_at_ms)
   return _internal_last_login_at_ms();
 }
 inline void PlayerBaseData::_internal_set_last_login_at_ms(uint64_t value) {
@@ -896,7 +890,7 @@ inline void PlayerBaseData::_internal_set_last_login_at_ms(uint64_t value) {
 }
 inline void PlayerBaseData::set_last_login_at_ms(uint64_t value) {
   _internal_set_last_login_at_ms(value);
-  // @@protoc_insertion_point(field_set:some_server.player.v1.PlayerBaseData.last_login_at_ms)
+  // @@protoc_insertion_point(field_set:pb.PlayerBaseData.last_login_at_ms)
 }
 
 // -------------------------------------------------------------------
@@ -911,7 +905,7 @@ inline uint32_t PlayerCoreData::_internal_level() const {
   return _impl_.level_;
 }
 inline uint32_t PlayerCoreData::level() const {
-  // @@protoc_insertion_point(field_get:some_server.player.v1.PlayerCoreData.level)
+  // @@protoc_insertion_point(field_get:pb.PlayerCoreData.level)
   return _internal_level();
 }
 inline void PlayerCoreData::_internal_set_level(uint32_t value) {
@@ -920,7 +914,7 @@ inline void PlayerCoreData::_internal_set_level(uint32_t value) {
 }
 inline void PlayerCoreData::set_level(uint32_t value) {
   _internal_set_level(value);
-  // @@protoc_insertion_point(field_set:some_server.player.v1.PlayerCoreData.level)
+  // @@protoc_insertion_point(field_set:pb.PlayerCoreData.level)
 }
 
 // uint64 experience = 2;
@@ -931,7 +925,7 @@ inline uint64_t PlayerCoreData::_internal_experience() const {
   return _impl_.experience_;
 }
 inline uint64_t PlayerCoreData::experience() const {
-  // @@protoc_insertion_point(field_get:some_server.player.v1.PlayerCoreData.experience)
+  // @@protoc_insertion_point(field_get:pb.PlayerCoreData.experience)
   return _internal_experience();
 }
 inline void PlayerCoreData::_internal_set_experience(uint64_t value) {
@@ -940,7 +934,7 @@ inline void PlayerCoreData::_internal_set_experience(uint64_t value) {
 }
 inline void PlayerCoreData::set_experience(uint64_t value) {
   _internal_set_experience(value);
-  // @@protoc_insertion_point(field_set:some_server.player.v1.PlayerCoreData.experience)
+  // @@protoc_insertion_point(field_set:pb.PlayerCoreData.experience)
 }
 
 // uint64 login_count = 3;
@@ -951,7 +945,7 @@ inline uint64_t PlayerCoreData::_internal_login_count() const {
   return _impl_.login_count_;
 }
 inline uint64_t PlayerCoreData::login_count() const {
-  // @@protoc_insertion_point(field_get:some_server.player.v1.PlayerCoreData.login_count)
+  // @@protoc_insertion_point(field_get:pb.PlayerCoreData.login_count)
   return _internal_login_count();
 }
 inline void PlayerCoreData::_internal_set_login_count(uint64_t value) {
@@ -960,7 +954,7 @@ inline void PlayerCoreData::_internal_set_login_count(uint64_t value) {
 }
 inline void PlayerCoreData::set_login_count(uint64_t value) {
   _internal_set_login_count(value);
-  // @@protoc_insertion_point(field_set:some_server.player.v1.PlayerCoreData.login_count)
+  // @@protoc_insertion_point(field_set:pb.PlayerCoreData.login_count)
 }
 
 // -------------------------------------------------------------------
@@ -972,7 +966,7 @@ inline void PlayerExtensionsData::clear_opaque_blob() {
   _impl_.opaque_blob_.ClearToEmpty();
 }
 inline const std::string& PlayerExtensionsData::opaque_blob() const {
-  // @@protoc_insertion_point(field_get:some_server.player.v1.PlayerExtensionsData.opaque_blob)
+  // @@protoc_insertion_point(field_get:pb.PlayerExtensionsData.opaque_blob)
   return _internal_opaque_blob();
 }
 template <typename ArgT0, typename... ArgT>
@@ -980,11 +974,11 @@ inline PROTOBUF_ALWAYS_INLINE
 void PlayerExtensionsData::set_opaque_blob(ArgT0&& arg0, ArgT... args) {
  
  _impl_.opaque_blob_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:some_server.player.v1.PlayerExtensionsData.opaque_blob)
+  // @@protoc_insertion_point(field_set:pb.PlayerExtensionsData.opaque_blob)
 }
 inline std::string* PlayerExtensionsData::mutable_opaque_blob() {
   std::string* _s = _internal_mutable_opaque_blob();
-  // @@protoc_insertion_point(field_mutable:some_server.player.v1.PlayerExtensionsData.opaque_blob)
+  // @@protoc_insertion_point(field_mutable:pb.PlayerExtensionsData.opaque_blob)
   return _s;
 }
 inline const std::string& PlayerExtensionsData::_internal_opaque_blob() const {
@@ -999,7 +993,7 @@ inline std::string* PlayerExtensionsData::_internal_mutable_opaque_blob() {
   return _impl_.opaque_blob_.Mutable(GetArenaForAllocation());
 }
 inline std::string* PlayerExtensionsData::release_opaque_blob() {
-  // @@protoc_insertion_point(field_release:some_server.player.v1.PlayerExtensionsData.opaque_blob)
+  // @@protoc_insertion_point(field_release:pb.PlayerExtensionsData.opaque_blob)
   return _impl_.opaque_blob_.Release();
 }
 inline void PlayerExtensionsData::set_allocated_opaque_blob(std::string* opaque_blob) {
@@ -1014,14 +1008,14 @@ inline void PlayerExtensionsData::set_allocated_opaque_blob(std::string* opaque_
     _impl_.opaque_blob_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:some_server.player.v1.PlayerExtensionsData.opaque_blob)
+  // @@protoc_insertion_point(field_set_allocated:pb.PlayerExtensionsData.opaque_blob)
 }
 
 // -------------------------------------------------------------------
 
 // PlayerData
 
-// .some_server.player.v1.PlayerBaseData base = 1;
+// .pb.PlayerBaseData base = 1;
 inline bool PlayerData::_internal_has_base() const {
   return this != internal_default_instance() && _impl_.base_ != nullptr;
 }
@@ -1034,17 +1028,17 @@ inline void PlayerData::clear_base() {
   }
   _impl_.base_ = nullptr;
 }
-inline const ::some_server::player::v1::PlayerBaseData& PlayerData::_internal_base() const {
-  const ::some_server::player::v1::PlayerBaseData* p = _impl_.base_;
-  return p != nullptr ? *p : reinterpret_cast<const ::some_server::player::v1::PlayerBaseData&>(
-      ::some_server::player::v1::_PlayerBaseData_default_instance_);
+inline const ::pb::PlayerBaseData& PlayerData::_internal_base() const {
+  const ::pb::PlayerBaseData* p = _impl_.base_;
+  return p != nullptr ? *p : reinterpret_cast<const ::pb::PlayerBaseData&>(
+      ::pb::_PlayerBaseData_default_instance_);
 }
-inline const ::some_server::player::v1::PlayerBaseData& PlayerData::base() const {
-  // @@protoc_insertion_point(field_get:some_server.player.v1.PlayerData.base)
+inline const ::pb::PlayerBaseData& PlayerData::base() const {
+  // @@protoc_insertion_point(field_get:pb.PlayerData.base)
   return _internal_base();
 }
 inline void PlayerData::unsafe_arena_set_allocated_base(
-    ::some_server::player::v1::PlayerBaseData* base) {
+    ::pb::PlayerBaseData* base) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.base_);
   }
@@ -1054,11 +1048,11 @@ inline void PlayerData::unsafe_arena_set_allocated_base(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:some_server.player.v1.PlayerData.base)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:pb.PlayerData.base)
 }
-inline ::some_server::player::v1::PlayerBaseData* PlayerData::release_base() {
+inline ::pb::PlayerBaseData* PlayerData::release_base() {
   
-  ::some_server::player::v1::PlayerBaseData* temp = _impl_.base_;
+  ::pb::PlayerBaseData* temp = _impl_.base_;
   _impl_.base_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
@@ -1071,27 +1065,27 @@ inline ::some_server::player::v1::PlayerBaseData* PlayerData::release_base() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::some_server::player::v1::PlayerBaseData* PlayerData::unsafe_arena_release_base() {
-  // @@protoc_insertion_point(field_release:some_server.player.v1.PlayerData.base)
+inline ::pb::PlayerBaseData* PlayerData::unsafe_arena_release_base() {
+  // @@protoc_insertion_point(field_release:pb.PlayerData.base)
   
-  ::some_server::player::v1::PlayerBaseData* temp = _impl_.base_;
+  ::pb::PlayerBaseData* temp = _impl_.base_;
   _impl_.base_ = nullptr;
   return temp;
 }
-inline ::some_server::player::v1::PlayerBaseData* PlayerData::_internal_mutable_base() {
+inline ::pb::PlayerBaseData* PlayerData::_internal_mutable_base() {
   
   if (_impl_.base_ == nullptr) {
-    auto* p = CreateMaybeMessage<::some_server::player::v1::PlayerBaseData>(GetArenaForAllocation());
+    auto* p = CreateMaybeMessage<::pb::PlayerBaseData>(GetArenaForAllocation());
     _impl_.base_ = p;
   }
   return _impl_.base_;
 }
-inline ::some_server::player::v1::PlayerBaseData* PlayerData::mutable_base() {
-  ::some_server::player::v1::PlayerBaseData* _msg = _internal_mutable_base();
-  // @@protoc_insertion_point(field_mutable:some_server.player.v1.PlayerData.base)
+inline ::pb::PlayerBaseData* PlayerData::mutable_base() {
+  ::pb::PlayerBaseData* _msg = _internal_mutable_base();
+  // @@protoc_insertion_point(field_mutable:pb.PlayerData.base)
   return _msg;
 }
-inline void PlayerData::set_allocated_base(::some_server::player::v1::PlayerBaseData* base) {
+inline void PlayerData::set_allocated_base(::pb::PlayerBaseData* base) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete _impl_.base_;
@@ -1108,10 +1102,10 @@ inline void PlayerData::set_allocated_base(::some_server::player::v1::PlayerBase
     
   }
   _impl_.base_ = base;
-  // @@protoc_insertion_point(field_set_allocated:some_server.player.v1.PlayerData.base)
+  // @@protoc_insertion_point(field_set_allocated:pb.PlayerData.base)
 }
 
-// .some_server.player.v1.PlayerCoreData core = 2;
+// .pb.PlayerCoreData core = 2;
 inline bool PlayerData::_internal_has_core() const {
   return this != internal_default_instance() && _impl_.core_ != nullptr;
 }
@@ -1124,17 +1118,17 @@ inline void PlayerData::clear_core() {
   }
   _impl_.core_ = nullptr;
 }
-inline const ::some_server::player::v1::PlayerCoreData& PlayerData::_internal_core() const {
-  const ::some_server::player::v1::PlayerCoreData* p = _impl_.core_;
-  return p != nullptr ? *p : reinterpret_cast<const ::some_server::player::v1::PlayerCoreData&>(
-      ::some_server::player::v1::_PlayerCoreData_default_instance_);
+inline const ::pb::PlayerCoreData& PlayerData::_internal_core() const {
+  const ::pb::PlayerCoreData* p = _impl_.core_;
+  return p != nullptr ? *p : reinterpret_cast<const ::pb::PlayerCoreData&>(
+      ::pb::_PlayerCoreData_default_instance_);
 }
-inline const ::some_server::player::v1::PlayerCoreData& PlayerData::core() const {
-  // @@protoc_insertion_point(field_get:some_server.player.v1.PlayerData.core)
+inline const ::pb::PlayerCoreData& PlayerData::core() const {
+  // @@protoc_insertion_point(field_get:pb.PlayerData.core)
   return _internal_core();
 }
 inline void PlayerData::unsafe_arena_set_allocated_core(
-    ::some_server::player::v1::PlayerCoreData* core) {
+    ::pb::PlayerCoreData* core) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.core_);
   }
@@ -1144,11 +1138,11 @@ inline void PlayerData::unsafe_arena_set_allocated_core(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:some_server.player.v1.PlayerData.core)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:pb.PlayerData.core)
 }
-inline ::some_server::player::v1::PlayerCoreData* PlayerData::release_core() {
+inline ::pb::PlayerCoreData* PlayerData::release_core() {
   
-  ::some_server::player::v1::PlayerCoreData* temp = _impl_.core_;
+  ::pb::PlayerCoreData* temp = _impl_.core_;
   _impl_.core_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
@@ -1161,27 +1155,27 @@ inline ::some_server::player::v1::PlayerCoreData* PlayerData::release_core() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::some_server::player::v1::PlayerCoreData* PlayerData::unsafe_arena_release_core() {
-  // @@protoc_insertion_point(field_release:some_server.player.v1.PlayerData.core)
+inline ::pb::PlayerCoreData* PlayerData::unsafe_arena_release_core() {
+  // @@protoc_insertion_point(field_release:pb.PlayerData.core)
   
-  ::some_server::player::v1::PlayerCoreData* temp = _impl_.core_;
+  ::pb::PlayerCoreData* temp = _impl_.core_;
   _impl_.core_ = nullptr;
   return temp;
 }
-inline ::some_server::player::v1::PlayerCoreData* PlayerData::_internal_mutable_core() {
+inline ::pb::PlayerCoreData* PlayerData::_internal_mutable_core() {
   
   if (_impl_.core_ == nullptr) {
-    auto* p = CreateMaybeMessage<::some_server::player::v1::PlayerCoreData>(GetArenaForAllocation());
+    auto* p = CreateMaybeMessage<::pb::PlayerCoreData>(GetArenaForAllocation());
     _impl_.core_ = p;
   }
   return _impl_.core_;
 }
-inline ::some_server::player::v1::PlayerCoreData* PlayerData::mutable_core() {
-  ::some_server::player::v1::PlayerCoreData* _msg = _internal_mutable_core();
-  // @@protoc_insertion_point(field_mutable:some_server.player.v1.PlayerData.core)
+inline ::pb::PlayerCoreData* PlayerData::mutable_core() {
+  ::pb::PlayerCoreData* _msg = _internal_mutable_core();
+  // @@protoc_insertion_point(field_mutable:pb.PlayerData.core)
   return _msg;
 }
-inline void PlayerData::set_allocated_core(::some_server::player::v1::PlayerCoreData* core) {
+inline void PlayerData::set_allocated_core(::pb::PlayerCoreData* core) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete _impl_.core_;
@@ -1198,10 +1192,10 @@ inline void PlayerData::set_allocated_core(::some_server::player::v1::PlayerCore
     
   }
   _impl_.core_ = core;
-  // @@protoc_insertion_point(field_set_allocated:some_server.player.v1.PlayerData.core)
+  // @@protoc_insertion_point(field_set_allocated:pb.PlayerData.core)
 }
 
-// .some_server.player.v1.PlayerExtensionsData extensions = 3;
+// .pb.PlayerExtensionsData extensions = 3;
 inline bool PlayerData::_internal_has_extensions() const {
   return this != internal_default_instance() && _impl_.extensions_ != nullptr;
 }
@@ -1214,17 +1208,17 @@ inline void PlayerData::clear_extensions() {
   }
   _impl_.extensions_ = nullptr;
 }
-inline const ::some_server::player::v1::PlayerExtensionsData& PlayerData::_internal_extensions() const {
-  const ::some_server::player::v1::PlayerExtensionsData* p = _impl_.extensions_;
-  return p != nullptr ? *p : reinterpret_cast<const ::some_server::player::v1::PlayerExtensionsData&>(
-      ::some_server::player::v1::_PlayerExtensionsData_default_instance_);
+inline const ::pb::PlayerExtensionsData& PlayerData::_internal_extensions() const {
+  const ::pb::PlayerExtensionsData* p = _impl_.extensions_;
+  return p != nullptr ? *p : reinterpret_cast<const ::pb::PlayerExtensionsData&>(
+      ::pb::_PlayerExtensionsData_default_instance_);
 }
-inline const ::some_server::player::v1::PlayerExtensionsData& PlayerData::extensions() const {
-  // @@protoc_insertion_point(field_get:some_server.player.v1.PlayerData.extensions)
+inline const ::pb::PlayerExtensionsData& PlayerData::extensions() const {
+  // @@protoc_insertion_point(field_get:pb.PlayerData.extensions)
   return _internal_extensions();
 }
 inline void PlayerData::unsafe_arena_set_allocated_extensions(
-    ::some_server::player::v1::PlayerExtensionsData* extensions) {
+    ::pb::PlayerExtensionsData* extensions) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.extensions_);
   }
@@ -1234,11 +1228,11 @@ inline void PlayerData::unsafe_arena_set_allocated_extensions(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:some_server.player.v1.PlayerData.extensions)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:pb.PlayerData.extensions)
 }
-inline ::some_server::player::v1::PlayerExtensionsData* PlayerData::release_extensions() {
+inline ::pb::PlayerExtensionsData* PlayerData::release_extensions() {
   
-  ::some_server::player::v1::PlayerExtensionsData* temp = _impl_.extensions_;
+  ::pb::PlayerExtensionsData* temp = _impl_.extensions_;
   _impl_.extensions_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
@@ -1251,27 +1245,27 @@ inline ::some_server::player::v1::PlayerExtensionsData* PlayerData::release_exte
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::some_server::player::v1::PlayerExtensionsData* PlayerData::unsafe_arena_release_extensions() {
-  // @@protoc_insertion_point(field_release:some_server.player.v1.PlayerData.extensions)
+inline ::pb::PlayerExtensionsData* PlayerData::unsafe_arena_release_extensions() {
+  // @@protoc_insertion_point(field_release:pb.PlayerData.extensions)
   
-  ::some_server::player::v1::PlayerExtensionsData* temp = _impl_.extensions_;
+  ::pb::PlayerExtensionsData* temp = _impl_.extensions_;
   _impl_.extensions_ = nullptr;
   return temp;
 }
-inline ::some_server::player::v1::PlayerExtensionsData* PlayerData::_internal_mutable_extensions() {
+inline ::pb::PlayerExtensionsData* PlayerData::_internal_mutable_extensions() {
   
   if (_impl_.extensions_ == nullptr) {
-    auto* p = CreateMaybeMessage<::some_server::player::v1::PlayerExtensionsData>(GetArenaForAllocation());
+    auto* p = CreateMaybeMessage<::pb::PlayerExtensionsData>(GetArenaForAllocation());
     _impl_.extensions_ = p;
   }
   return _impl_.extensions_;
 }
-inline ::some_server::player::v1::PlayerExtensionsData* PlayerData::mutable_extensions() {
-  ::some_server::player::v1::PlayerExtensionsData* _msg = _internal_mutable_extensions();
-  // @@protoc_insertion_point(field_mutable:some_server.player.v1.PlayerData.extensions)
+inline ::pb::PlayerExtensionsData* PlayerData::mutable_extensions() {
+  ::pb::PlayerExtensionsData* _msg = _internal_mutable_extensions();
+  // @@protoc_insertion_point(field_mutable:pb.PlayerData.extensions)
   return _msg;
 }
-inline void PlayerData::set_allocated_extensions(::some_server::player::v1::PlayerExtensionsData* extensions) {
+inline void PlayerData::set_allocated_extensions(::pb::PlayerExtensionsData* extensions) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete _impl_.extensions_;
@@ -1288,7 +1282,7 @@ inline void PlayerData::set_allocated_extensions(::some_server::player::v1::Play
     
   }
   _impl_.extensions_ = extensions;
-  // @@protoc_insertion_point(field_set_allocated:some_server.player.v1.PlayerData.extensions)
+  // @@protoc_insertion_point(field_set_allocated:pb.PlayerData.extensions)
 }
 
 #ifdef __GNUC__
@@ -1303,9 +1297,7 @@ inline void PlayerData::set_allocated_extensions(::some_server::player::v1::Play
 
 // @@protoc_insertion_point(namespace_scope)
 
-}  // namespace v1
-}  // namespace player
-}  // namespace some_server
+}  // namespace pb
 
 // @@protoc_insertion_point(global_scope)
 

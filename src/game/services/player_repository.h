@@ -25,7 +25,7 @@ struct PlayerRepositoryRecord
     std::uint64_t last_load_ms = 0;
     std::uint64_t last_dirty_ms = 0;
     std::uint64_t last_flush_ms = 0;
-    some_server::player::v1::PlayerData data;
+    pb::PlayerData data;
 };
 
 class PlayerRepository final : public ServiceBase

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package some_server.player.v1;
+package pb;
 
 message PlayerBaseData {
   uint64 player_id = 1;

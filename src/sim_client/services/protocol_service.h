@@ -4,6 +4,8 @@
 #include "../../framework/application/service_base.h"
 #include "../../framework/ipc/base/result.h"
 
+#include <message_ids.pb.h>
+
 #include <cstdint>
 #include <mutex>
 #include <optional>
@@ -24,12 +26,6 @@ struct ProtocolEncodeResult
 
 struct SimClientProtocolSnapshot
 {
-    std::uint32_t player_message_request_message_id = 3001;
-    std::uint32_t player_message_response_message_id = 3002;
-    std::uint32_t player_push_message_id = 3003;
-    std::uint32_t login_message_id = 1001;
-    std::uint32_t heartbeat_message_id = 1002;
-    std::uint32_t kick_notification_message_id = 2003;
     std::size_t encoded_login_bytes = 0;
     std::size_t encoded_heartbeat_bytes = 0;
     std::size_t received_login_response_bytes = 0;

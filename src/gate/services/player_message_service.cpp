@@ -13,9 +13,9 @@
 
 ipc::Result GatePlayerMessageService::HandleClientPlayerMessage(
     const std::uint64_t connection_id,
-    const std::string& payload)
+    const pb::PlayerMessageRequest& client_request)
 {
-    if (mConnectionService == nullptr || mSessionService == nullptr || mIpcService == nullptr || mProtocolService == nullptr)
+    if (mConnectionService == nullptr || mSessionService == nullptr || mIpcService == nullptr)
     {
         return ipc::Result::Failure("gate player message dependencies are not registered");
     }
@@ -26,39 +26,33 @@ ipc::Result GatePlayerMessageService::HandleClientPlayerMessage(
         return ipc::Result::Failure("gate session is not active");
     }
 
-    const auto decoded = mProtocolService->DecodePlayerMessageRequest(payload);
-    if (!decoded.has_value())
-    {
-        return ipc::Result::Failure("failed to parse PlayerMessageRequest");
-    }
-
-    some_server::ipc::gate_game::v1::ForwardPlayerMessageRequest request;
-    request.set_request_id(mNextRequestId++);
-    request.set_gate_service_type(session->game_service_type == 0 ? 20 : 20);
-    request.set_gate_instance_id(session->game_instance_id == 0 ? 1 : 1);
-    request.set_gate_session_id(session->gate_session_id);
-    request.set_player_id(session->player_id);
-    request.set_message_id(decoded->message.header().message_id());
-    request.set_payload_bytes(decoded->message.payload());
-    request.set_client_sequence(decoded->message.header().sequence());
-    request.set_timestamp_ms(decoded->message.header().timestamp_ms());
+    some_server::ipc::gate_game::v1::ForwardPlayerMessageRequest forward_request;
+    forward_request.set_request_id(mNextRequestId++);
+    forward_request.set_gate_service_type(session->game_service_type == 0 ? 20 : 20);
+    forward_request.set_gate_instance_id(session->game_instance_id == 0 ? 1 : 1);
+    forward_request.set_gate_session_id(session->gate_session_id);
+    forward_request.set_player_id(session->player_id);
+    forward_request.set_message_id(client_request.header().message_id());
+    forward_request.set_payload_bytes(client_request.payload());
+    forward_request.set_client_sequence(client_request.header().sequence());
+    forward_request.set_timestamp_ms(client_request.header().timestamp_ms());
 
     const auto send = mIpcService->SendProcessPayload(
         ipc::ProcessId{
             .service_type = session->game_service_type,
             .instance_id = session->game_instance_id},
-        request);
+        forward_request);
     if (!send.ok)
     {
         return send;
     }
 
     std::scoped_lock lock(mMutex);
-    mPendingMessages[request.request_id()] = PendingMessage{
+    mPendingMessages[forward_request.request_id()] = PendingMessage{
         .connection_id = connection_id,
         .gate_session_id = session->gate_session_id,
         .player_id = session->player_id,
-        .client_message_id = decoded->message.header().message_id()};
+        .client_message_id = client_request.header().message_id()};
     return ipc::Result::Success();
 }
 
@@ -89,8 +83,8 @@ ipc::DispatchResult GatePlayerMessageService::HandleProcessEnvelope(const ipc::R
             response.message_id(),
             response.response_payload_bytes(),
             response.result_code() == some_server::ipc::gate_game::v1::RESULT_CODE_OK
-                ? client::common::v1::ERROR_CODE_OK
-                : client::common::v1::ERROR_CODE_INTERNAL,
+                ? pb::ERROR_CODE_OK
+                : pb::ERROR_CODE_INTERNAL,
             response.error_message());
         if (!encoded.ok)
         {

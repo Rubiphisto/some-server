@@ -6,6 +6,7 @@
 
 #include <common.pb.h>
 #include <ipc/gate_game/v1/session.pb.h>
+#include <login.pb.h>
 
 #include "session_service.h"
 
@@ -57,7 +58,7 @@ public:
     {
     }
 
-    ipc::Result HandleClientLogin(std::uint64_t connection_id, const std::string& payload);
+    ipc::Result HandleClientLogin(std::uint64_t connection_id, const pb::LoginRequest& request);
     ipc::Result HandleSessionDisconnected(
         const GateSessionRecord& session,
         some_server::ipc::gate_game::v1::DisconnectReason reason);
@@ -84,7 +85,7 @@ private:
 
     ipc::Result SendLoginFailure(
         std::uint64_t connection_id,
-        client::common::v1::ErrorCode error_code,
+        pb::ErrorCode error_code,
         std::string_view error_message) const;
 
     std::uint32_t mGateInstanceId = 1;

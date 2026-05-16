@@ -15,5 +15,6 @@ mkdir -p "${OUT_DIR}"
   --cpp_out="${OUT_DIR}" \
   "${PROTO_ROOT}/common.proto" \
   "${PROTO_ROOT}/login.proto" \
+  "${PROTO_ROOT}/message_ids.proto" \
   "${PROTO_ROOT}/player.proto" \
   "${PROTO_ROOT}/player_data.proto"

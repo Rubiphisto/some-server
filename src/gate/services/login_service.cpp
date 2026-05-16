@@ -21,29 +21,22 @@ constexpr ipc::ServiceType kGameServiceType = 10;
 constexpr ipc::ServiceType kGateServiceType = 20;
 }
 
-ipc::Result GateLoginService::HandleClientLogin(const std::uint64_t connection_id, const std::string& payload)
+ipc::Result GateLoginService::HandleClientLogin(
+    const std::uint64_t connection_id,
+    const pb::LoginRequest& request)
 {
-    if (mProtocolService == nullptr || mAuthService == nullptr || mSessionService == nullptr || mConnectionService == nullptr)
+    if (mAuthService == nullptr || mSessionService == nullptr || mConnectionService == nullptr)
     {
         return ipc::Result::Failure("gate login dependencies are not registered");
     }
 
-    const auto decoded = mProtocolService->DecodeLoginRequest(payload);
-    if (!decoded.has_value())
-    {
-        return SendLoginFailure(
-            connection_id,
-            client::common::v1::ERROR_CODE_INVALID_REQUEST,
-            "failed to parse LoginRequest");
-    }
-
     const auto auth = mAuthService->Validate(
-        decoded->message.platform(),
-        decoded->message.account_id(),
-        decoded->message.credential());
+        request.platform(),
+        request.account_id(),
+        request.credential());
     if (!auth.ok)
     {
-        return SendLoginFailure(connection_id, client::common::v1::ERROR_CODE_UNAUTHORIZED, auth.message);
+        return SendLoginFailure(connection_id, pb::ERROR_CODE_UNAUTHORIZED, auth.message);
     }
 
     if (const auto kick = KickExistingAccountSession(auth.account_id, connection_id); !kick.ok)
@@ -66,7 +59,7 @@ ipc::Result GateLoginService::HandleClientLogin(const std::uint64_t connection_i
         return anonymous;
     }
 
-    return RequestLogin(1, connection_id, gate_session_id, decoded->message.platform(), auth.account_id, 1);
+    return RequestLogin(1, connection_id, gate_session_id, request.platform(), auth.account_id, 1);
 }
 
 ipc::Result GateLoginService::RequestLogin(
@@ -321,8 +314,8 @@ ipc::DispatchResult GateLoginService::HandleProcessEnvelope(const ipc::ReceiverA
             response.player_id(),
             response.is_reconnect(),
             response.result_code() == some_server::ipc::gate_game::v1::RESULT_CODE_OK
-                ? client::common::v1::ERROR_CODE_OK
-                : client::common::v1::ERROR_CODE_INTERNAL,
+                ? pb::ERROR_CODE_OK
+                : pb::ERROR_CODE_INTERNAL,
             response.error_message());
         if (!encoded.ok)
         {
@@ -432,7 +425,7 @@ ipc::Result GateLoginService::HandleUnbindPlayerSession(const ipc::Envelope& env
 
 ipc::Result GateLoginService::SendLoginFailure(
     const std::uint64_t connection_id,
-    const client::common::v1::ErrorCode error_code,
+    const pb::ErrorCode error_code,
     const std::string_view error_message) const
 {
     if (mProtocolService == nullptr || mConnectionService == nullptr)

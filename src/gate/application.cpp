@@ -11,6 +11,7 @@
 #include "services/session_service.h"
 
 #include <ipc/gate_game/v1/session.pb.h>
+#include <message_ids.pb.h>
 #include <spdlog/spdlog.h>
 #include <ctime>
 
@@ -70,34 +71,48 @@ void Application::RegisterServices()
     mPlayerMessageService = player_message_service.get();
     AddService(std::move(player_message_service));
 
+    mProtocolService->RegisterClientHandler<pb::LoginRequest>(
+        pb::MESSAGE_ID_LOGIN_REQUEST,
+        [this](const std::uint64_t connection_id, const pb::LoginRequest& request) {
+            if (mLoginService == nullptr)
+            {
+                return ipc::Result::Failure("gate login service is not registered");
+            }
+            return mLoginService->HandleClientLogin(connection_id, request);
+        });
+    mProtocolService->RegisterClientHandler<pb::HeartbeatRequest>(
+        pb::MESSAGE_ID_HEARTBEAT_REQUEST,
+        [this](const std::uint64_t connection_id, const pb::HeartbeatRequest&) {
+            if (mProtocolService == nullptr || mConnectionService == nullptr)
+            {
+                return ipc::Result::Failure("gate heartbeat dependencies are not registered");
+            }
+
+            const auto encoded =
+                mProtocolService->EncodeHeartbeatResponse(static_cast<std::uint64_t>(std::time(nullptr)) * 1000);
+            if (!encoded.ok)
+            {
+                return ipc::Result::Failure(encoded.message);
+            }
+            return mConnectionService->Send(connection_id, encoded.message_id, encoded.payload);
+        });
+    mProtocolService->RegisterClientHandler<pb::PlayerMessageRequest>(
+        pb::MESSAGE_ID_PLAYER_MESSAGE_REQUEST,
+        [this](const std::uint64_t connection_id, const pb::PlayerMessageRequest& request) {
+            if (mPlayerMessageService == nullptr)
+            {
+                return ipc::Result::Failure("gate player message service is not registered");
+            }
+            return mPlayerMessageService->HandleClientPlayerMessage(connection_id, request);
+        });
+
     mConnectionService->SetMessageHandler(
         [this](const std::uint64_t connection_id, const std::uint32_t message_id, const std::string& payload) {
             if (mLoginService == nullptr || mConnectionService == nullptr || mProtocolService == nullptr)
             {
                 return;
             }
-
-            if (message_id == GateProtocolService::kLoginRequestMessageId)
-            {
-                (void)mLoginService->HandleClientLogin(connection_id, payload);
-                return;
-            }
-
-            if (message_id == GateProtocolService::kHeartbeatRequestMessageId)
-            {
-                const auto encoded =
-                    mProtocolService->EncodeHeartbeatResponse(static_cast<std::uint64_t>(std::time(nullptr)) * 1000);
-                if (encoded.ok)
-                {
-                    (void)mConnectionService->Send(connection_id, encoded.message_id, encoded.payload);
-                }
-                return;
-            }
-
-            if (message_id == GateProtocolService::kPlayerMessageRequestMessageId && mPlayerMessageService != nullptr)
-            {
-                (void)mPlayerMessageService->HandleClientPlayerMessage(connection_id, payload);
-            }
+            (void)mProtocolService->DispatchClientMessage(connection_id, message_id, payload);
         });
     mConnectionService->SetDisconnectHandler(
         [this](const std::uint64_t connection_id) {

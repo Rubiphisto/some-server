@@ -20,9 +20,7 @@ PROTOBUF_PRAGMA_INIT_SEG
 namespace _pb = ::PROTOBUF_NAMESPACE_ID;
 namespace _pbi = _pb::internal;
 
-namespace client {
-namespace login {
-namespace v1 {
+namespace pb {
 PROTOBUF_CONSTEXPR LoginRequest::LoginRequest(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.platform_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
@@ -97,97 +95,94 @@ struct KickNotificationDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 KickNotificationDefaultTypeInternal _KickNotification_default_instance_;
-}  // namespace v1
-}  // namespace login
-}  // namespace client
+}  // namespace pb
 static ::_pb::Metadata file_level_metadata_login_2eproto[5];
 static constexpr ::_pb::EnumDescriptor const** file_level_enum_descriptors_login_2eproto = nullptr;
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_login_2eproto = nullptr;
 
 const uint32_t TableStruct_login_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::LoginRequest, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::pb::LoginRequest, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::LoginRequest, _impl_.header_),
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::LoginRequest, _impl_.platform_),
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::LoginRequest, _impl_.account_id_),
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::LoginRequest, _impl_.credential_),
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::LoginRequest, _impl_.client_version_),
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::LoginRequest, _impl_.channel_),
+  PROTOBUF_FIELD_OFFSET(::pb::LoginRequest, _impl_.header_),
+  PROTOBUF_FIELD_OFFSET(::pb::LoginRequest, _impl_.platform_),
+  PROTOBUF_FIELD_OFFSET(::pb::LoginRequest, _impl_.account_id_),
+  PROTOBUF_FIELD_OFFSET(::pb::LoginRequest, _impl_.credential_),
+  PROTOBUF_FIELD_OFFSET(::pb::LoginRequest, _impl_.client_version_),
+  PROTOBUF_FIELD_OFFSET(::pb::LoginRequest, _impl_.channel_),
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::LoginResponse, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::pb::LoginResponse, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::LoginResponse, _impl_.header_),
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::LoginResponse, _impl_.player_id_),
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::LoginResponse, _impl_.initial_snapshot_),
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::LoginResponse, _impl_.is_reconnect_),
+  PROTOBUF_FIELD_OFFSET(::pb::LoginResponse, _impl_.header_),
+  PROTOBUF_FIELD_OFFSET(::pb::LoginResponse, _impl_.player_id_),
+  PROTOBUF_FIELD_OFFSET(::pb::LoginResponse, _impl_.initial_snapshot_),
+  PROTOBUF_FIELD_OFFSET(::pb::LoginResponse, _impl_.is_reconnect_),
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::HeartbeatRequest, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::pb::HeartbeatRequest, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::HeartbeatRequest, _impl_.header_),
+  PROTOBUF_FIELD_OFFSET(::pb::HeartbeatRequest, _impl_.header_),
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::HeartbeatResponse, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::pb::HeartbeatResponse, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::HeartbeatResponse, _impl_.header_),
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::HeartbeatResponse, _impl_.server_time_ms_),
+  PROTOBUF_FIELD_OFFSET(::pb::HeartbeatResponse, _impl_.header_),
+  PROTOBUF_FIELD_OFFSET(::pb::HeartbeatResponse, _impl_.server_time_ms_),
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::KickNotification, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::pb::KickNotification, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::client::login::v1::KickNotification, _impl_.reason_),
+  PROTOBUF_FIELD_OFFSET(::pb::KickNotification, _impl_.reason_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  { 0, -1, -1, sizeof(::client::login::v1::LoginRequest)},
-  { 12, -1, -1, sizeof(::client::login::v1::LoginResponse)},
-  { 22, -1, -1, sizeof(::client::login::v1::HeartbeatRequest)},
-  { 29, -1, -1, sizeof(::client::login::v1::HeartbeatResponse)},
-  { 37, -1, -1, sizeof(::client::login::v1::KickNotification)},
+  { 0, -1, -1, sizeof(::pb::LoginRequest)},
+  { 12, -1, -1, sizeof(::pb::LoginResponse)},
+  { 22, -1, -1, sizeof(::pb::HeartbeatRequest)},
+  { 29, -1, -1, sizeof(::pb::HeartbeatResponse)},
+  { 37, -1, -1, sizeof(::pb::KickNotification)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
-  &::client::login::v1::_LoginRequest_default_instance_._instance,
-  &::client::login::v1::_LoginResponse_default_instance_._instance,
-  &::client::login::v1::_HeartbeatRequest_default_instance_._instance,
-  &::client::login::v1::_HeartbeatResponse_default_instance_._instance,
-  &::client::login::v1::_KickNotification_default_instance_._instance,
+  &::pb::_LoginRequest_default_instance_._instance,
+  &::pb::_LoginResponse_default_instance_._instance,
+  &::pb::_HeartbeatRequest_default_instance_._instance,
+  &::pb::_HeartbeatResponse_default_instance_._instance,
+  &::pb::_KickNotification_default_instance_._instance,
 };
 
 const char descriptor_table_protodef_login_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\013login.proto\022\017client.login.v1\032\014common.p"
-  "roto\"\242\001\n\014LoginRequest\022/\n\006header\030\001 \001(\0132\037."
-  "client.common.v1.RequestHeader\022\020\n\010platfo"
-  "rm\030\002 \001(\t\022\022\n\naccount_id\030\003 \001(\t\022\022\n\ncredenti"
-  "al\030\004 \001(\t\022\026\n\016client_version\030\005 \001(\r\022\017\n\007chan"
-  "nel\030\006 \001(\t\"\204\001\n\rLoginResponse\0220\n\006header\030\001 "
-  "\001(\0132 .client.common.v1.ResponseHeader\022\021\n"
-  "\tplayer_id\030\002 \001(\004\022\030\n\020initial_snapshot\030\003 \001"
-  "(\014\022\024\n\014is_reconnect\030\004 \001(\010\"C\n\020HeartbeatReq"
-  "uest\022/\n\006header\030\001 \001(\0132\037.client.common.v1."
-  "RequestHeader\"]\n\021HeartbeatResponse\0220\n\006he"
-  "ader\030\001 \001(\0132 .client.common.v1.ResponseHe"
-  "ader\022\026\n\016server_time_ms\030\002 \001(\004\"\"\n\020KickNoti"
-  "fication\022\016\n\006reason\030\001 \001(\tb\006proto3"
+  "\n\013login.proto\022\002pb\032\014common.proto\"\224\001\n\014Logi"
+  "nRequest\022!\n\006header\030\001 \001(\0132\021.pb.RequestHea"
+  "der\022\020\n\010platform\030\002 \001(\t\022\022\n\naccount_id\030\003 \001("
+  "\t\022\022\n\ncredential\030\004 \001(\t\022\026\n\016client_version\030"
+  "\005 \001(\r\022\017\n\007channel\030\006 \001(\t\"v\n\rLoginResponse\022"
+  "\"\n\006header\030\001 \001(\0132\022.pb.ResponseHeader\022\021\n\tp"
+  "layer_id\030\002 \001(\004\022\030\n\020initial_snapshot\030\003 \001(\014"
+  "\022\024\n\014is_reconnect\030\004 \001(\010\"5\n\020HeartbeatReque"
+  "st\022!\n\006header\030\001 \001(\0132\021.pb.RequestHeader\"O\n"
+  "\021HeartbeatResponse\022\"\n\006header\030\001 \001(\0132\022.pb."
+  "ResponseHeader\022\026\n\016server_time_ms\030\002 \001(\004\"\""
+  "\n\020KickNotification\022\016\n\006reason\030\001 \001(\tb\006prot"
+  "o3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_login_2eproto_deps[1] = {
   &::descriptor_table_common_2eproto,
 };
 static ::_pbi::once_flag descriptor_table_login_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_login_2eproto = {
-    false, false, 552, descriptor_table_protodef_login_2eproto,
+    false, false, 482, descriptor_table_protodef_login_2eproto,
     "login.proto",
     &descriptor_table_login_2eproto_once, descriptor_table_login_2eproto_deps, 1, 5,
     schemas, file_default_instances, TableStruct_login_2eproto::offsets,
@@ -200,18 +195,16 @@ PROTOBUF_ATTRIBUTE_WEAK const ::_pbi::DescriptorTable* descriptor_table_login_2e
 
 // Force running AddDescriptors() at dynamic initialization time.
 PROTOBUF_ATTRIBUTE_INIT_PRIORITY2 static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_login_2eproto(&descriptor_table_login_2eproto);
-namespace client {
-namespace login {
-namespace v1 {
+namespace pb {
 
 // ===================================================================
 
 class LoginRequest::_Internal {
  public:
-  static const ::client::common::v1::RequestHeader& header(const LoginRequest* msg);
+  static const ::pb::RequestHeader& header(const LoginRequest* msg);
 };
 
-const ::client::common::v1::RequestHeader&
+const ::pb::RequestHeader&
 LoginRequest::_Internal::header(const LoginRequest* msg) {
   return *msg->_impl_.header_;
 }
@@ -225,7 +218,7 @@ LoginRequest::LoginRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:client.login.v1.LoginRequest)
+  // @@protoc_insertion_point(arena_constructor:pb.LoginRequest)
 }
 LoginRequest::LoginRequest(const LoginRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
@@ -273,10 +266,10 @@ LoginRequest::LoginRequest(const LoginRequest& from)
       _this->GetArenaForAllocation());
   }
   if (from._internal_has_header()) {
-    _this->_impl_.header_ = new ::client::common::v1::RequestHeader(*from._impl_.header_);
+    _this->_impl_.header_ = new ::pb::RequestHeader(*from._impl_.header_);
   }
   _this->_impl_.client_version_ = from._impl_.client_version_;
-  // @@protoc_insertion_point(copy_constructor:client.login.v1.LoginRequest)
+  // @@protoc_insertion_point(copy_constructor:pb.LoginRequest)
 }
 
 inline void LoginRequest::SharedCtor(
@@ -311,7 +304,7 @@ inline void LoginRequest::SharedCtor(
 }
 
 LoginRequest::~LoginRequest() {
-  // @@protoc_insertion_point(destructor:client.login.v1.LoginRequest)
+  // @@protoc_insertion_point(destructor:pb.LoginRequest)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
   (void)arena;
     return;
@@ -333,7 +326,7 @@ void LoginRequest::SetCachedSize(int size) const {
 }
 
 void LoginRequest::Clear() {
-// @@protoc_insertion_point(message_clear_start:client.login.v1.LoginRequest)
+// @@protoc_insertion_point(message_clear_start:pb.LoginRequest)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -356,7 +349,7 @@ const char* LoginRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* 
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // .client.common.v1.RequestHeader header = 1;
+      // .pb.RequestHeader header = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_header(), ptr);
@@ -370,7 +363,7 @@ const char* LoginRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* 
           auto str = _internal_mutable_platform();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "client.login.v1.LoginRequest.platform"));
+          CHK_(::_pbi::VerifyUTF8(str, "pb.LoginRequest.platform"));
         } else
           goto handle_unusual;
         continue;
@@ -380,7 +373,7 @@ const char* LoginRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* 
           auto str = _internal_mutable_account_id();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "client.login.v1.LoginRequest.account_id"));
+          CHK_(::_pbi::VerifyUTF8(str, "pb.LoginRequest.account_id"));
         } else
           goto handle_unusual;
         continue;
@@ -390,7 +383,7 @@ const char* LoginRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* 
           auto str = _internal_mutable_credential();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "client.login.v1.LoginRequest.credential"));
+          CHK_(::_pbi::VerifyUTF8(str, "pb.LoginRequest.credential"));
         } else
           goto handle_unusual;
         continue;
@@ -408,7 +401,7 @@ const char* LoginRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* 
           auto str = _internal_mutable_channel();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "client.login.v1.LoginRequest.channel"));
+          CHK_(::_pbi::VerifyUTF8(str, "pb.LoginRequest.channel"));
         } else
           goto handle_unusual;
         continue;
@@ -437,11 +430,11 @@ failure:
 
 uint8_t* LoginRequest::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:client.login.v1.LoginRequest)
+  // @@protoc_insertion_point(serialize_to_array_start:pb.LoginRequest)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // .client.common.v1.RequestHeader header = 1;
+  // .pb.RequestHeader header = 1;
   if (this->_internal_has_header()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(1, _Internal::header(this),
@@ -453,7 +446,7 @@ uint8_t* LoginRequest::_InternalSerialize(
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_platform().data(), static_cast<int>(this->_internal_platform().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "client.login.v1.LoginRequest.platform");
+      "pb.LoginRequest.platform");
     target = stream->WriteStringMaybeAliased(
         2, this->_internal_platform(), target);
   }
@@ -463,7 +456,7 @@ uint8_t* LoginRequest::_InternalSerialize(
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_account_id().data(), static_cast<int>(this->_internal_account_id().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "client.login.v1.LoginRequest.account_id");
+      "pb.LoginRequest.account_id");
     target = stream->WriteStringMaybeAliased(
         3, this->_internal_account_id(), target);
   }
@@ -473,7 +466,7 @@ uint8_t* LoginRequest::_InternalSerialize(
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_credential().data(), static_cast<int>(this->_internal_credential().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "client.login.v1.LoginRequest.credential");
+      "pb.LoginRequest.credential");
     target = stream->WriteStringMaybeAliased(
         4, this->_internal_credential(), target);
   }
@@ -489,7 +482,7 @@ uint8_t* LoginRequest::_InternalSerialize(
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_channel().data(), static_cast<int>(this->_internal_channel().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "client.login.v1.LoginRequest.channel");
+      "pb.LoginRequest.channel");
     target = stream->WriteStringMaybeAliased(
         6, this->_internal_channel(), target);
   }
@@ -498,12 +491,12 @@ uint8_t* LoginRequest::_InternalSerialize(
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:client.login.v1.LoginRequest)
+  // @@protoc_insertion_point(serialize_to_array_end:pb.LoginRequest)
   return target;
 }
 
 size_t LoginRequest::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:client.login.v1.LoginRequest)
+// @@protoc_insertion_point(message_byte_size_start:pb.LoginRequest)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -538,7 +531,7 @@ size_t LoginRequest::ByteSizeLong() const {
         this->_internal_channel());
   }
 
-  // .client.common.v1.RequestHeader header = 1;
+  // .pb.RequestHeader header = 1;
   if (this->_internal_has_header()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
@@ -563,7 +556,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*LoginRequest::GetClassData() c
 void LoginRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
   auto* const _this = static_cast<LoginRequest*>(&to_msg);
   auto& from = static_cast<const LoginRequest&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:client.login.v1.LoginRequest)
+  // @@protoc_insertion_point(class_specific_merge_from_start:pb.LoginRequest)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
@@ -581,7 +574,7 @@ void LoginRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::P
     _this->_internal_set_channel(from._internal_channel());
   }
   if (from._internal_has_header()) {
-    _this->_internal_mutable_header()->::client::common::v1::RequestHeader::MergeFrom(
+    _this->_internal_mutable_header()->::pb::RequestHeader::MergeFrom(
         from._internal_header());
   }
   if (from._internal_client_version() != 0) {
@@ -591,7 +584,7 @@ void LoginRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::P
 }
 
 void LoginRequest::CopyFrom(const LoginRequest& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:client.login.v1.LoginRequest)
+// @@protoc_insertion_point(class_specific_copy_from_start:pb.LoginRequest)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -640,10 +633,10 @@ void LoginRequest::InternalSwap(LoginRequest* other) {
 
 class LoginResponse::_Internal {
  public:
-  static const ::client::common::v1::ResponseHeader& header(const LoginResponse* msg);
+  static const ::pb::ResponseHeader& header(const LoginResponse* msg);
 };
 
-const ::client::common::v1::ResponseHeader&
+const ::pb::ResponseHeader&
 LoginResponse::_Internal::header(const LoginResponse* msg) {
   return *msg->_impl_.header_;
 }
@@ -657,7 +650,7 @@ LoginResponse::LoginResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:client.login.v1.LoginResponse)
+  // @@protoc_insertion_point(arena_constructor:pb.LoginResponse)
 }
 LoginResponse::LoginResponse(const LoginResponse& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
@@ -679,12 +672,12 @@ LoginResponse::LoginResponse(const LoginResponse& from)
       _this->GetArenaForAllocation());
   }
   if (from._internal_has_header()) {
-    _this->_impl_.header_ = new ::client::common::v1::ResponseHeader(*from._impl_.header_);
+    _this->_impl_.header_ = new ::pb::ResponseHeader(*from._impl_.header_);
   }
   ::memcpy(&_impl_.player_id_, &from._impl_.player_id_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.is_reconnect_) -
     reinterpret_cast<char*>(&_impl_.player_id_)) + sizeof(_impl_.is_reconnect_));
-  // @@protoc_insertion_point(copy_constructor:client.login.v1.LoginResponse)
+  // @@protoc_insertion_point(copy_constructor:pb.LoginResponse)
 }
 
 inline void LoginResponse::SharedCtor(
@@ -705,7 +698,7 @@ inline void LoginResponse::SharedCtor(
 }
 
 LoginResponse::~LoginResponse() {
-  // @@protoc_insertion_point(destructor:client.login.v1.LoginResponse)
+  // @@protoc_insertion_point(destructor:pb.LoginResponse)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
   (void)arena;
     return;
@@ -724,7 +717,7 @@ void LoginResponse::SetCachedSize(int size) const {
 }
 
 void LoginResponse::Clear() {
-// @@protoc_insertion_point(message_clear_start:client.login.v1.LoginResponse)
+// @@protoc_insertion_point(message_clear_start:pb.LoginResponse)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -746,7 +739,7 @@ const char* LoginResponse::_InternalParse(const char* ptr, ::_pbi::ParseContext*
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // .client.common.v1.ResponseHeader header = 1;
+      // .pb.ResponseHeader header = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_header(), ptr);
@@ -804,11 +797,11 @@ failure:
 
 uint8_t* LoginResponse::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:client.login.v1.LoginResponse)
+  // @@protoc_insertion_point(serialize_to_array_start:pb.LoginResponse)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // .client.common.v1.ResponseHeader header = 1;
+  // .pb.ResponseHeader header = 1;
   if (this->_internal_has_header()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(1, _Internal::header(this),
@@ -837,12 +830,12 @@ uint8_t* LoginResponse::_InternalSerialize(
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:client.login.v1.LoginResponse)
+  // @@protoc_insertion_point(serialize_to_array_end:pb.LoginResponse)
   return target;
 }
 
 size_t LoginResponse::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:client.login.v1.LoginResponse)
+// @@protoc_insertion_point(message_byte_size_start:pb.LoginResponse)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -856,7 +849,7 @@ size_t LoginResponse::ByteSizeLong() const {
         this->_internal_initial_snapshot());
   }
 
-  // .client.common.v1.ResponseHeader header = 1;
+  // .pb.ResponseHeader header = 1;
   if (this->_internal_has_header()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
@@ -886,7 +879,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*LoginResponse::GetClassData() 
 void LoginResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
   auto* const _this = static_cast<LoginResponse*>(&to_msg);
   auto& from = static_cast<const LoginResponse&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:client.login.v1.LoginResponse)
+  // @@protoc_insertion_point(class_specific_merge_from_start:pb.LoginResponse)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
@@ -895,7 +888,7 @@ void LoginResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::
     _this->_internal_set_initial_snapshot(from._internal_initial_snapshot());
   }
   if (from._internal_has_header()) {
-    _this->_internal_mutable_header()->::client::common::v1::ResponseHeader::MergeFrom(
+    _this->_internal_mutable_header()->::pb::ResponseHeader::MergeFrom(
         from._internal_header());
   }
   if (from._internal_player_id() != 0) {
@@ -908,7 +901,7 @@ void LoginResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::
 }
 
 void LoginResponse::CopyFrom(const LoginResponse& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:client.login.v1.LoginResponse)
+// @@protoc_insertion_point(class_specific_copy_from_start:pb.LoginResponse)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -945,10 +938,10 @@ void LoginResponse::InternalSwap(LoginResponse* other) {
 
 class HeartbeatRequest::_Internal {
  public:
-  static const ::client::common::v1::RequestHeader& header(const HeartbeatRequest* msg);
+  static const ::pb::RequestHeader& header(const HeartbeatRequest* msg);
 };
 
-const ::client::common::v1::RequestHeader&
+const ::pb::RequestHeader&
 HeartbeatRequest::_Internal::header(const HeartbeatRequest* msg) {
   return *msg->_impl_.header_;
 }
@@ -962,7 +955,7 @@ HeartbeatRequest::HeartbeatRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:client.login.v1.HeartbeatRequest)
+  // @@protoc_insertion_point(arena_constructor:pb.HeartbeatRequest)
 }
 HeartbeatRequest::HeartbeatRequest(const HeartbeatRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
@@ -973,9 +966,9 @@ HeartbeatRequest::HeartbeatRequest(const HeartbeatRequest& from)
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   if (from._internal_has_header()) {
-    _this->_impl_.header_ = new ::client::common::v1::RequestHeader(*from._impl_.header_);
+    _this->_impl_.header_ = new ::pb::RequestHeader(*from._impl_.header_);
   }
-  // @@protoc_insertion_point(copy_constructor:client.login.v1.HeartbeatRequest)
+  // @@protoc_insertion_point(copy_constructor:pb.HeartbeatRequest)
 }
 
 inline void HeartbeatRequest::SharedCtor(
@@ -989,7 +982,7 @@ inline void HeartbeatRequest::SharedCtor(
 }
 
 HeartbeatRequest::~HeartbeatRequest() {
-  // @@protoc_insertion_point(destructor:client.login.v1.HeartbeatRequest)
+  // @@protoc_insertion_point(destructor:pb.HeartbeatRequest)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
   (void)arena;
     return;
@@ -1007,7 +1000,7 @@ void HeartbeatRequest::SetCachedSize(int size) const {
 }
 
 void HeartbeatRequest::Clear() {
-// @@protoc_insertion_point(message_clear_start:client.login.v1.HeartbeatRequest)
+// @@protoc_insertion_point(message_clear_start:pb.HeartbeatRequest)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -1025,7 +1018,7 @@ const char* HeartbeatRequest::_InternalParse(const char* ptr, ::_pbi::ParseConte
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // .client.common.v1.RequestHeader header = 1;
+      // .pb.RequestHeader header = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_header(), ptr);
@@ -1058,11 +1051,11 @@ failure:
 
 uint8_t* HeartbeatRequest::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:client.login.v1.HeartbeatRequest)
+  // @@protoc_insertion_point(serialize_to_array_start:pb.HeartbeatRequest)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // .client.common.v1.RequestHeader header = 1;
+  // .pb.RequestHeader header = 1;
   if (this->_internal_has_header()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(1, _Internal::header(this),
@@ -1073,19 +1066,19 @@ uint8_t* HeartbeatRequest::_InternalSerialize(
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:client.login.v1.HeartbeatRequest)
+  // @@protoc_insertion_point(serialize_to_array_end:pb.HeartbeatRequest)
   return target;
 }
 
 size_t HeartbeatRequest::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:client.login.v1.HeartbeatRequest)
+// @@protoc_insertion_point(message_byte_size_start:pb.HeartbeatRequest)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // .client.common.v1.RequestHeader header = 1;
+  // .pb.RequestHeader header = 1;
   if (this->_internal_has_header()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
@@ -1105,20 +1098,20 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*HeartbeatRequest::GetClassData
 void HeartbeatRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
   auto* const _this = static_cast<HeartbeatRequest*>(&to_msg);
   auto& from = static_cast<const HeartbeatRequest&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:client.login.v1.HeartbeatRequest)
+  // @@protoc_insertion_point(class_specific_merge_from_start:pb.HeartbeatRequest)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (from._internal_has_header()) {
-    _this->_internal_mutable_header()->::client::common::v1::RequestHeader::MergeFrom(
+    _this->_internal_mutable_header()->::pb::RequestHeader::MergeFrom(
         from._internal_header());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void HeartbeatRequest::CopyFrom(const HeartbeatRequest& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:client.login.v1.HeartbeatRequest)
+// @@protoc_insertion_point(class_specific_copy_from_start:pb.HeartbeatRequest)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -1144,10 +1137,10 @@ void HeartbeatRequest::InternalSwap(HeartbeatRequest* other) {
 
 class HeartbeatResponse::_Internal {
  public:
-  static const ::client::common::v1::ResponseHeader& header(const HeartbeatResponse* msg);
+  static const ::pb::ResponseHeader& header(const HeartbeatResponse* msg);
 };
 
-const ::client::common::v1::ResponseHeader&
+const ::pb::ResponseHeader&
 HeartbeatResponse::_Internal::header(const HeartbeatResponse* msg) {
   return *msg->_impl_.header_;
 }
@@ -1161,7 +1154,7 @@ HeartbeatResponse::HeartbeatResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:client.login.v1.HeartbeatResponse)
+  // @@protoc_insertion_point(arena_constructor:pb.HeartbeatResponse)
 }
 HeartbeatResponse::HeartbeatResponse(const HeartbeatResponse& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
@@ -1173,10 +1166,10 @@ HeartbeatResponse::HeartbeatResponse(const HeartbeatResponse& from)
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   if (from._internal_has_header()) {
-    _this->_impl_.header_ = new ::client::common::v1::ResponseHeader(*from._impl_.header_);
+    _this->_impl_.header_ = new ::pb::ResponseHeader(*from._impl_.header_);
   }
   _this->_impl_.server_time_ms_ = from._impl_.server_time_ms_;
-  // @@protoc_insertion_point(copy_constructor:client.login.v1.HeartbeatResponse)
+  // @@protoc_insertion_point(copy_constructor:pb.HeartbeatResponse)
 }
 
 inline void HeartbeatResponse::SharedCtor(
@@ -1191,7 +1184,7 @@ inline void HeartbeatResponse::SharedCtor(
 }
 
 HeartbeatResponse::~HeartbeatResponse() {
-  // @@protoc_insertion_point(destructor:client.login.v1.HeartbeatResponse)
+  // @@protoc_insertion_point(destructor:pb.HeartbeatResponse)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
   (void)arena;
     return;
@@ -1209,7 +1202,7 @@ void HeartbeatResponse::SetCachedSize(int size) const {
 }
 
 void HeartbeatResponse::Clear() {
-// @@protoc_insertion_point(message_clear_start:client.login.v1.HeartbeatResponse)
+// @@protoc_insertion_point(message_clear_start:pb.HeartbeatResponse)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -1228,7 +1221,7 @@ const char* HeartbeatResponse::_InternalParse(const char* ptr, ::_pbi::ParseCont
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // .client.common.v1.ResponseHeader header = 1;
+      // .pb.ResponseHeader header = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_header(), ptr);
@@ -1269,11 +1262,11 @@ failure:
 
 uint8_t* HeartbeatResponse::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:client.login.v1.HeartbeatResponse)
+  // @@protoc_insertion_point(serialize_to_array_start:pb.HeartbeatResponse)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // .client.common.v1.ResponseHeader header = 1;
+  // .pb.ResponseHeader header = 1;
   if (this->_internal_has_header()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(1, _Internal::header(this),
@@ -1290,19 +1283,19 @@ uint8_t* HeartbeatResponse::_InternalSerialize(
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:client.login.v1.HeartbeatResponse)
+  // @@protoc_insertion_point(serialize_to_array_end:pb.HeartbeatResponse)
   return target;
 }
 
 size_t HeartbeatResponse::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:client.login.v1.HeartbeatResponse)
+// @@protoc_insertion_point(message_byte_size_start:pb.HeartbeatResponse)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // .client.common.v1.ResponseHeader header = 1;
+  // .pb.ResponseHeader header = 1;
   if (this->_internal_has_header()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
@@ -1327,13 +1320,13 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*HeartbeatResponse::GetClassDat
 void HeartbeatResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
   auto* const _this = static_cast<HeartbeatResponse*>(&to_msg);
   auto& from = static_cast<const HeartbeatResponse&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:client.login.v1.HeartbeatResponse)
+  // @@protoc_insertion_point(class_specific_merge_from_start:pb.HeartbeatResponse)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (from._internal_has_header()) {
-    _this->_internal_mutable_header()->::client::common::v1::ResponseHeader::MergeFrom(
+    _this->_internal_mutable_header()->::pb::ResponseHeader::MergeFrom(
         from._internal_header());
   }
   if (from._internal_server_time_ms() != 0) {
@@ -1343,7 +1336,7 @@ void HeartbeatResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, cons
 }
 
 void HeartbeatResponse::CopyFrom(const HeartbeatResponse& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:client.login.v1.HeartbeatResponse)
+// @@protoc_insertion_point(class_specific_copy_from_start:pb.HeartbeatResponse)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -1380,7 +1373,7 @@ KickNotification::KickNotification(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:client.login.v1.KickNotification)
+  // @@protoc_insertion_point(arena_constructor:pb.KickNotification)
 }
 KickNotification::KickNotification(const KickNotification& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
@@ -1398,7 +1391,7 @@ KickNotification::KickNotification(const KickNotification& from)
     _this->_impl_.reason_.Set(from._internal_reason(), 
       _this->GetArenaForAllocation());
   }
-  // @@protoc_insertion_point(copy_constructor:client.login.v1.KickNotification)
+  // @@protoc_insertion_point(copy_constructor:pb.KickNotification)
 }
 
 inline void KickNotification::SharedCtor(
@@ -1416,7 +1409,7 @@ inline void KickNotification::SharedCtor(
 }
 
 KickNotification::~KickNotification() {
-  // @@protoc_insertion_point(destructor:client.login.v1.KickNotification)
+  // @@protoc_insertion_point(destructor:pb.KickNotification)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
   (void)arena;
     return;
@@ -1434,7 +1427,7 @@ void KickNotification::SetCachedSize(int size) const {
 }
 
 void KickNotification::Clear() {
-// @@protoc_insertion_point(message_clear_start:client.login.v1.KickNotification)
+// @@protoc_insertion_point(message_clear_start:pb.KickNotification)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -1455,7 +1448,7 @@ const char* KickNotification::_InternalParse(const char* ptr, ::_pbi::ParseConte
           auto str = _internal_mutable_reason();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "client.login.v1.KickNotification.reason"));
+          CHK_(::_pbi::VerifyUTF8(str, "pb.KickNotification.reason"));
         } else
           goto handle_unusual;
         continue;
@@ -1484,7 +1477,7 @@ failure:
 
 uint8_t* KickNotification::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:client.login.v1.KickNotification)
+  // @@protoc_insertion_point(serialize_to_array_start:pb.KickNotification)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -1493,7 +1486,7 @@ uint8_t* KickNotification::_InternalSerialize(
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_reason().data(), static_cast<int>(this->_internal_reason().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "client.login.v1.KickNotification.reason");
+      "pb.KickNotification.reason");
     target = stream->WriteStringMaybeAliased(
         1, this->_internal_reason(), target);
   }
@@ -1502,12 +1495,12 @@ uint8_t* KickNotification::_InternalSerialize(
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:client.login.v1.KickNotification)
+  // @@protoc_insertion_point(serialize_to_array_end:pb.KickNotification)
   return target;
 }
 
 size_t KickNotification::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:client.login.v1.KickNotification)
+// @@protoc_insertion_point(message_byte_size_start:pb.KickNotification)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -1534,7 +1527,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*KickNotification::GetClassData
 void KickNotification::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
   auto* const _this = static_cast<KickNotification*>(&to_msg);
   auto& from = static_cast<const KickNotification&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:client.login.v1.KickNotification)
+  // @@protoc_insertion_point(class_specific_merge_from_start:pb.KickNotification)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
@@ -1546,7 +1539,7 @@ void KickNotification::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const
 }
 
 void KickNotification::CopyFrom(const KickNotification& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:client.login.v1.KickNotification)
+// @@protoc_insertion_point(class_specific_copy_from_start:pb.KickNotification)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -1574,29 +1567,27 @@ void KickNotification::InternalSwap(KickNotification* other) {
 }
 
 // @@protoc_insertion_point(namespace_scope)
-}  // namespace v1
-}  // namespace login
-}  // namespace client
+}  // namespace pb
 PROTOBUF_NAMESPACE_OPEN
-template<> PROTOBUF_NOINLINE ::client::login::v1::LoginRequest*
-Arena::CreateMaybeMessage< ::client::login::v1::LoginRequest >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::client::login::v1::LoginRequest >(arena);
+template<> PROTOBUF_NOINLINE ::pb::LoginRequest*
+Arena::CreateMaybeMessage< ::pb::LoginRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::pb::LoginRequest >(arena);
 }
-template<> PROTOBUF_NOINLINE ::client::login::v1::LoginResponse*
-Arena::CreateMaybeMessage< ::client::login::v1::LoginResponse >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::client::login::v1::LoginResponse >(arena);
+template<> PROTOBUF_NOINLINE ::pb::LoginResponse*
+Arena::CreateMaybeMessage< ::pb::LoginResponse >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::pb::LoginResponse >(arena);
 }
-template<> PROTOBUF_NOINLINE ::client::login::v1::HeartbeatRequest*
-Arena::CreateMaybeMessage< ::client::login::v1::HeartbeatRequest >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::client::login::v1::HeartbeatRequest >(arena);
+template<> PROTOBUF_NOINLINE ::pb::HeartbeatRequest*
+Arena::CreateMaybeMessage< ::pb::HeartbeatRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::pb::HeartbeatRequest >(arena);
 }
-template<> PROTOBUF_NOINLINE ::client::login::v1::HeartbeatResponse*
-Arena::CreateMaybeMessage< ::client::login::v1::HeartbeatResponse >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::client::login::v1::HeartbeatResponse >(arena);
+template<> PROTOBUF_NOINLINE ::pb::HeartbeatResponse*
+Arena::CreateMaybeMessage< ::pb::HeartbeatResponse >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::pb::HeartbeatResponse >(arena);
 }
-template<> PROTOBUF_NOINLINE ::client::login::v1::KickNotification*
-Arena::CreateMaybeMessage< ::client::login::v1::KickNotification >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::client::login::v1::KickNotification >(arena);
+template<> PROTOBUF_NOINLINE ::pb::KickNotification*
+Arena::CreateMaybeMessage< ::pb::KickNotification >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::pb::KickNotification >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 

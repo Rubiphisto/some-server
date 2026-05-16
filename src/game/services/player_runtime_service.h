@@ -26,11 +26,11 @@ public:
     std::uint64_t CommandCount() const { return mCommandCount; }
 
     ipc::Result HandleEcho(
-        const client::game::v1::PlayerEchoRequest& request,
-        client::game::v1::PlayerEchoResponse& response);
+        const pb::PlayerEchoRequest& request,
+        pb::PlayerEchoResponse& response);
     ipc::Result HandleRename(
-        const client::game::v1::RenamePlayerRequest& request,
-        client::game::v1::RenamePlayerResponse& response);
+        const pb::RenamePlayerRequest& request,
+        pb::RenamePlayerResponse& response);
     std::optional<std::string> BuildProfilePushPayload() const;
 
 private:
@@ -59,12 +59,12 @@ public:
     ipc::Result RemovePlayer(std::uint64_t player_id);
     ipc::Result HandleEcho(
         std::uint64_t player_id,
-        const client::game::v1::PlayerEchoRequest& request,
-        client::game::v1::PlayerEchoResponse& response);
+        const pb::PlayerEchoRequest& request,
+        pb::PlayerEchoResponse& response);
     ipc::Result HandleRename(
         std::uint64_t player_id,
-        const client::game::v1::RenamePlayerRequest& request,
-        client::game::v1::RenamePlayerResponse& response);
+        const pb::RenamePlayerRequest& request,
+        pb::RenamePlayerResponse& response);
     std::optional<std::string> BuildProfilePushPayload(std::uint64_t player_id) const;
     PlayerRuntimeSnapshot Snapshot(std::uint64_t player_id) const;
 

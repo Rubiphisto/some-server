@@ -45,25 +45,19 @@ struct TableStruct_common_2eproto {
   static const uint32_t offsets[];
 };
 extern const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_common_2eproto;
-namespace client {
-namespace common {
-namespace v1 {
+namespace pb {
 class RequestHeader;
 struct RequestHeaderDefaultTypeInternal;
 extern RequestHeaderDefaultTypeInternal _RequestHeader_default_instance_;
 class ResponseHeader;
 struct ResponseHeaderDefaultTypeInternal;
 extern ResponseHeaderDefaultTypeInternal _ResponseHeader_default_instance_;
-}  // namespace v1
-}  // namespace common
-}  // namespace client
+}  // namespace pb
 PROTOBUF_NAMESPACE_OPEN
-template<> ::client::common::v1::RequestHeader* Arena::CreateMaybeMessage<::client::common::v1::RequestHeader>(Arena*);
-template<> ::client::common::v1::ResponseHeader* Arena::CreateMaybeMessage<::client::common::v1::ResponseHeader>(Arena*);
+template<> ::pb::RequestHeader* Arena::CreateMaybeMessage<::pb::RequestHeader>(Arena*);
+template<> ::pb::ResponseHeader* Arena::CreateMaybeMessage<::pb::ResponseHeader>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
-namespace client {
-namespace common {
-namespace v1 {
+namespace pb {
 
 enum ErrorCode : int {
   ERROR_CODE_UNSPECIFIED = 0,
@@ -96,7 +90,7 @@ inline bool ErrorCode_Parse(
 // ===================================================================
 
 class RequestHeader final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:client.common.v1.RequestHeader) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.RequestHeader) */ {
  public:
   inline RequestHeader() : RequestHeader(nullptr) {}
   ~RequestHeader() override;
@@ -199,7 +193,7 @@ class RequestHeader final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "client.common.v1.RequestHeader";
+    return "pb.RequestHeader";
   }
   protected:
   explicit RequestHeader(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -247,7 +241,7 @@ class RequestHeader final :
   void _internal_set_message_id(uint32_t value);
   public:
 
-  // @@protoc_insertion_point(class_scope:client.common.v1.RequestHeader)
+  // @@protoc_insertion_point(class_scope:pb.RequestHeader)
  private:
   class _Internal;
 
@@ -266,7 +260,7 @@ class RequestHeader final :
 // -------------------------------------------------------------------
 
 class ResponseHeader final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:client.common.v1.ResponseHeader) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:pb.ResponseHeader) */ {
  public:
   inline ResponseHeader() : ResponseHeader(nullptr) {}
   ~ResponseHeader() override;
@@ -369,7 +363,7 @@ class ResponseHeader final :
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "client.common.v1.ResponseHeader";
+    return "pb.ResponseHeader";
   }
   protected:
   explicit ResponseHeader(::PROTOBUF_NAMESPACE_ID::Arena* arena,
@@ -423,16 +417,16 @@ class ResponseHeader final :
   void _internal_set_message_id(uint32_t value);
   public:
 
-  // .client.common.v1.ErrorCode error_code = 3;
+  // .pb.ErrorCode error_code = 3;
   void clear_error_code();
-  ::client::common::v1::ErrorCode error_code() const;
-  void set_error_code(::client::common::v1::ErrorCode value);
+  ::pb::ErrorCode error_code() const;
+  void set_error_code(::pb::ErrorCode value);
   private:
-  ::client::common::v1::ErrorCode _internal_error_code() const;
-  void _internal_set_error_code(::client::common::v1::ErrorCode value);
+  ::pb::ErrorCode _internal_error_code() const;
+  void _internal_set_error_code(::pb::ErrorCode value);
   public:
 
-  // @@protoc_insertion_point(class_scope:client.common.v1.ResponseHeader)
+  // @@protoc_insertion_point(class_scope:pb.ResponseHeader)
  private:
   class _Internal;
 
@@ -468,7 +462,7 @@ inline uint32_t RequestHeader::_internal_message_id() const {
   return _impl_.message_id_;
 }
 inline uint32_t RequestHeader::message_id() const {
-  // @@protoc_insertion_point(field_get:client.common.v1.RequestHeader.message_id)
+  // @@protoc_insertion_point(field_get:pb.RequestHeader.message_id)
   return _internal_message_id();
 }
 inline void RequestHeader::_internal_set_message_id(uint32_t value) {
@@ -477,7 +471,7 @@ inline void RequestHeader::_internal_set_message_id(uint32_t value) {
 }
 inline void RequestHeader::set_message_id(uint32_t value) {
   _internal_set_message_id(value);
-  // @@protoc_insertion_point(field_set:client.common.v1.RequestHeader.message_id)
+  // @@protoc_insertion_point(field_set:pb.RequestHeader.message_id)
 }
 
 // uint64 sequence = 2;
@@ -488,7 +482,7 @@ inline uint64_t RequestHeader::_internal_sequence() const {
   return _impl_.sequence_;
 }
 inline uint64_t RequestHeader::sequence() const {
-  // @@protoc_insertion_point(field_get:client.common.v1.RequestHeader.sequence)
+  // @@protoc_insertion_point(field_get:pb.RequestHeader.sequence)
   return _internal_sequence();
 }
 inline void RequestHeader::_internal_set_sequence(uint64_t value) {
@@ -497,7 +491,7 @@ inline void RequestHeader::_internal_set_sequence(uint64_t value) {
 }
 inline void RequestHeader::set_sequence(uint64_t value) {
   _internal_set_sequence(value);
-  // @@protoc_insertion_point(field_set:client.common.v1.RequestHeader.sequence)
+  // @@protoc_insertion_point(field_set:pb.RequestHeader.sequence)
 }
 
 // uint64 timestamp_ms = 3;
@@ -508,7 +502,7 @@ inline uint64_t RequestHeader::_internal_timestamp_ms() const {
   return _impl_.timestamp_ms_;
 }
 inline uint64_t RequestHeader::timestamp_ms() const {
-  // @@protoc_insertion_point(field_get:client.common.v1.RequestHeader.timestamp_ms)
+  // @@protoc_insertion_point(field_get:pb.RequestHeader.timestamp_ms)
   return _internal_timestamp_ms();
 }
 inline void RequestHeader::_internal_set_timestamp_ms(uint64_t value) {
@@ -517,7 +511,7 @@ inline void RequestHeader::_internal_set_timestamp_ms(uint64_t value) {
 }
 inline void RequestHeader::set_timestamp_ms(uint64_t value) {
   _internal_set_timestamp_ms(value);
-  // @@protoc_insertion_point(field_set:client.common.v1.RequestHeader.timestamp_ms)
+  // @@protoc_insertion_point(field_set:pb.RequestHeader.timestamp_ms)
 }
 
 // -------------------------------------------------------------------
@@ -532,7 +526,7 @@ inline uint32_t ResponseHeader::_internal_message_id() const {
   return _impl_.message_id_;
 }
 inline uint32_t ResponseHeader::message_id() const {
-  // @@protoc_insertion_point(field_get:client.common.v1.ResponseHeader.message_id)
+  // @@protoc_insertion_point(field_get:pb.ResponseHeader.message_id)
   return _internal_message_id();
 }
 inline void ResponseHeader::_internal_set_message_id(uint32_t value) {
@@ -541,7 +535,7 @@ inline void ResponseHeader::_internal_set_message_id(uint32_t value) {
 }
 inline void ResponseHeader::set_message_id(uint32_t value) {
   _internal_set_message_id(value);
-  // @@protoc_insertion_point(field_set:client.common.v1.ResponseHeader.message_id)
+  // @@protoc_insertion_point(field_set:pb.ResponseHeader.message_id)
 }
 
 // uint64 sequence = 2;
@@ -552,7 +546,7 @@ inline uint64_t ResponseHeader::_internal_sequence() const {
   return _impl_.sequence_;
 }
 inline uint64_t ResponseHeader::sequence() const {
-  // @@protoc_insertion_point(field_get:client.common.v1.ResponseHeader.sequence)
+  // @@protoc_insertion_point(field_get:pb.ResponseHeader.sequence)
   return _internal_sequence();
 }
 inline void ResponseHeader::_internal_set_sequence(uint64_t value) {
@@ -561,27 +555,27 @@ inline void ResponseHeader::_internal_set_sequence(uint64_t value) {
 }
 inline void ResponseHeader::set_sequence(uint64_t value) {
   _internal_set_sequence(value);
-  // @@protoc_insertion_point(field_set:client.common.v1.ResponseHeader.sequence)
+  // @@protoc_insertion_point(field_set:pb.ResponseHeader.sequence)
 }
 
-// .client.common.v1.ErrorCode error_code = 3;
+// .pb.ErrorCode error_code = 3;
 inline void ResponseHeader::clear_error_code() {
   _impl_.error_code_ = 0;
 }
-inline ::client::common::v1::ErrorCode ResponseHeader::_internal_error_code() const {
-  return static_cast< ::client::common::v1::ErrorCode >(_impl_.error_code_);
+inline ::pb::ErrorCode ResponseHeader::_internal_error_code() const {
+  return static_cast< ::pb::ErrorCode >(_impl_.error_code_);
 }
-inline ::client::common::v1::ErrorCode ResponseHeader::error_code() const {
-  // @@protoc_insertion_point(field_get:client.common.v1.ResponseHeader.error_code)
+inline ::pb::ErrorCode ResponseHeader::error_code() const {
+  // @@protoc_insertion_point(field_get:pb.ResponseHeader.error_code)
   return _internal_error_code();
 }
-inline void ResponseHeader::_internal_set_error_code(::client::common::v1::ErrorCode value) {
+inline void ResponseHeader::_internal_set_error_code(::pb::ErrorCode value) {
   
   _impl_.error_code_ = value;
 }
-inline void ResponseHeader::set_error_code(::client::common::v1::ErrorCode value) {
+inline void ResponseHeader::set_error_code(::pb::ErrorCode value) {
   _internal_set_error_code(value);
-  // @@protoc_insertion_point(field_set:client.common.v1.ResponseHeader.error_code)
+  // @@protoc_insertion_point(field_set:pb.ResponseHeader.error_code)
 }
 
 // string error_message = 4;
@@ -589,7 +583,7 @@ inline void ResponseHeader::clear_error_message() {
   _impl_.error_message_.ClearToEmpty();
 }
 inline const std::string& ResponseHeader::error_message() const {
-  // @@protoc_insertion_point(field_get:client.common.v1.ResponseHeader.error_message)
+  // @@protoc_insertion_point(field_get:pb.ResponseHeader.error_message)
   return _internal_error_message();
 }
 template <typename ArgT0, typename... ArgT>
@@ -597,11 +591,11 @@ inline PROTOBUF_ALWAYS_INLINE
 void ResponseHeader::set_error_message(ArgT0&& arg0, ArgT... args) {
  
  _impl_.error_message_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:client.common.v1.ResponseHeader.error_message)
+  // @@protoc_insertion_point(field_set:pb.ResponseHeader.error_message)
 }
 inline std::string* ResponseHeader::mutable_error_message() {
   std::string* _s = _internal_mutable_error_message();
-  // @@protoc_insertion_point(field_mutable:client.common.v1.ResponseHeader.error_message)
+  // @@protoc_insertion_point(field_mutable:pb.ResponseHeader.error_message)
   return _s;
 }
 inline const std::string& ResponseHeader::_internal_error_message() const {
@@ -616,7 +610,7 @@ inline std::string* ResponseHeader::_internal_mutable_error_message() {
   return _impl_.error_message_.Mutable(GetArenaForAllocation());
 }
 inline std::string* ResponseHeader::release_error_message() {
-  // @@protoc_insertion_point(field_release:client.common.v1.ResponseHeader.error_message)
+  // @@protoc_insertion_point(field_release:pb.ResponseHeader.error_message)
   return _impl_.error_message_.Release();
 }
 inline void ResponseHeader::set_allocated_error_message(std::string* error_message) {
@@ -631,7 +625,7 @@ inline void ResponseHeader::set_allocated_error_message(std::string* error_messa
     _impl_.error_message_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:client.common.v1.ResponseHeader.error_message)
+  // @@protoc_insertion_point(field_set_allocated:pb.ResponseHeader.error_message)
 }
 
 #ifdef __GNUC__
@@ -642,16 +636,14 @@ inline void ResponseHeader::set_allocated_error_message(std::string* error_messa
 
 // @@protoc_insertion_point(namespace_scope)
 
-}  // namespace v1
-}  // namespace common
-}  // namespace client
+}  // namespace pb
 
 PROTOBUF_NAMESPACE_OPEN
 
-template <> struct is_proto_enum< ::client::common::v1::ErrorCode> : ::std::true_type {};
+template <> struct is_proto_enum< ::pb::ErrorCode> : ::std::true_type {};
 template <>
-inline const EnumDescriptor* GetEnumDescriptor< ::client::common::v1::ErrorCode>() {
-  return ::client::common::v1::ErrorCode_descriptor();
+inline const EnumDescriptor* GetEnumDescriptor< ::pb::ErrorCode>() {
+  return ::pb::ErrorCode_descriptor();
 }
 
 PROTOBUF_NAMESPACE_CLOSE

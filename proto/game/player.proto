@@ -1,16 +1,16 @@
 syntax = "proto3";
 
-package client.game.v1;
+package pb;
 
 import "common.proto";
 
 message PlayerMessageRequest {
-  client.common.v1.RequestHeader header = 1;
+  RequestHeader header = 1;
   bytes payload = 2;
 }
 
 message PlayerMessageResponse {
-  client.common.v1.ResponseHeader header = 1;
+  ResponseHeader header = 1;
   bytes payload = 2;
 }
 

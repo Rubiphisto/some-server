@@ -63,6 +63,7 @@ proto/
   game/
     common.proto
     login.proto
+    message_ids.proto
     player.proto
     player_data.proto
   ipc/
@@ -77,6 +78,8 @@ proto/
   - 业务层通用错误码、header
 - `login.proto`
   - 登录、心跳、踢线等网络消息
+- `message_ids.proto`
+  - 统一业务层协议号定义
 - `player.proto`
   - 玩家请求/响应/推送等网络消息
 - `player_data.proto`
@@ -156,6 +159,8 @@ tools/game_proto/
 
 - 客户端通讯协议与玩家数据定义都收进 `proto/game/`
 - `client_proto` 与 `player_data_proto` 合并成 `game_proto`
+- `proto/game/*` 当前统一使用同一个 package：`pb`
+- 统一协议号集中定义在 `proto/game/message_ids.proto`
 - 仍然保持与 `proto/ipc/` 的彻底隔离
 
 ## 首版最小集合
@@ -164,8 +169,33 @@ tools/game_proto/
 
 - `common.proto`
 - `login.proto`
+- `message_ids.proto`
 - `player.proto`
 - `player_data.proto`
+
+## 应用层分发基础模块
+
+当前 `gate/game` 的应用层协议注册与 decode 后分发，统一收敛在：
+
+- `src/common/protocol/protobuf_dispatcher.h`
+
+这层只负责两件事：
+
+- 根据统一协议号找到注册项
+- 先用 protobuf 解析网络 payload，再调用 typed handler
+
+当前提供两类基础能力：
+
+- `ProtobufMessageDispatcher`
+  - 适合 `gate` 这类“decode 后直接处理”的入口
+- `ProtobufRequestResponseDispatcher`
+  - 适合 `game` 这类“decode 请求 -> 调 handler -> 序列化响应”的入口
+
+这样可以避免应用层重复写：
+
+- `if / else if` 协议号判断
+- 手写 `ParseFromString`
+- 手写响应 protobuf 序列化
 
 ## KISS 复核
 

@@ -1,8 +1,8 @@
 #include "player_runtime_service.h"
 
 ipc::Result PlayerInstance::HandleEcho(
-    const client::game::v1::PlayerEchoRequest& request,
-    client::game::v1::PlayerEchoResponse& response)
+    const pb::PlayerEchoRequest& request,
+    pb::PlayerEchoResponse& response)
 {
     if (mRepository == nullptr)
     {
@@ -24,8 +24,8 @@ ipc::Result PlayerInstance::HandleEcho(
 }
 
 ipc::Result PlayerInstance::HandleRename(
-    const client::game::v1::RenamePlayerRequest& request,
-    client::game::v1::RenamePlayerResponse& response)
+    const pb::RenamePlayerRequest& request,
+    pb::RenamePlayerResponse& response)
 {
     if (mRepository == nullptr)
     {
@@ -61,7 +61,7 @@ std::optional<std::string> PlayerInstance::BuildProfilePushPayload() const
         return std::nullopt;
     }
 
-    client::game::v1::PlayerProfilePush push;
+    pb::PlayerProfilePush push;
     push.set_player_id(mPlayerId);
     push.set_display_name(repository->data.base().display_name());
     push.set_level(repository->data.core().level());
@@ -108,8 +108,8 @@ ipc::Result PlayerRuntimeService::RemovePlayer(const std::uint64_t player_id)
 
 ipc::Result PlayerRuntimeService::HandleEcho(
     const std::uint64_t player_id,
-    const client::game::v1::PlayerEchoRequest& request,
-    client::game::v1::PlayerEchoResponse& response)
+    const pb::PlayerEchoRequest& request,
+    pb::PlayerEchoResponse& response)
 {
     std::scoped_lock lock(mMutex);
     const auto it = mPlayers.find(player_id);
@@ -122,8 +122,8 @@ ipc::Result PlayerRuntimeService::HandleEcho(
 
 ipc::Result PlayerRuntimeService::HandleRename(
     const std::uint64_t player_id,
-    const client::game::v1::RenamePlayerRequest& request,
-    client::game::v1::RenamePlayerResponse& response)
+    const pb::RenamePlayerRequest& request,
+    pb::RenamePlayerResponse& response)
 {
     std::scoped_lock lock(mMutex);
     const auto it = mPlayers.find(player_id);
