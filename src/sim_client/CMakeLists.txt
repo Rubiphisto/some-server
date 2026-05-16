@@ -1,4 +1,4 @@
-some_application(sim_client LIBS loader framework common client_proto)
+some_application(sim_client LIBS loader framework common game_proto)
 
 add_custom_command(TARGET sim_client POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:sim_client>/conf

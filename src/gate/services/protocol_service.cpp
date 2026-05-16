@@ -1,7 +1,7 @@
 #include "protocol_service.h"
 
-#include <common/v1/types.pb.h>
-#include <login/v1/login.pb.h>
+#include <common.pb.h>
+#include <login.pb.h>
 
 GateProtocolEncodeResult GateProtocolService::EncodeLoginResponse(
     const std::uint64_t player_id,

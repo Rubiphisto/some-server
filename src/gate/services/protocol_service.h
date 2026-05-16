@@ -3,9 +3,9 @@
 #include "../../framework/application/service_base.h"
 #include "../../framework/ipc/base/result.h"
 
-#include <common/v1/types.pb.h>
-#include <game/v1/player.pb.h>
-#include <login/v1/login.pb.h>
+#include <common.pb.h>
+#include <login.pb.h>
+#include <player.pb.h>
 
 #include <cstddef>
 #include <cstdint>

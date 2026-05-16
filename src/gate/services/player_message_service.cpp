@@ -5,7 +5,7 @@
 #include "protocol_service.h"
 #include "session_service.h"
 
-#include <common/v1/types.pb.h>
+#include <common.pb.h>
 #include <ipc/gate_game/v1/player_message.pb.h>
 #include <ipc/gate_game/v1/push.pb.h>
 

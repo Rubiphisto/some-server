@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package client.login.v1;
 
-import "common/v1/types.proto";
+import "common.proto";
 
 message LoginRequest {
   client.common.v1.RequestHeader header = 1;
@@ -32,4 +32,3 @@ message HeartbeatResponse {
 message KickNotification {
   string reason = 1;
 }
-

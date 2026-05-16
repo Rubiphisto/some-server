@@ -40,6 +40,7 @@
 - [sim-client-design.md](/home/dev/projects/some-server/docs/player-system/sim-client-design.md)
 - [ipc-improvement-design.md](/home/dev/projects/some-server/docs/ipc-improvements/ipc-improvement-design.md)
 - [client-protocol-build-design.md](/home/dev/projects/some-server/docs/protocol/client-protocol-build-design.md)
+  - 当前已由 [game-protocol-build-design.md](/home/dev/projects/some-server/docs/protocol/game-protocol-build-design.md) 取代
 
 对应提交：
 
@@ -758,8 +759,38 @@
   - 单独记录当前版本范围
   - 单独记录当前完成线
   - 单独记录当前明确不做的事项
+- 已完成业务层 proto 目录重构：
+  - `proto/` 顶层当前只保留：
+    - `proto/ipc/`
+    - `proto/game/`
+  - 原 `proto/client/` 与 `proto/player/` 已合并进 `proto/game/`
+  - 原 `client_proto` 与 `player_data_proto` 已合并为 `game_proto`
+  - 业务层生成目录已统一到 `src/protocol/game/pb/`
+  - 对应生成脚本已统一到 `tools/game_proto/gen_game_proto.sh`
+  - `proto/game/` 当前已进一步收平为单目录：
+    - `common.proto`
+    - `login.proto`
+    - `player.proto`
+    - `player_data.proto`
+  - `src/protocol/game/pb/` 当前也已收平为单目录生成产物
+  - 已完成验证：
+    - `cmake --build build --target game_proto gate game sim_client -j 4`
+    - `tools/sim_client/run_regression.sh reconnect_after_disconnect` -> `ok`
 
 ## 当前总体进度判断
+
+## 当前协议目录补充说明
+
+当前协议目录已进一步收口为：
+
+- `proto/ipc/`
+- `proto/game/`
+
+其中：
+
+- 原 `proto/client/` 与 `proto/player/` 已合并进 `proto/game/`
+- 原 `client_proto` 与 `player_data_proto` 已合并为 `game_proto`
+- 业务层生成目录已统一到 `src/protocol/game/pb/`
 
 按阶段看：
 

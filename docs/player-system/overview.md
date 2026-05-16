@@ -150,15 +150,15 @@
 - 哪些属于 IPC 上层业务协议
 - 哪些不应下沉到 IPC 基础层
 
-### 客户端协议目录与构建设计
+### 业务协议目录与构建设计
 
-- [client-protocol-build-design.md](/home/dev/projects/some-server/docs/protocol/client-protocol-build-design.md)
+- [game-protocol-build-design.md](/home/dev/projects/some-server/docs/protocol/game-protocol-build-design.md)
 
 说明：
 
-- 客户端 protobuf 目录规划
-- 客户端协议生成目录
-- CMake target 与脚本拆分
+- 业务层 protobuf 目录规划
+- `proto/game/` 生成目录
+- `game_proto` target 与脚本拆分
 - 与 IPC 协议彻底隔离的工程边界
 
 ## 推荐实现顺序
@@ -170,7 +170,7 @@
 3. `game-player-storage-design.md`
 4. `ipc-improvement-design.md`
 5. `sim-client-design.md`
-6. `client-protocol-build-design.md`
+6. `game-protocol-build-design.md`
 
 实际编码时，建议再反过来做一次交叉复核：
 

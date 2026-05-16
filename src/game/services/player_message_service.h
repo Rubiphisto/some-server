@@ -4,7 +4,7 @@
 #include "../../framework/ipc/base/envelope.h"
 #include "../../framework/ipc/base/result.h"
 
-#include <game/v1/player.pb.h>
+#include <player.pb.h>
 
 #include <cstdint>
 #include <functional>

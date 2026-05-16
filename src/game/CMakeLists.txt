@@ -1,4 +1,4 @@
-some_application(game LIBS loader framework common player_data_proto gate_game_proto client_proto)
+some_application(game LIBS loader framework common game_proto gate_game_proto)
 
 add_custom_command(TARGET game POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:game>/conf

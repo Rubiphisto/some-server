@@ -4,7 +4,7 @@
 #include "../../framework/ipc/base/envelope.h"
 #include "../../framework/ipc/base/result.h"
 
-#include <common/v1/types.pb.h>
+#include <common.pb.h>
 #include <ipc/gate_game/v1/session.pb.h>
 
 #include "session_service.h"

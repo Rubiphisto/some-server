@@ -77,12 +77,8 @@
 建议目录：
 
 ```text
-proto/player/
-  v1/
-    player_base.proto
-    player_inventory.proto
-    player_progress.proto
-    player_blob.proto
+proto/game/
+  player_data.proto
 ```
 
 建议根对象：

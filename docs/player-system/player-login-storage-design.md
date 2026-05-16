@@ -622,7 +622,7 @@ Redis 可作为共享索引，但“踢线动作”应通过 IPC 驱动，不建
 
 ## 玩家数据设计
 
-第 11 条要求是关键点：玩家数据必须用 protobuf 定义。
+第 11 条要求是关键点：玩家数据必须用 protobuf 定义，并归入业务层 `proto/game/`。
 
 我建议：
 
@@ -631,7 +631,7 @@ Redis 可作为共享索引，但“踢线动作”应通过 IPC 驱动，不建
 例如：
 
 ```text
-proto/player/v1/player.proto
+proto/game/player_data.proto
 ```
 
 定义：
@@ -777,7 +777,7 @@ Redis key 示例：
 
 第 10 条和第 12 条要求合起来，意味着我们需要两层协议：
 
-### 1. 客户端协议
+### 1. 业务层网络协议
 
 特点：
 
@@ -785,28 +785,30 @@ Redis key 示例：
 - protobuf
 - 有协议号
 - 登录、心跳、玩家请求、服务器推送都在这里
-- 目录、生成、编译、脚本完全独立于 IPC
+- 目录、生成、编译、脚本都归入业务层 `proto/game/`
+- 但仍然与 `proto/ipc/` 完全独立
 
 建议目录：
 
 ```text
-proto/client/
-  common/v1/
-  login/v1/
-  game/v1/
+proto/game/
+  common.proto
+  login.proto
+  player.proto
+  player_data.proto
 ```
 
 建议生成目录：
 
 ```text
-src/protocol/client/pb/
+src/protocol/game/pb/
 ```
 
 建议构建入口：
 
-- 独立 `client_proto.cmake`
+- 独立 `game_proto.cmake`
 - 独立生成命令
-- 独立 library target，例如 `client_proto`
+- 独立 library target，例如 `game_proto`
 
 ### 2. 内部 IPC 协议
 
@@ -815,7 +817,7 @@ src/protocol/client/pb/
 - gate <-> game
 - protobuf
 - 不直接复用客户端协议
-- 目录、生成、编译、脚本完全独立于客户端协议
+- 目录、生成、编译、脚本完全独立于业务层 `proto/game/`
 
 建议目录：
 
@@ -840,16 +842,16 @@ src/framework/ipc/pb/
 
 这里不是“尽量不要”，而是“明确禁止”：
 
-- 客户端协议面向网络接入
+- `proto/game/` 面向业务层协议与玩家数据结构
 - IPC 协议面向服务协作
 
 禁止事项：
 
-- 客户端 `.proto` import `proto/ipc/...`
-- IPC `.proto` import `proto/client/...`
-- 客户端 protobuf 代码生成到 `src/framework/ipc/pb/`
+- `proto/game/*.proto` import `proto/ipc/...`
+- IPC `.proto` import `proto/game/...`
+- 业务层 protobuf 代码生成到 `src/framework/ipc/pb/`
 - IPC protobuf 代码生成到客户端协议目录
-- 在同一个 CMake custom command 里同时生成客户端协议与 IPC 协议
+- 在同一个 CMake custom command 里同时生成业务层协议与 IPC 协议
 - 用同一个脚本同时承担两套协议的生成职责
 
 允许的唯一共性只有：
@@ -905,11 +907,11 @@ public:
 - 协议号与业务处理逻辑解耦
 - 可以逐步沉淀统一中间件层
 
-`sim_client` 应直接复用同一套客户端协议号定义和 protobuf 消息定义，以保证联调路径真实。
+`sim_client` 应直接复用同一套业务层协议号定义和 protobuf 消息定义，以保证联调路径真实。
 
 注意：
 
-- `sim_client` 只能依赖客户端协议定义
+- `sim_client` 只能依赖 `proto/game/` 下的业务层协议定义
 - `sim_client` 不应依赖 IPC 协议定义
 - `sim_client` 不应把 IPC 消息作为自己的网络协议
 - `sim_client` 的价值就是模拟真实客户端，而不感知服务端内部 IPC 协议
@@ -924,10 +926,11 @@ public:
 
 ```text
 proto/
-  client/
-    common/v1/
-    login/v1/
-    game/v1/
+  game/
+    common.proto
+    login.proto
+    player.proto
+    player_data.proto
   ipc/
     common/v1/
     control/v1/
@@ -939,7 +942,7 @@ proto/
 建议：
 
 ```text
-src/protocol/client/pb/
+src/protocol/game/pb/
 src/framework/ipc/pb/
 ```
 
@@ -953,28 +956,28 @@ src/framework/ipc/pb/
 - IPC 协议单独定义生成变量、输出变量、目标变量
 - 不共享同一组 `PROTO_FILES`、`PROTO_SRCS`、`PROTO_HDRS`
 
-按当前仓库状态，`src/framework/CMakeLists.txt` 中现有的 proto 生成链应继续只服务 `proto/ipc/*`，不应扩展成“顺手也生成客户端协议”。
+按当前仓库状态，`src/framework/CMakeLists.txt` 中现有的 proto 生成链应继续只服务 `proto/ipc/*`，不应扩展成“顺手也生成业务层协议”。
 
 也就是说，未来应新增一套独立入口，例如：
 
 ```text
 src/protocol/CMakeLists.txt
-src/protocol/client_proto.cmake
+src/protocol/game_proto.cmake
 ```
 
-而不是把客户端协议继续塞进 `framework`。
+而不是把业务层协议继续塞进 `framework`。
 
 ### 脚本隔离
 
 若后续加入 proto 生成脚本，建议分成：
 
-- `tools/proto/gen_client_proto.sh`
+- `tools/game_proto/gen_game_proto.sh`
 - `tools/proto/gen_ipc_proto.sh`
 
 或者更明确地拆到不同子目录：
 
 ```text
-tools/client_proto/
+tools/game_proto/
 tools/ipc_proto/
 ```
 

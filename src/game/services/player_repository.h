@@ -4,7 +4,7 @@
 #include "../../framework/ipc/base/result.h"
 #include "../../framework/storage/service.h"
 
-#include <player/v1/player.pb.h>
+#include <player_data.pb.h>
 
 #include <cstdint>
 #include <mutex>

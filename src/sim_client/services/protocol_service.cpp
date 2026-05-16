@@ -1,9 +1,9 @@
 #include "protocol_service.h"
 
-#include <common/v1/types.pb.h>
-#include <game/v1/player.pb.h>
+#include <common.pb.h>
 #include <google/protobuf/message.h>
-#include <login/v1/login.pb.h>
+#include <login.pb.h>
+#include <player.pb.h>
 
 namespace
 {
