@@ -2,14 +2,62 @@
 
 #include "connection_service.h"
 #include "ipc_service.h"
-#include "protocol_service.h"
+#include "client_protocol_service.h"
 #include "session_service.h"
 
 #include <common.pb.h>
 #include <ipc/gate_game/v1/player_message.pb.h>
 #include <ipc/gate_game/v1/push.pb.h>
 
-#include "../../framework/ipc/messaging/payload_registry.h"
+GatePlayerMessageService::GatePlayerMessageService(
+    GateConnectionService* connection_service,
+    GateSessionService* session_service,
+    GateIpcService* ipc_service,
+    GateClientProtocolService* protocol_service)
+    : ServiceBase("gate_player_message", 70)
+    , mConnectionService(connection_service)
+    , mSessionService(session_service)
+    , mIpcService(ipc_service)
+    , mProtocolService(protocol_service)
+{
+    RegisterProtocolHandlers();
+    RegisterProcessHandlers();
+}
+
+void GatePlayerMessageService::RegisterProtocolHandlers()
+{
+    if (mProtocolService == nullptr)
+    {
+        return;
+    }
+    mProtocolService->RegisterClientHandler<pb::PlayerMessageRequest>(
+        pb::MESSAGE_ID_PLAYER_MESSAGE_REQUEST,
+        [this](const std::uint64_t connection_id, const pb::PlayerMessageRequest& request) {
+            return HandleClientPlayerMessage(connection_id, request);
+        });
+}
+
+void GatePlayerMessageService::RegisterProcessHandlers()
+{
+    if (mIpcService == nullptr)
+    {
+        return;
+    }
+    mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::ForwardPlayerMessageResponse>(
+        [this](
+            const ipc::ReceiverAddress&,
+            const ipc::Envelope& envelope,
+            const some_server::ipc::gate_game::v1::ForwardPlayerMessageResponse& response) {
+            return HandleForwardPlayerMessageResponse(envelope, response);
+        });
+    mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::PushPlayerMessage>(
+        [this](
+            const ipc::ReceiverAddress&,
+            const ipc::Envelope& envelope,
+            const some_server::ipc::gate_game::v1::PushPlayerMessage& push) {
+            return HandlePushPlayerMessage(envelope, push);
+        });
+}
 
 ipc::Result GatePlayerMessageService::HandleClientPlayerMessage(
     const std::uint64_t connection_id,
@@ -56,69 +104,44 @@ ipc::Result GatePlayerMessageService::HandleClientPlayerMessage(
     return ipc::Result::Success();
 }
 
-ipc::DispatchResult GatePlayerMessageService::HandleProcessEnvelope(const ipc::ReceiverAddress&, const ipc::Envelope& envelope)
+ipc::DispatchResult GatePlayerMessageService::HandleForwardPlayerMessageResponse(
+    const ipc::Envelope&,
+    const some_server::ipc::gate_game::v1::ForwardPlayerMessageResponse& response)
 {
-    if (envelope.payload_type_url ==
-        ipc::PayloadRegistry::TypeUrlFor(some_server::ipc::gate_game::v1::ForwardPlayerMessageResponse{}))
+    PendingMessage pending;
     {
-        some_server::ipc::gate_game::v1::ForwardPlayerMessageResponse response;
-        if (!response.ParseFromArray(envelope.payload_bytes.data(), static_cast<int>(envelope.payload_bytes.size())))
+        std::scoped_lock lock(mMutex);
+        const auto it = mPendingMessages.find(response.request_id());
+        if (it == mPendingMessages.end())
         {
-            return ipc::DispatchResult::Failure("failed to parse ForwardPlayerMessageResponse");
+            return ipc::DispatchResult::Failure("missing pending player message");
         }
-
-        PendingMessage pending;
-        {
-            std::scoped_lock lock(mMutex);
-            const auto it = mPendingMessages.find(response.request_id());
-            if (it == mPendingMessages.end())
-            {
-                return ipc::DispatchResult::Failure("missing pending player message");
-            }
-            pending = it->second;
-            mPendingMessages.erase(it);
-        }
-
-        const auto encoded = mProtocolService->EncodePlayerMessageResponse(
-            response.message_id(),
-            response.response_payload_bytes(),
-            response.result_code() == some_server::ipc::gate_game::v1::RESULT_CODE_OK
-                ? pb::ERROR_CODE_OK
-                : pb::ERROR_CODE_INTERNAL,
-            response.error_message());
-        if (!encoded.ok)
-        {
-            return ipc::DispatchResult::Failure(encoded.message);
-        }
-
-        const auto send = mConnectionService->Send(pending.connection_id, encoded.message_id, encoded.payload);
-        return send.ok ? ipc::DispatchResult::Success() : ipc::DispatchResult::Failure(send.message);
+        pending = it->second;
+        mPendingMessages.erase(it);
     }
 
-    if (envelope.payload_type_url ==
-        ipc::PayloadRegistry::TypeUrlFor(some_server::ipc::gate_game::v1::PushPlayerMessage{}))
+    const auto send = mProtocolService->SendPlayerMessageResponse(
+        pending.connection_id,
+        response.message_id(),
+        response.response_payload_bytes(),
+        response.result_code() == some_server::ipc::gate_game::v1::RESULT_CODE_OK
+            ? pb::ERROR_CODE_OK
+            : pb::ERROR_CODE_INTERNAL,
+        response.error_message());
+    return send.ok ? ipc::DispatchResult::Success() : ipc::DispatchResult::Failure(send.message);
+}
+
+ipc::DispatchResult GatePlayerMessageService::HandlePushPlayerMessage(
+    const ipc::Envelope&,
+    const some_server::ipc::gate_game::v1::PushPlayerMessage& push)
+{
+    const auto session = mSessionService->Snapshot(push.gate_session_id());
+    if (!session.has_value() || session->connection_id == 0 || session->player_id != push.player_id())
     {
-        some_server::ipc::gate_game::v1::PushPlayerMessage push;
-        if (!push.ParseFromArray(envelope.payload_bytes.data(), static_cast<int>(envelope.payload_bytes.size())))
-        {
-            return ipc::DispatchResult::Failure("failed to parse PushPlayerMessage");
-        }
-
-        const auto session = mSessionService->Snapshot(push.gate_session_id());
-        if (!session.has_value() || session->connection_id == 0 || session->player_id != push.player_id())
-        {
-            return ipc::DispatchResult::Failure("gate session for push is not available");
-        }
-
-        const auto encoded = mProtocolService->EncodePlayerPushMessage(push.message_id(), push.payload_bytes());
-        if (!encoded.ok)
-        {
-            return ipc::DispatchResult::Failure(encoded.message);
-        }
-
-        const auto send = mConnectionService->Send(session->connection_id, encoded.message_id, encoded.payload);
-        return send.ok ? ipc::DispatchResult::Success() : ipc::DispatchResult::Failure(send.message);
+        return ipc::DispatchResult::Failure("gate session for push is not available");
     }
 
-    return ipc::DispatchResult::Success();
+    const auto send =
+        mProtocolService->SendPlayerPushMessage(session->connection_id, push.message_id(), push.payload_bytes());
+    return send.ok ? ipc::DispatchResult::Success() : ipc::DispatchResult::Failure(send.message);
 }

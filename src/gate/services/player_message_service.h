@@ -4,6 +4,9 @@
 #include "../../framework/ipc/base/envelope.h"
 #include "../../framework/ipc/base/result.h"
 
+#include <ipc/gate_game/v1/player_message.pb.h>
+#include <ipc/gate_game/v1/push.pb.h>
+#include <message_ids.pb.h>
 #include <player.pb.h>
 
 #include <cstdint>
@@ -13,7 +16,7 @@
 
 class GateConnectionService;
 class GateIpcService;
-class GateProtocolService;
+class GateClientProtocolService;
 class GateSessionService;
 
 class GatePlayerMessageService final : public ServiceBase
@@ -23,21 +26,21 @@ public:
         GateConnectionService* connection_service,
         GateSessionService* session_service,
         GateIpcService* ipc_service,
-        GateProtocolService* protocol_service)
-        : ServiceBase("gate_player_message", 70)
-        , mConnectionService(connection_service)
-        , mSessionService(session_service)
-        , mIpcService(ipc_service)
-        , mProtocolService(protocol_service)
-    {
-    }
+        GateClientProtocolService* protocol_service);
 
     ipc::Result HandleClientPlayerMessage(
         std::uint64_t connection_id,
         const pb::PlayerMessageRequest& request);
-    ipc::DispatchResult HandleProcessEnvelope(const ipc::ReceiverAddress& target, const ipc::Envelope& envelope);
 
 private:
+    void RegisterProtocolHandlers();
+    void RegisterProcessHandlers();
+    ipc::DispatchResult HandleForwardPlayerMessageResponse(
+        const ipc::Envelope& envelope,
+        const some_server::ipc::gate_game::v1::ForwardPlayerMessageResponse& response);
+    ipc::DispatchResult HandlePushPlayerMessage(
+        const ipc::Envelope& envelope,
+        const some_server::ipc::gate_game::v1::PushPlayerMessage& push);
     struct PendingMessage
     {
         std::uint64_t connection_id = 0;
@@ -49,7 +52,7 @@ private:
     GateConnectionService* mConnectionService = nullptr;
     GateSessionService* mSessionService = nullptr;
     GateIpcService* mIpcService = nullptr;
-    GateProtocolService* mProtocolService = nullptr;
+    GateClientProtocolService* mProtocolService = nullptr;
     std::uint64_t mNextRequestId = 1;
     std::mutex mMutex;
     std::unordered_map<std::uint64_t, PendingMessage> mPendingMessages;

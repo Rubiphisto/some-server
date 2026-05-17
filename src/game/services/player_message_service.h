@@ -5,6 +5,7 @@
 #include "../../framework/ipc/base/result.h"
 #include "../../common/protocol/protobuf_dispatcher.h"
 
+#include <ipc/gate_game/v1/player_message.pb.h>
 #include <message_ids.pb.h>
 #include <player.pb.h>
 
@@ -28,18 +29,7 @@ public:
         PlayerLeaseService* lease_service,
         PlayerRepository* repository,
         PlayerRuntimeService* runtime_service,
-        GameIpcClientService* ipc_service)
-        : ServiceBase("game_player_message", 50)
-        , mSessionService(session_service)
-        , mLeaseService(lease_service)
-        , mRepository(repository)
-        , mRuntimeService(runtime_service)
-        , mIpcService(ipc_service)
-    {
-        RegisterBuiltinHandlers();
-    }
-
-    ipc::DispatchResult HandleProcessEnvelope(const ipc::ReceiverAddress& target, const ipc::Envelope& envelope);
+        GameIpcClientService* ipc_service);
     ipc::Result PushToPlayer(std::uint64_t player_id, std::uint32_t message_id, std::string_view payload);
     ipc::Result PushProfileToPlayer(std::uint64_t player_id);
 
@@ -51,6 +41,10 @@ private:
     }
 
     void RegisterBuiltinHandlers();
+    void RegisterProcessHandlers();
+    ipc::DispatchResult HandleForwardPlayerMessageRequest(
+        const ipc::Envelope& envelope,
+        const some_server::ipc::gate_game::v1::ForwardPlayerMessageRequest& request);
     ipc::Result HandleEcho(
         std::uint64_t player_id,
         const pb::PlayerEchoRequest& request,

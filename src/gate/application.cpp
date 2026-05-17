@@ -6,14 +6,12 @@
 #include "services/ipc_service.h"
 #include "services/login_service.h"
 #include "services/player_message_service.h"
-#include "services/protocol_service.h"
+#include "services/client_protocol_service.h"
 #include "services/routing_service.h"
 #include "services/session_service.h"
 
 #include <ipc/gate_game/v1/session.pb.h>
-#include <message_ids.pb.h>
 #include <spdlog/spdlog.h>
-#include <ctime>
 
 namespace
 {
@@ -39,9 +37,17 @@ void Application::RegisterServices()
     mRoutingService = routing_service.get();
     AddService(std::move(routing_service));
 
-    auto protocol_service = std::make_unique<GateProtocolService>();
+    auto protocol_service = std::make_unique<GateClientProtocolService>();
     mProtocolService = protocol_service.get();
     AddService(std::move(protocol_service));
+    mProtocolService->SetSendHandler(
+        [this](const std::uint64_t connection_id, const std::uint32_t message_id, const std::string& payload) {
+            if (mConnectionService == nullptr)
+            {
+                return ipc::Result::Failure("gate connection service is not registered");
+            }
+            return mConnectionService->Send(connection_id, message_id, payload);
+        });
 
     auto auth_service = std::make_unique<GateAuthService>();
     mAuthService = auth_service.get();
@@ -70,45 +76,9 @@ void Application::RegisterServices()
         mProtocolService);
     mPlayerMessageService = player_message_service.get();
     AddService(std::move(player_message_service));
-
-    mProtocolService->RegisterClientHandler<pb::LoginRequest>(
-        pb::MESSAGE_ID_LOGIN_REQUEST,
-        [this](const std::uint64_t connection_id, const pb::LoginRequest& request) {
-            if (mLoginService == nullptr)
-            {
-                return ipc::Result::Failure("gate login service is not registered");
-            }
-            return mLoginService->HandleClientLogin(connection_id, request);
-        });
-    mProtocolService->RegisterClientHandler<pb::HeartbeatRequest>(
-        pb::MESSAGE_ID_HEARTBEAT_REQUEST,
-        [this](const std::uint64_t connection_id, const pb::HeartbeatRequest&) {
-            if (mProtocolService == nullptr || mConnectionService == nullptr)
-            {
-                return ipc::Result::Failure("gate heartbeat dependencies are not registered");
-            }
-
-            const auto encoded =
-                mProtocolService->EncodeHeartbeatResponse(static_cast<std::uint64_t>(std::time(nullptr)) * 1000);
-            if (!encoded.ok)
-            {
-                return ipc::Result::Failure(encoded.message);
-            }
-            return mConnectionService->Send(connection_id, encoded.message_id, encoded.payload);
-        });
-    mProtocolService->RegisterClientHandler<pb::PlayerMessageRequest>(
-        pb::MESSAGE_ID_PLAYER_MESSAGE_REQUEST,
-        [this](const std::uint64_t connection_id, const pb::PlayerMessageRequest& request) {
-            if (mPlayerMessageService == nullptr)
-            {
-                return ipc::Result::Failure("gate player message service is not registered");
-            }
-            return mPlayerMessageService->HandleClientPlayerMessage(connection_id, request);
-        });
-
     mConnectionService->SetMessageHandler(
         [this](const std::uint64_t connection_id, const std::uint32_t message_id, const std::string& payload) {
-            if (mLoginService == nullptr || mConnectionService == nullptr || mProtocolService == nullptr)
+            if (mProtocolService == nullptr)
             {
                 return;
             }
@@ -135,23 +105,6 @@ void Application::RegisterServices()
             }
         });
 
-    mIpcService->SetProcessDispatchHandler(
-        [this](const ipc::ReceiverAddress& target, const ipc::Envelope& envelope) -> ipc::DispatchResult {
-            if (mLoginService == nullptr)
-            {
-                return ipc::DispatchResult::Failure("gate login service is not registered");
-            }
-            const auto login_result = mLoginService->HandleProcessEnvelope(target, envelope);
-            if (!login_result.ok)
-            {
-                return login_result;
-            }
-            if (mPlayerMessageService != nullptr)
-            {
-                return mPlayerMessageService->HandleProcessEnvelope(target, envelope);
-            }
-            return ipc::DispatchResult::Success();
-        });
 }
 
 void Application::RegisterRuntimeCommands()
@@ -519,45 +472,6 @@ void Application::RegisterRuntimeCommands()
                 result.ok,
                 result.account_id,
                 result.message);
-            return CommandExecutionStatus::handled;
-        });
-
-    Runtime().RegisterCommand(
-        "protocol_encode_login_response",
-        "Encode one simulated login response using client protobuf: <player_id>",
-        [this](const CommandArguments& arguments) {
-            if (mProtocolService == nullptr)
-            {
-                spdlog::warn("gate protocol encode login response: service not registered");
-                return CommandExecutionStatus::handled;
-            }
-            if (arguments.size() != 1)
-            {
-                spdlog::warn("usage: protocol_encode_login_response <player_id>");
-                return CommandExecutionStatus::handled;
-            }
-
-            std::uint64_t player_id = 0;
-            try
-            {
-                player_id = std::stoull(arguments[0]);
-            }
-            catch (const std::exception&)
-            {
-                spdlog::warn("gate protocol encode login response: player_id must be an unsigned integer");
-                return CommandExecutionStatus::handled;
-            }
-
-            const auto result = mProtocolService->EncodeLoginResponse(player_id, false);
-            if (!result.ok)
-            {
-                spdlog::warn("gate protocol encode login response failed: {}", result.message);
-                return CommandExecutionStatus::handled;
-            }
-            spdlog::info(
-                "gate protocol encode login response: bytes={} message_id={}",
-                result.encoded_size,
-                result.message_id);
             return CommandExecutionStatus::handled;
         });
 

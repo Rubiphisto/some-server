@@ -150,7 +150,10 @@ ipc::ProcessDescriptor GateIpcService::BuildSelfDescriptor() const
 ipc::Result GateIpcService::SetupRoleComponentsLocked()
 {
     mProcessReceiverHost = std::make_unique<ProcessReceiverHost>(mSelf->process);
-    mProcessReceiverHost->SetDispatchHandler(mProcessDispatchHandler);
+    mProcessReceiverHost->SetDispatchHandler(
+        [this](const ipc::ReceiverAddress& target, const ipc::Envelope& envelope) {
+            return mProcessDispatcher.Dispatch(envelope, target);
+        });
     if (const ipc::Result host_result = mReceiverRegistry.Register(*mProcessReceiverHost, ipc::ReceiverType::process);
         !host_result.ok)
     {
@@ -312,14 +315,4 @@ void GateIpcService::RecordSendRejectLocked(const std::string& reason)
     ++mSendRejectCount;
     mLastSendRejectReason = reason;
     mLastError = reason;
-}
-
-void GateIpcService::SetProcessDispatchHandler(ProcessDispatchHandler handler)
-{
-    std::scoped_lock lock(mMutex);
-    mProcessDispatchHandler = std::move(handler);
-    if (mProcessReceiverHost)
-    {
-        mProcessReceiverHost->SetDispatchHandler(mProcessDispatchHandler);
-    }
 }

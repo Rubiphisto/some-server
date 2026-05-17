@@ -5,6 +5,7 @@
 #include "../../framework/ipc/base/result.h"
 
 #include <common.pb.h>
+#include <ipc/gate_game/v1/login.pb.h>
 #include <ipc/gate_game/v1/session.pb.h>
 #include <login.pb.h>
 
@@ -19,7 +20,7 @@ class GateAuthService;
 class GateAccountDirectoryService;
 class GateConnectionService;
 class GateIpcService;
-class GateProtocolService;
+class GateClientProtocolService;
 class GateRoutingService;
 class GateSessionService;
 
@@ -44,19 +45,8 @@ public:
         GateConnectionService* connection_service,
         GateSessionService* session_service,
         GateRoutingService* routing_service,
-        GateProtocolService* protocol_service,
-        GateAuthService* auth_service)
-        : ServiceBase("gate_login", 60)
-        , mGateInstanceId(gate_instance_id)
-        , mIpcService(ipc_service)
-        , mAccountDirectoryService(account_directory_service)
-        , mConnectionService(connection_service)
-        , mSessionService(session_service)
-        , mRoutingService(routing_service)
-        , mProtocolService(protocol_service)
-        , mAuthService(auth_service)
-    {
-    }
+        GateClientProtocolService* protocol_service,
+        GateAuthService* auth_service);
 
     ipc::Result HandleClientLogin(std::uint64_t connection_id, const pb::LoginRequest& request);
     ipc::Result HandleSessionDisconnected(
@@ -69,13 +59,21 @@ public:
         std::string_view platform,
         std::string_view account_id,
         std::uint32_t area_id);
-    ipc::DispatchResult HandleProcessEnvelope(const ipc::ReceiverAddress& target, const ipc::Envelope& envelope);
     GateLoginSnapshot Snapshot() const { return mSnapshot; }
 
 private:
+    void RegisterProtocolHandlers();
+    void RegisterProcessHandlers();
+    ipc::DispatchResult HandleLoginResponse(
+        const ipc::Envelope& envelope,
+        const some_server::ipc::gate_game::v1::LoginPlayerResponse& response);
     ipc::Result KickExistingAccountSession(std::string_view account_id, std::uint64_t current_connection_id);
-    ipc::Result HandleKickAccountSession(const ipc::Envelope& envelope);
-    ipc::Result HandleUnbindPlayerSession(const ipc::Envelope& envelope);
+    ipc::DispatchResult HandleKickAccountSession(
+        const ipc::Envelope& envelope,
+        const some_server::ipc::gate_game::v1::KickAccountSession& request);
+    ipc::DispatchResult HandleUnbindPlayerSession(
+        const ipc::Envelope& envelope,
+        const some_server::ipc::gate_game::v1::UnbindPlayerSession& request);
     struct PendingLogin
     {
         std::uint64_t connection_id = 0;
@@ -94,7 +92,7 @@ private:
     GateConnectionService* mConnectionService = nullptr;
     GateSessionService* mSessionService = nullptr;
     GateRoutingService* mRoutingService = nullptr;
-    GateProtocolService* mProtocolService = nullptr;
+    GateClientProtocolService* mProtocolService = nullptr;
     GateAuthService* mAuthService = nullptr;
     mutable std::mutex mMutex;
     std::unordered_map<std::uint64_t, PendingLogin> mPendingLogins;

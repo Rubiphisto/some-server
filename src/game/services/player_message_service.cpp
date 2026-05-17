@@ -11,25 +11,45 @@
 #include <ipc/gate_game/v1/push.pb.h>
 #include <message_ids.pb.h>
 
-#include "../../framework/ipc/messaging/payload_registry.h"
+GamePlayerMessageService::GamePlayerMessageService(
+    PlayerSessionService* session_service,
+    PlayerLeaseService* lease_service,
+    PlayerRepository* repository,
+    PlayerRuntimeService* runtime_service,
+    GameIpcClientService* ipc_service)
+    : ServiceBase("game_player_message", 50)
+    , mSessionService(session_service)
+    , mLeaseService(lease_service)
+    , mRepository(repository)
+    , mRuntimeService(runtime_service)
+    , mIpcService(ipc_service)
+{
+    RegisterBuiltinHandlers();
+    RegisterProcessHandlers();
+}
 
-ipc::DispatchResult GamePlayerMessageService::HandleProcessEnvelope(const ipc::ReceiverAddress&, const ipc::Envelope& envelope)
+void GamePlayerMessageService::RegisterProcessHandlers()
+{
+    if (mIpcService == nullptr)
+    {
+        return;
+    }
+    mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::ForwardPlayerMessageRequest>(
+        [this](
+            const ipc::ReceiverAddress&,
+            const ipc::Envelope& envelope,
+            const some_server::ipc::gate_game::v1::ForwardPlayerMessageRequest& request) {
+            return HandleForwardPlayerMessageRequest(envelope, request);
+        });
+}
+
+ipc::DispatchResult GamePlayerMessageService::HandleForwardPlayerMessageRequest(
+    const ipc::Envelope& envelope,
+    const some_server::ipc::gate_game::v1::ForwardPlayerMessageRequest& request)
 {
     if (mSessionService == nullptr || mLeaseService == nullptr || mRepository == nullptr || mRuntimeService == nullptr || mIpcService == nullptr)
     {
         return ipc::DispatchResult::Failure("game player message dependencies are not registered");
-    }
-
-    if (envelope.payload_type_url !=
-        ipc::PayloadRegistry::TypeUrlFor(some_server::ipc::gate_game::v1::ForwardPlayerMessageRequest{}))
-    {
-        return ipc::DispatchResult::Success();
-    }
-
-    some_server::ipc::gate_game::v1::ForwardPlayerMessageRequest request;
-    if (!request.ParseFromArray(envelope.payload_bytes.data(), static_cast<int>(envelope.payload_bytes.size())))
-    {
-        return ipc::DispatchResult::Failure("failed to parse ForwardPlayerMessageRequest");
     }
 
     const auto session = mSessionService->Snapshot(request.player_id());

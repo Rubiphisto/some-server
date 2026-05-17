@@ -1017,8 +1017,8 @@ src/sim_client/
   services/
     connection_service.h
     connection_service.cpp
-    protocol_service.h
-    protocol_service.cpp
+    client_protocol_service.h
+    client_protocol_service.cpp
     scenario_service.h
     scenario_service.cpp
 ```

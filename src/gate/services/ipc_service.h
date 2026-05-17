@@ -1,11 +1,13 @@
 #pragma once
 
 #include "../application.h"
+#include "../../common/protocol/protobuf_envelope_dispatcher.h"
 #include "../../common/ipc/ipc_node_service_base.h"
 #include "process_receiver_host.h"
 #include "service_receiver_host.h"
 
 #include <functional>
+#include <utility>
 #include <memory>
 #include <string>
 
@@ -45,8 +47,6 @@ struct GateIpcStatus
 class GateIpcService final : public some_server::common::IpcNodeServiceBase
 {
 public:
-    using ProcessDispatchHandler = std::function<ipc::DispatchResult(const ipc::ReceiverAddress&, const ipc::Envelope&)>;
-
     GateIpcService(const GateConfiguration& configuration, ipc::ServiceType gate_service_type);
 
     LifecycleTask Load() override;
@@ -56,7 +56,12 @@ public:
 
     GateIpcStatus Snapshot() const;
     ipc::SendResult SendProcessPayload(ipc::ProcessId target, const google::protobuf::Message& message);
-    void SetProcessDispatchHandler(ProcessDispatchHandler handler);
+
+    template <typename Message, typename HandlerFn>
+    void RegisterProcessHandler(HandlerFn&& handler)
+    {
+        mProcessDispatcher.Register<Message>(std::forward<HandlerFn>(handler));
+    }
 
 private:
     ipc::ProcessDescriptor BuildSelfDescriptor() const override;
@@ -75,7 +80,7 @@ private:
     ipc::ServiceType mGateServiceType = 0;
     std::unique_ptr<ProcessReceiverHost> mProcessReceiverHost;
     ServiceReceiverHost mServiceReceiverHost;
-    ProcessDispatchHandler mProcessDispatchHandler;
+    common::protocol::ProtobufEnvelopeDispatcher<ipc::ReceiverAddress> mProcessDispatcher;
     std::uint64_t mSendRejectCount = 0;
     std::string mLastSendRejectReason;
 };

@@ -357,7 +357,10 @@ ipc::ProcessDescriptor GameIpcClientService::BuildSelfDescriptor() const
 ipc::Result GameIpcClientService::SetupRoleComponentsLocked()
 {
     mProcessReceiverHost = std::make_unique<ProcessReceiverHost>(mSelf->process);
-    mProcessReceiverHost->SetDispatchHandler(mProcessDispatchHandler);
+    mProcessReceiverHost->SetDispatchHandler(
+        [this](const ipc::ReceiverAddress& target, const ipc::Envelope& envelope) {
+            return mProcessDispatcher.Dispatch(envelope, target);
+        });
     if (const ipc::Result host_result = mReceiverRegistry.Register(*mProcessReceiverHost, ipc::ReceiverType::process); !host_result.ok)
     {
         mLastError = host_result.message;
@@ -548,14 +551,4 @@ void GameIpcClientService::RecordSendRejectLocked(const std::string& reason)
     ++mSendRejectCount;
     mLastSendRejectReason = reason;
     mLastError = reason;
-}
-
-void GameIpcClientService::SetProcessDispatchHandler(ProcessDispatchHandler handler)
-{
-    std::scoped_lock lock(mMutex);
-    mProcessDispatchHandler = std::move(handler);
-    if (mProcessReceiverHost)
-    {
-        mProcessReceiverHost->SetDispatchHandler(mProcessDispatchHandler);
-    }
 }

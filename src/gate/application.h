@@ -29,7 +29,7 @@ class GatePlayerMessageService;
 class GateConnectionService;
 class GateSessionService;
 class GateRoutingService;
-class GateProtocolService;
+class GateClientProtocolService;
 class GateAuthService;
 class Application : public ApplicationBase<GateConfiguration>
 {
@@ -50,7 +50,7 @@ private:
     GateConnectionService* mConnectionService = nullptr;
     GateSessionService* mSessionService = nullptr;
     GateRoutingService* mRoutingService = nullptr;
-    GateProtocolService* mProtocolService = nullptr;
+    GateClientProtocolService* mProtocolService = nullptr;
     GateAuthService* mAuthService = nullptr;
     GateLoginService* mLoginService = nullptr;
     GatePlayerMessageService* mPlayerMessageService = nullptr;

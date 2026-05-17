@@ -4,7 +4,7 @@
 #include "auth_service.h"
 #include "connection_service.h"
 #include "ipc_service.h"
-#include "protocol_service.h"
+#include "client_protocol_service.h"
 #include "routing_service.h"
 #include "session_service.h"
 
@@ -19,6 +19,71 @@ namespace
 {
 constexpr ipc::ServiceType kGameServiceType = 10;
 constexpr ipc::ServiceType kGateServiceType = 20;
+}
+
+GateLoginService::GateLoginService(
+    const std::uint32_t gate_instance_id,
+    GateIpcService* ipc_service,
+    GateAccountDirectoryService* account_directory_service,
+    GateConnectionService* connection_service,
+    GateSessionService* session_service,
+    GateRoutingService* routing_service,
+    GateClientProtocolService* protocol_service,
+    GateAuthService* auth_service)
+    : ServiceBase("gate_login", 60)
+    , mGateInstanceId(gate_instance_id)
+    , mIpcService(ipc_service)
+    , mAccountDirectoryService(account_directory_service)
+    , mConnectionService(connection_service)
+    , mSessionService(session_service)
+    , mRoutingService(routing_service)
+    , mProtocolService(protocol_service)
+    , mAuthService(auth_service)
+{
+    RegisterProtocolHandlers();
+    RegisterProcessHandlers();
+}
+
+void GateLoginService::RegisterProtocolHandlers()
+{
+    if (mProtocolService == nullptr)
+    {
+        return;
+    }
+    mProtocolService->RegisterClientHandler<pb::LoginRequest>(
+        pb::MESSAGE_ID_LOGIN_REQUEST,
+        [this](const std::uint64_t connection_id, const pb::LoginRequest& request) {
+            return HandleClientLogin(connection_id, request);
+        });
+}
+
+void GateLoginService::RegisterProcessHandlers()
+{
+    if (mIpcService == nullptr)
+    {
+        return;
+    }
+    mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::LoginPlayerResponse>(
+        [this](
+            const ipc::ReceiverAddress&,
+            const ipc::Envelope& envelope,
+            const some_server::ipc::gate_game::v1::LoginPlayerResponse& response) {
+            return HandleLoginResponse(envelope, response);
+        });
+    mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::KickAccountSession>(
+        [this](
+            const ipc::ReceiverAddress&,
+            const ipc::Envelope& envelope,
+            const some_server::ipc::gate_game::v1::KickAccountSession& request) {
+            return HandleKickAccountSession(envelope, request);
+        });
+    mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::UnbindPlayerSession>(
+        [this](
+            const ipc::ReceiverAddress&,
+            const ipc::Envelope& envelope,
+            const some_server::ipc::gate_game::v1::UnbindPlayerSession& request) {
+            return HandleUnbindPlayerSession(envelope, request);
+        });
 }
 
 ipc::Result GateLoginService::HandleClientLogin(
@@ -137,10 +202,11 @@ ipc::Result GateLoginService::KickExistingAccountSession(
 
         if (mProtocolService != nullptr)
         {
-            const auto kick = mProtocolService->EncodeKickNotification("same account logged in on a new connection");
-            if (kick.ok)
+            if (const auto send =
+                    mProtocolService->SendKickNotification(existing->connection_id, "same account logged in on a new connection");
+                !send.ok)
             {
-                (void)mConnectionService->Send(existing->connection_id, kick.message_id, kick.payload);
+                return send;
             }
         }
 
@@ -156,10 +222,11 @@ ipc::Result GateLoginService::KickExistingAccountSession(
         }
         if (mProtocolService != nullptr)
         {
-            const auto kick = mProtocolService->EncodeKickNotification("same account logged in on a new connection");
-            if (kick.ok)
+            if (const auto send =
+                    mProtocolService->SendKickNotification(existing->connection_id, "same account logged in on a new connection");
+                !send.ok)
             {
-                (void)mConnectionService->Send(existing->connection_id, kick.message_id, kick.payload);
+                return send;
             }
         }
         return mConnectionService->Close(existing->connection_id);
@@ -238,124 +305,91 @@ ipc::Result GateLoginService::HandleSessionDisconnected(
     return ipc::Result::Success();
 }
 
-ipc::DispatchResult GateLoginService::HandleProcessEnvelope(const ipc::ReceiverAddress&, const ipc::Envelope& envelope)
+ipc::DispatchResult GateLoginService::HandleLoginResponse(
+    const ipc::Envelope&,
+    const some_server::ipc::gate_game::v1::LoginPlayerResponse& response)
 {
-    if (envelope.payload_type_url ==
-        ipc::PayloadRegistry::TypeUrlFor(some_server::ipc::gate_game::v1::LoginPlayerResponse{}))
+    mSnapshot.last_request_id = response.request_id();
+    mSnapshot.last_player_id = response.player_id();
+    mSnapshot.last_result_code = response.result_code();
+    mSnapshot.last_game_service_type = response.game_service_type();
+    mSnapshot.last_game_instance_id = response.game_instance_id();
+    mSnapshot.last_is_reconnect = response.is_reconnect();
+    mSnapshot.last_error_message = response.error_message();
+
+    PendingLogin pending;
     {
-        some_server::ipc::gate_game::v1::LoginPlayerResponse response;
-        if (!response.ParseFromArray(
-                envelope.payload_bytes.data(),
-                static_cast<int>(envelope.payload_bytes.size())))
+        std::scoped_lock lock(mMutex);
+        const auto it = mPendingLogins.find(response.request_id());
+        if (it == mPendingLogins.end())
         {
-            return ipc::DispatchResult::Failure("failed to parse LoginPlayerResponse");
+            return ipc::DispatchResult::Failure("missing pending login");
         }
+        pending = it->second;
+        mPendingLogins.erase(it);
+    }
 
-        mSnapshot.last_request_id = response.request_id();
-        mSnapshot.last_player_id = response.player_id();
-        mSnapshot.last_result_code = response.result_code();
-        mSnapshot.last_game_service_type = response.game_service_type();
-        mSnapshot.last_game_instance_id = response.game_instance_id();
-        mSnapshot.last_is_reconnect = response.is_reconnect();
-        mSnapshot.last_error_message = response.error_message();
-
-        PendingLogin pending;
+    if (response.result_code() == some_server::ipc::gate_game::v1::RESULT_CODE_OK)
+    {
+        if (mSessionService != nullptr)
         {
-            std::scoped_lock lock(mMutex);
-            const auto it = mPendingLogins.find(response.request_id());
-            if (it == mPendingLogins.end())
-            {
-                return ipc::DispatchResult::Failure("missing pending login");
-            }
-            pending = it->second;
-            mPendingLogins.erase(it);
+            (void)mSessionService->Activate(
+                pending.gate_session_id,
+                pending.account_id,
+                response.player_id(),
+                response.game_service_type(),
+                response.game_instance_id());
         }
-
-        if (response.result_code() == some_server::ipc::gate_game::v1::RESULT_CODE_OK)
+        if (mRoutingService != nullptr)
         {
-            if (mSessionService != nullptr)
-            {
-                (void)mSessionService->Activate(
-                    pending.gate_session_id,
-                    pending.account_id,
-                    response.player_id(),
-                    response.game_service_type(),
-                    response.game_instance_id());
-            }
-            if (mRoutingService != nullptr)
-            {
-                (void)mRoutingService->BindPlayer(
-                    response.player_id(),
-                    response.game_service_type(),
-                    response.game_instance_id(),
-                    pending.gate_session_id);
-            }
-            if (mConnectionService != nullptr)
-            {
-                (void)mConnectionService->MarkBound(pending.connection_id);
-            }
-            if (mAccountDirectoryService != nullptr)
-            {
-                (void)mAccountDirectoryService->BindAccount(
-                    pending.account_id,
-                    GateAccountOwner{
-                        .gate_service_type = kGateServiceType,
-                        .gate_instance_id = mGateInstanceId,
-                        .gate_session_id = pending.gate_session_id});
-            }
+            (void)mRoutingService->BindPlayer(
+                response.player_id(),
+                response.game_service_type(),
+                response.game_instance_id(),
+                pending.gate_session_id);
         }
-
-        if (mProtocolService == nullptr || mConnectionService == nullptr)
+        if (mConnectionService != nullptr)
         {
-            return ipc::DispatchResult::Success();
+            (void)mConnectionService->MarkBound(pending.connection_id);
         }
-
-        const auto encoded = mProtocolService->EncodeLoginResponse(
-            response.player_id(),
-            response.is_reconnect(),
-            response.result_code() == some_server::ipc::gate_game::v1::RESULT_CODE_OK
-                ? pb::ERROR_CODE_OK
-                : pb::ERROR_CODE_INTERNAL,
-            response.error_message());
-        if (!encoded.ok)
+        if (mAccountDirectoryService != nullptr)
         {
-            return ipc::DispatchResult::Failure(encoded.message);
+            (void)mAccountDirectoryService->BindAccount(
+                pending.account_id,
+                GateAccountOwner{
+                    .gate_service_type = kGateServiceType,
+                    .gate_instance_id = mGateInstanceId,
+                    .gate_session_id = pending.gate_session_id});
         }
+    }
 
-        if (const auto send = mConnectionService->Send(pending.connection_id, encoded.message_id, encoded.payload); !send.ok)
-        {
-            return ipc::DispatchResult::Failure(send.message);
-        }
+    if (mProtocolService == nullptr || mConnectionService == nullptr)
+    {
         return ipc::DispatchResult::Success();
     }
-    if (envelope.payload_type_url ==
-        ipc::PayloadRegistry::TypeUrlFor(some_server::ipc::gate_game::v1::KickAccountSession{}))
+
+    const auto send = mProtocolService->SendLoginResponse(
+        pending.connection_id,
+        response.player_id(),
+        response.is_reconnect(),
+        response.result_code() == some_server::ipc::gate_game::v1::RESULT_CODE_OK
+            ? pb::ERROR_CODE_OK
+            : pb::ERROR_CODE_INTERNAL,
+        response.error_message());
+    if (!send.ok)
     {
-        const auto result = HandleKickAccountSession(envelope);
-        return result.ok ? ipc::DispatchResult::Success() : ipc::DispatchResult::Failure(result.message);
-    }
-    if (envelope.payload_type_url ==
-        ipc::PayloadRegistry::TypeUrlFor(some_server::ipc::gate_game::v1::UnbindPlayerSession{}))
-    {
-        const auto result = HandleUnbindPlayerSession(envelope);
-        return result.ok ? ipc::DispatchResult::Success() : ipc::DispatchResult::Failure(result.message);
+        return ipc::DispatchResult::Failure(send.message);
     }
     return ipc::DispatchResult::Success();
 }
 
-ipc::Result GateLoginService::HandleKickAccountSession(const ipc::Envelope& envelope)
+ipc::DispatchResult GateLoginService::HandleKickAccountSession(
+    const ipc::Envelope&,
+    const some_server::ipc::gate_game::v1::KickAccountSession& request)
 {
     if (mSessionService == nullptr || mConnectionService == nullptr)
     {
-        return ipc::Result::Failure("gate kick handling dependencies are not registered");
-    }
-
-    some_server::ipc::gate_game::v1::KickAccountSession request;
-    if (!request.ParseFromArray(
-            envelope.payload_bytes.data(),
-            static_cast<int>(envelope.payload_bytes.size())))
-    {
-        return ipc::Result::Failure("failed to parse KickAccountSession");
+        return ipc::DispatchResult::Failure("gate kick handling dependencies are not registered");
     }
 
     const auto session = mSessionService->Snapshot(request.old_gate_session_id());
@@ -371,29 +405,25 @@ ipc::Result GateLoginService::HandleKickAccountSession(const ipc::Envelope& enve
 
     if (mProtocolService != nullptr)
     {
-        const auto kick = mProtocolService->EncodeKickNotification(
+        const auto send = mProtocolService->SendKickNotification(
+            session->connection_id,
             request.reason().empty() ? "same account logged in on a new connection" : request.reason());
-        if (kick.ok)
+        if (!send.ok)
         {
-            (void)mConnectionService->Send(session->connection_id, kick.message_id, kick.payload);
+            return ipc::DispatchResult::Failure(send.message);
         }
     }
-    return mConnectionService->Close(session->connection_id);
+    const auto close = mConnectionService->Close(session->connection_id);
+    return close.ok ? ipc::DispatchResult::Success() : ipc::DispatchResult::Failure(close.message);
 }
 
-ipc::Result GateLoginService::HandleUnbindPlayerSession(const ipc::Envelope& envelope)
+ipc::DispatchResult GateLoginService::HandleUnbindPlayerSession(
+    const ipc::Envelope&,
+    const some_server::ipc::gate_game::v1::UnbindPlayerSession& request)
 {
     if (mSessionService == nullptr || mConnectionService == nullptr)
     {
-        return ipc::Result::Failure("gate unbind handling dependencies are not registered");
-    }
-
-    some_server::ipc::gate_game::v1::UnbindPlayerSession request;
-    if (!request.ParseFromArray(
-            envelope.payload_bytes.data(),
-            static_cast<int>(envelope.payload_bytes.size())))
-    {
-        return ipc::Result::Failure("failed to parse UnbindPlayerSession");
+        return ipc::DispatchResult::Failure("gate unbind handling dependencies are not registered");
     }
 
     const auto session = mSessionService->Snapshot(request.gate_session_id());
@@ -408,19 +438,19 @@ ipc::Result GateLoginService::HandleUnbindPlayerSession(const ipc::Envelope& env
 
     if (mProtocolService != nullptr)
     {
-        const auto kick = mProtocolService->EncodeKickNotification("player session ownership moved");
-        if (kick.ok)
+        const auto send = mProtocolService->SendKickNotification(session->connection_id, "player session ownership moved");
+        if (!send.ok)
         {
-            (void)mConnectionService->Send(session->connection_id, kick.message_id, kick.payload);
+            return ipc::DispatchResult::Failure(send.message);
         }
     }
 
     const auto close = mConnectionService->Close(session->connection_id);
     if (!close.ok && close.message != "connection does not exist")
     {
-        return close;
+        return ipc::DispatchResult::Failure(close.message);
     }
-    return ipc::Result::Success();
+    return ipc::DispatchResult::Success();
 }
 
 ipc::Result GateLoginService::SendLoginFailure(
@@ -433,10 +463,5 @@ ipc::Result GateLoginService::SendLoginFailure(
         return ipc::Result::Failure("gate login failure path dependencies are not registered");
     }
 
-    const auto encoded = mProtocolService->EncodeLoginResponse(0, false, error_code, error_message);
-    if (!encoded.ok)
-    {
-        return ipc::Result::Failure(encoded.message);
-    }
-    return mConnectionService->Send(connection_id, encoded.message_id, encoded.payload);
+    return mProtocolService->SendLoginResponse(connection_id, 0, false, error_code, error_message);
 }

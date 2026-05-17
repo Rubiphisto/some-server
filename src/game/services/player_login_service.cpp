@@ -8,8 +8,6 @@
 #include <ipc/gate_game/v1/login.pb.h>
 #include <ipc/gate_game/v1/session.pb.h>
 
-#include "../../framework/ipc/messaging/payload_registry.h"
-
 namespace
 {
 some_server::ipc::gate_game::v1::ResultCode ToResultCode(const ipc::Result& result)
@@ -20,43 +18,56 @@ some_server::ipc::gate_game::v1::ResultCode ToResultCode(const ipc::Result& resu
     }
     return some_server::ipc::gate_game::v1::RESULT_CODE_INTERNAL;
 }
-}
+}  // namespace
 
-ipc::DispatchResult PlayerLoginService::HandleProcessEnvelope(
-    const ipc::ReceiverAddress&,
-    const ipc::Envelope& envelope)
+PlayerLoginService::PlayerLoginService(
+    PlayerDirectoryService* directory_service,
+    PlayerSessionService* session_service,
+    GameIpcClientService* ipc_service)
+    : ServiceBase("player_login", 40)
+    , mDirectoryService(directory_service)
+    , mSessionService(session_service)
+    , mIpcService(ipc_service)
 {
-    if (envelope.payload_type_url ==
-        ipc::PayloadRegistry::TypeUrlFor(some_server::ipc::gate_game::v1::LoginPlayerRequest{}))
-    {
-        return HandleLoginRequest(envelope);
-    }
-    if (envelope.payload_type_url ==
-        ipc::PayloadRegistry::TypeUrlFor(some_server::ipc::gate_game::v1::ReconnectPlayerRequest{}))
-    {
-        return HandleReconnectRequest(envelope);
-    }
-    if (envelope.payload_type_url ==
-        ipc::PayloadRegistry::TypeUrlFor(some_server::ipc::gate_game::v1::PlayerDisconnected{}))
-    {
-        return HandlePlayerDisconnected(envelope);
-    }
-    return ipc::DispatchResult::Success();
+    RegisterProcessHandlers();
 }
 
-ipc::DispatchResult PlayerLoginService::HandleLoginRequest(const ipc::Envelope& envelope)
+void PlayerLoginService::RegisterProcessHandlers()
+{
+    if (mIpcService == nullptr)
+    {
+        return;
+    }
+    mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::LoginPlayerRequest>(
+        [this](
+            const ipc::ReceiverAddress&,
+            const ipc::Envelope& envelope,
+            const some_server::ipc::gate_game::v1::LoginPlayerRequest& request) {
+            return HandleLoginRequest(envelope, request);
+        });
+    mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::ReconnectPlayerRequest>(
+        [this](
+            const ipc::ReceiverAddress&,
+            const ipc::Envelope& envelope,
+            const some_server::ipc::gate_game::v1::ReconnectPlayerRequest& request) {
+            return HandleReconnectRequest(envelope, request);
+        });
+    mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::PlayerDisconnected>(
+        [this](
+            const ipc::ReceiverAddress&,
+            const ipc::Envelope& envelope,
+            const some_server::ipc::gate_game::v1::PlayerDisconnected& request) {
+            return HandlePlayerDisconnected(envelope, request);
+        });
+}
+
+ipc::DispatchResult PlayerLoginService::HandleLoginRequest(
+    const ipc::Envelope& envelope,
+    const some_server::ipc::gate_game::v1::LoginPlayerRequest& request)
 {
     if (mDirectoryService == nullptr || mSessionService == nullptr || mIpcService == nullptr)
     {
         return ipc::DispatchResult::Failure("player login dependencies are not registered");
-    }
-
-    some_server::ipc::gate_game::v1::LoginPlayerRequest request;
-    if (!request.ParseFromArray(
-            envelope.payload_bytes.data(),
-            static_cast<int>(envelope.payload_bytes.size())))
-    {
-        return ipc::DispatchResult::Failure("failed to parse LoginPlayerRequest");
     }
 
     const auto resolved =
@@ -93,19 +104,13 @@ ipc::DispatchResult PlayerLoginService::HandleLoginRequest(const ipc::Envelope& 
     return ipc::DispatchResult::Success();
 }
 
-ipc::DispatchResult PlayerLoginService::HandleReconnectRequest(const ipc::Envelope& envelope)
+ipc::DispatchResult PlayerLoginService::HandleReconnectRequest(
+    const ipc::Envelope& envelope,
+    const some_server::ipc::gate_game::v1::ReconnectPlayerRequest& request)
 {
     if (mSessionService == nullptr || mIpcService == nullptr)
     {
         return ipc::DispatchResult::Failure("player login dependencies are not registered");
-    }
-
-    some_server::ipc::gate_game::v1::ReconnectPlayerRequest request;
-    if (!request.ParseFromArray(
-            envelope.payload_bytes.data(),
-            static_cast<int>(envelope.payload_bytes.size())))
-    {
-        return ipc::DispatchResult::Failure("failed to parse ReconnectPlayerRequest");
     }
 
     const auto activate = mSessionService->ActivatePlayer(
@@ -136,19 +141,13 @@ ipc::DispatchResult PlayerLoginService::HandleReconnectRequest(const ipc::Envelo
     return ipc::DispatchResult::Success();
 }
 
-ipc::DispatchResult PlayerLoginService::HandlePlayerDisconnected(const ipc::Envelope& envelope)
+ipc::DispatchResult PlayerLoginService::HandlePlayerDisconnected(
+    const ipc::Envelope&,
+    const some_server::ipc::gate_game::v1::PlayerDisconnected& request)
 {
     if (mSessionService == nullptr)
     {
         return ipc::DispatchResult::Failure("player session service is not registered");
-    }
-
-    some_server::ipc::gate_game::v1::PlayerDisconnected request;
-    if (!request.ParseFromArray(
-            envelope.payload_bytes.data(),
-            static_cast<int>(envelope.payload_bytes.size())))
-    {
-        return ipc::DispatchResult::Failure("failed to parse PlayerDisconnected");
     }
 
     const auto detach = mSessionService->DetachPlayer(

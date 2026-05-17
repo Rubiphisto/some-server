@@ -136,24 +136,6 @@ void Application::RegisterServices()
             mIpcService);
     mPlayerMessageService = player_message_service.get();
     AddService(std::move(player_message_service));
-
-    mIpcService->SetProcessDispatchHandler(
-        [this](const ipc::ReceiverAddress& target, const ipc::Envelope& envelope) -> ipc::DispatchResult {
-            if (mPlayerLoginService == nullptr)
-            {
-                return ipc::DispatchResult::Failure("player login service is not registered");
-            }
-            const auto login_result = mPlayerLoginService->HandleProcessEnvelope(target, envelope);
-            if (!login_result.ok)
-            {
-                return login_result;
-            }
-            if (mPlayerMessageService != nullptr)
-            {
-                return mPlayerMessageService->HandleProcessEnvelope(target, envelope);
-            }
-            return ipc::DispatchResult::Success();
-        });
 }
 
 void Application::RegisterRuntimeCommands()

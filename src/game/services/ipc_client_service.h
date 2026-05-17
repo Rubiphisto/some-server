@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../application.h"
+#include "../../common/protocol/protobuf_envelope_dispatcher.h"
 #include "../../common/ipc/ipc_node_service_base.h"
 #include "player_receiver_host.h"
 #include "process_receiver_host.h"
@@ -61,8 +62,6 @@ struct GameLocalReceiverSnapshot
 class GameIpcClientService final : public some_server::common::IpcNodeServiceBase
 {
 public:
-    using ProcessDispatchHandler = std::function<ipc::DispatchResult(const ipc::ReceiverAddress&, const ipc::Envelope&)>;
-
     GameIpcClientService(const GameConfiguration& configuration, ipc::ServiceType game_service_type);
 
     LifecycleTask Load() override;
@@ -87,7 +86,12 @@ public:
     ipc::SendResult SendProcessMessage(ipc::InstanceId instance_id, const std::string& value);
     ipc::SendResult SendPlayerMessage(std::uint64_t player_id, const std::string& value);
     ipc::SendResult BroadcastServiceMessage(const std::string& value, bool include_local);
-    void SetProcessDispatchHandler(ProcessDispatchHandler handler);
+
+    template <typename Message, typename HandlerFn>
+    void RegisterProcessHandler(HandlerFn&& handler)
+    {
+        mProcessDispatcher.Register<Message>(std::forward<HandlerFn>(handler));
+    }
 
 private:
     ipc::ProcessDescriptor BuildSelfDescriptor() const override;
@@ -110,7 +114,7 @@ private:
     std::unique_ptr<ProcessReceiverHost> mProcessReceiverHost;
     PlayerReceiverHost mPlayerReceiverHost;
     ServiceReceiverHost mServiceReceiverHost;
-    ProcessDispatchHandler mProcessDispatchHandler;
+    common::protocol::ProtobufEnvelopeDispatcher<ipc::ReceiverAddress> mProcessDispatcher;
     std::uint64_t mSendRejectCount = 0;
     std::string mLastSendRejectReason;
 };
