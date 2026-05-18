@@ -4,7 +4,7 @@
 #include "../base/result.h"
 #include "../transport/frame.h"
 
-#include "ipc/control/v1/control.pb.h"
+#include "ipc/control.pb.h"
 
 namespace ipc
 {
@@ -18,8 +18,8 @@ enum class ControlMessageType : std::uint16_t
     close = 5
 };
 
-using ProtoControlMessage = some_server::ipc::control::v1::ControlMessage;
-using ProtoHelloAckResult = some_server::ipc::control::v1::HelloAck_Result;
+using ProtoControlMessage = pb::ipc::ControlMessage;
+using ProtoHelloAckResult = pb::ipc::HelloAck_Result;
 
 // Minimal handshake state extracted from a Hello control message.
 struct HelloInfo
@@ -34,7 +34,7 @@ ByteBuffer EncodeHello(const ProcessRef& self, std::uint32_t protocol_version);
 // Encodes a HelloAck handshake response, optionally carrying a reject result.
 ByteBuffer EncodeHelloAck(const ProcessRef& self,
                          std::uint32_t protocol_version,
-                         ProtoHelloAckResult result = some_server::ipc::control::v1::HelloAck_Result_RESULT_OK);
+                         ProtoHelloAckResult result = pb::ipc::HelloAck_Result_RESULT_OK);
 // Encodes a minimal Pong liveness response.
 ByteBuffer EncodePong();
 // Parses one protobuf control frame payload into the union control message.

@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package some_server.ipc.data.v1;
+package pb.ipc;
 
-import "ipc/common/v1/types.proto";
+import "ipc/types.proto";
 
 // Data-plane protocol for process-to-process business payload transport.
 // Routing consumes the envelope metadata; business handlers consume payload_bytes.
@@ -14,15 +14,15 @@ message DataEnvelope {
   }
 
   // Concrete sender identity used for stale-source checks and tracing.
-  some_server.ipc.common.v1.ProcessRef source_process = 1;
+  ProcessRef source_process = 1;
   // High-level delivery intent understood by the routing layer.
   DeliverySemantic semantic = 2;
   // Logical destination understood by receiver directory and routing.
-  some_server.ipc.common.v1.ReceiverAddress target_receiver = 3;
+  ReceiverAddress target_receiver = 3;
   // Optional resolved owner carried across relay hops for receiver-targeted forwarding.
-  optional some_server.ipc.common.v1.ProcessRef resolved_target_process = 9;
+  optional ProcessRef resolved_target_process = 9;
   // Present only for broadcast semantics.
-  optional some_server.ipc.common.v1.BroadcastScope broadcast_scope = 4;
+  optional BroadcastScope broadcast_scope = 4;
   // Protobuf payload dispatch key used by the messaging facade.
   string payload_type_url = 5;
   // Serialized business protobuf payload.

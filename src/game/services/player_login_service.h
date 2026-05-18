@@ -4,8 +4,8 @@
 #include "../../framework/ipc/base/envelope.h"
 #include "../../framework/ipc/base/result.h"
 
-#include <ipc/gate_game/v1/login.pb.h>
-#include <ipc/gate_game/v1/session.pb.h>
+#include <ipc/login.pb.h>
+#include <ipc/session.pb.h>
 
 class GameIpcClientService;
 class PlayerDirectoryService;
@@ -23,13 +23,13 @@ private:
     void RegisterProcessHandlers();
     ipc::DispatchResult HandleLoginRequest(
         const ipc::Envelope& envelope,
-        const some_server::ipc::gate_game::v1::LoginPlayerRequest& request);
+        const pb::ipc::LoginPlayerRequest& request);
     ipc::DispatchResult HandleReconnectRequest(
         const ipc::Envelope& envelope,
-        const some_server::ipc::gate_game::v1::ReconnectPlayerRequest& request);
+        const pb::ipc::ReconnectPlayerRequest& request);
     ipc::DispatchResult HandlePlayerDisconnected(
         const ipc::Envelope& envelope,
-        const some_server::ipc::gate_game::v1::PlayerDisconnected& request);
+        const pb::ipc::PlayerDisconnected& request);
 
     PlayerDirectoryService* mDirectoryService = nullptr;
     PlayerSessionService* mSessionService = nullptr;

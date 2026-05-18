@@ -1,15 +1,15 @@
 #include "data_codec.h"
 
-#include "ipc/data/v1/envelope.pb.h"
+#include "ipc/envelope.pb.h"
 
 namespace ipc
 {
 namespace
 {
-using ProtoDataEnvelope = some_server::ipc::data::v1::DataEnvelope;
-using ProtoReceiverAddress = some_server::ipc::common::v1::ReceiverAddress;
-using ProtoBroadcastScope = some_server::ipc::common::v1::BroadcastScope;
-using ProtoProcessRef = some_server::ipc::common::v1::ProcessRef;
+using ProtoDataEnvelope = pb::ipc::DataEnvelope;
+using ProtoReceiverAddress = pb::ipc::ReceiverAddress;
+using ProtoBroadcastScope = pb::ipc::BroadcastScope;
+using ProtoProcessRef = pb::ipc::ProcessRef;
 
 ProtoProcessRef ToProto(const ProcessRef& process)
 {

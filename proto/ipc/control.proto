@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package some_server.ipc.control.v1;
+package pb.ipc;
 
-import "ipc/common/v1/types.proto";
+import "ipc/types.proto";
 
 // Control-plane protocol for the link/discovery/routing side of IPC.
 // Application business messages must not be defined in this file.
@@ -21,11 +21,11 @@ message ControlMessage {
 
 // First handshake message on a newly established process link.
 message Hello {
-  some_server.ipc.common.v1.ProcessIdentity self = 1;
+  ProcessIdentity self = 1;
   string service_name = 2;
   uint32 protocol_version = 3;
   uint32 min_supported_protocol_version = 4;
-  some_server.ipc.common.v1.Endpoint listen_endpoint = 5;
+  Endpoint listen_endpoint = 5;
   map<string, string> labels = 6;
   repeated uint32 relay_capabilities = 7;
 }
@@ -41,7 +41,7 @@ message HelloAck {
   }
 
   Result result = 1;
-  some_server.ipc.common.v1.ProcessIdentity self = 2;
+  ProcessIdentity self = 2;
   uint32 protocol_version = 3;
   string reason = 4;
 }

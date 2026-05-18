@@ -10,7 +10,7 @@
 #include "services/routing_service.h"
 #include "services/session_service.h"
 
-#include <ipc/gate_game/v1/session.pb.h>
+#include <ipc/session.pb.h>
 #include <spdlog/spdlog.h>
 
 namespace
@@ -101,7 +101,7 @@ void Application::RegisterServices()
             {
                 (void)mLoginService->HandleSessionDisconnected(
                     removed,
-                    some_server::ipc::gate_game::v1::DISCONNECT_REASON_CLIENT_CLOSED);
+                    pb::ipc::DISCONNECT_REASON_CLIENT_CLOSED);
             }
         });
 

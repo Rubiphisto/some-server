@@ -4,8 +4,8 @@
 #include "../../framework/ipc/base/envelope.h"
 #include "../../framework/ipc/base/result.h"
 
-#include <ipc/gate_game/v1/player_message.pb.h>
-#include <ipc/gate_game/v1/push.pb.h>
+#include <ipc/player_message.pb.h>
+#include <ipc/push.pb.h>
 #include <message_ids.pb.h>
 #include <player.pb.h>
 
@@ -37,10 +37,10 @@ private:
     void RegisterProcessHandlers();
     ipc::DispatchResult HandleForwardPlayerMessageResponse(
         const ipc::Envelope& envelope,
-        const some_server::ipc::gate_game::v1::ForwardPlayerMessageResponse& response);
+        const pb::ipc::ForwardPlayerMessageResponse& response);
     ipc::DispatchResult HandlePushPlayerMessage(
         const ipc::Envelope& envelope,
-        const some_server::ipc::gate_game::v1::PushPlayerMessage& push);
+        const pb::ipc::PushPlayerMessage& push);
     struct PendingMessage
     {
         std::uint64_t connection_id = 0;

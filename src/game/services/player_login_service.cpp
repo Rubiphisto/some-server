@@ -4,19 +4,19 @@
 #include "player_directory_service.h"
 #include "player_session_service.h"
 
-#include <ipc/gate_game/v1/common.pb.h>
-#include <ipc/gate_game/v1/login.pb.h>
-#include <ipc/gate_game/v1/session.pb.h>
+#include <ipc/common.pb.h>
+#include <ipc/login.pb.h>
+#include <ipc/session.pb.h>
 
 namespace
 {
-some_server::ipc::gate_game::v1::ResultCode ToResultCode(const ipc::Result& result)
+pb::ipc::ResultCode ToResultCode(const ipc::Result& result)
 {
     if (result.message == "player lease is already held by another game")
     {
-        return some_server::ipc::gate_game::v1::RESULT_CODE_PLAYER_HELD_BY_OTHER_GAME;
+        return pb::ipc::RESULT_CODE_PLAYER_HELD_BY_OTHER_GAME;
     }
-    return some_server::ipc::gate_game::v1::RESULT_CODE_INTERNAL;
+    return pb::ipc::RESULT_CODE_INTERNAL;
 }
 }  // namespace
 
@@ -38,20 +38,20 @@ void PlayerLoginService::RegisterProcessHandlers()
     {
         return;
     }
-    mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::LoginPlayerRequest>(
+    mIpcService->RegisterProcessHandler<pb::ipc::LoginPlayerRequest>(
         this,
         &PlayerLoginService::HandleLoginRequest);
-    mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::ReconnectPlayerRequest>(
+    mIpcService->RegisterProcessHandler<pb::ipc::ReconnectPlayerRequest>(
         this,
         &PlayerLoginService::HandleReconnectRequest);
-    mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::PlayerDisconnected>(
+    mIpcService->RegisterProcessHandler<pb::ipc::PlayerDisconnected>(
         this,
         &PlayerLoginService::HandlePlayerDisconnected);
 }
 
 ipc::DispatchResult PlayerLoginService::HandleLoginRequest(
     const ipc::Envelope& envelope,
-    const some_server::ipc::gate_game::v1::LoginPlayerRequest& request)
+    const pb::ipc::LoginPlayerRequest& request)
 {
     if (mDirectoryService == nullptr || mSessionService == nullptr || mIpcService == nullptr)
     {
@@ -67,7 +67,7 @@ ipc::DispatchResult PlayerLoginService::HandleLoginRequest(
         request.gate_session_id(),
         resolved.created);
 
-    some_server::ipc::gate_game::v1::LoginPlayerResponse response;
+    pb::ipc::LoginPlayerResponse response;
     response.set_request_id(request.request_id());
     response.set_player_id(resolved.player_id);
     response.set_game_service_type(envelope.header.target_receiver.key_hi);
@@ -80,7 +80,7 @@ ipc::DispatchResult PlayerLoginService::HandleLoginRequest(
     }
     else
     {
-        response.set_result_code(some_server::ipc::gate_game::v1::RESULT_CODE_OK);
+        response.set_result_code(pb::ipc::RESULT_CODE_OK);
     }
 
     const auto send =
@@ -94,7 +94,7 @@ ipc::DispatchResult PlayerLoginService::HandleLoginRequest(
 
 ipc::DispatchResult PlayerLoginService::HandleReconnectRequest(
     const ipc::Envelope& envelope,
-    const some_server::ipc::gate_game::v1::ReconnectPlayerRequest& request)
+    const pb::ipc::ReconnectPlayerRequest& request)
 {
     if (mSessionService == nullptr || mIpcService == nullptr)
     {
@@ -107,7 +107,7 @@ ipc::DispatchResult PlayerLoginService::HandleReconnectRequest(
         request.gate_instance_id(),
         request.gate_session_id());
 
-    some_server::ipc::gate_game::v1::ReconnectPlayerResponse response;
+    pb::ipc::ReconnectPlayerResponse response;
     response.set_request_id(request.request_id());
     response.set_player_id(request.player_id());
     if (!activate.ok)
@@ -117,7 +117,7 @@ ipc::DispatchResult PlayerLoginService::HandleReconnectRequest(
     }
     else
     {
-        response.set_result_code(some_server::ipc::gate_game::v1::RESULT_CODE_OK);
+        response.set_result_code(pb::ipc::RESULT_CODE_OK);
     }
 
     const auto send =
@@ -131,7 +131,7 @@ ipc::DispatchResult PlayerLoginService::HandleReconnectRequest(
 
 ipc::DispatchResult PlayerLoginService::HandlePlayerDisconnected(
     const ipc::Envelope&,
-    const some_server::ipc::gate_game::v1::PlayerDisconnected& request)
+    const pb::ipc::PlayerDisconnected& request)
 {
     if (mSessionService == nullptr)
     {

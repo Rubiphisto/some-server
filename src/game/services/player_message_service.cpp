@@ -6,9 +6,9 @@
 #include "player_runtime_service.h"
 #include "player_session_service.h"
 
-#include <ipc/gate_game/v1/common.pb.h>
-#include <ipc/gate_game/v1/player_message.pb.h>
-#include <ipc/gate_game/v1/push.pb.h>
+#include <ipc/common.pb.h>
+#include <ipc/player_message.pb.h>
+#include <ipc/push.pb.h>
 #include <message_ids.pb.h>
 
 GamePlayerMessageService::GamePlayerMessageService(
@@ -34,14 +34,14 @@ void GamePlayerMessageService::RegisterProcessHandlers()
     {
         return;
     }
-    mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::ForwardPlayerMessageRequest>(
+    mIpcService->RegisterProcessHandler<pb::ipc::ForwardPlayerMessageRequest>(
         this,
         &GamePlayerMessageService::HandleForwardPlayerMessageRequest);
 }
 
 ipc::DispatchResult GamePlayerMessageService::HandleForwardPlayerMessageRequest(
     const ipc::Envelope& envelope,
-    const some_server::ipc::gate_game::v1::ForwardPlayerMessageRequest& request)
+    const pb::ipc::ForwardPlayerMessageRequest& request)
 {
     if (mSessionService == nullptr || mLeaseService == nullptr || mRepository == nullptr || mRuntimeService == nullptr || mIpcService == nullptr)
     {
@@ -50,24 +50,24 @@ ipc::DispatchResult GamePlayerMessageService::HandleForwardPlayerMessageRequest(
 
     const auto session = mSessionService->Snapshot(request.player_id());
 
-    some_server::ipc::gate_game::v1::ForwardPlayerMessageResponse response;
+    pb::ipc::ForwardPlayerMessageResponse response;
     response.set_request_id(request.request_id());
     response.set_player_id(request.player_id());
     response.set_message_id(request.message_id());
     response.set_server_sequence(request.client_sequence() + 1);
     if (!session.has_value())
     {
-        response.set_result_code(some_server::ipc::gate_game::v1::RESULT_CODE_PLAYER_NOT_FOUND);
+        response.set_result_code(pb::ipc::RESULT_CODE_PLAYER_NOT_FOUND);
         response.set_error_message("player session is not tracked");
     }
     else if (session->state != PlayerSessionState::online)
     {
-        response.set_result_code(some_server::ipc::gate_game::v1::RESULT_CODE_SESSION_EXPIRED);
+        response.set_result_code(pb::ipc::RESULT_CODE_SESSION_EXPIRED);
         response.set_error_message("player session is not online");
     }
     else if (!mLeaseService->IsHeldLocally(request.player_id()))
     {
-        response.set_result_code(some_server::ipc::gate_game::v1::RESULT_CODE_PLAYER_HELD_BY_OTHER_GAME);
+        response.set_result_code(pb::ipc::RESULT_CODE_PLAYER_HELD_BY_OTHER_GAME);
         response.set_error_message("player lease is not held locally");
     }
     else
@@ -80,12 +80,12 @@ ipc::DispatchResult GamePlayerMessageService::HandleForwardPlayerMessageRequest(
             request.player_id());
         if (!result.ok)
         {
-            response.set_result_code(some_server::ipc::gate_game::v1::RESULT_CODE_INVALID_ARGUMENT);
+            response.set_result_code(pb::ipc::RESULT_CODE_INVALID_ARGUMENT);
             response.set_error_message(result.message);
         }
         else
         {
-            response.set_result_code(some_server::ipc::gate_game::v1::RESULT_CODE_OK);
+            response.set_result_code(pb::ipc::RESULT_CODE_OK);
             response.set_response_payload_bytes(std::move(response_payload));
         }
     }
@@ -114,7 +114,7 @@ ipc::Result GamePlayerMessageService::PushToPlayer(
         return ipc::Result::Failure("player lease is not held locally");
     }
 
-    some_server::ipc::gate_game::v1::PushPlayerMessage push;
+    pb::ipc::PushPlayerMessage push;
     push.set_player_id(player_id);
     push.set_gate_service_type(session->gate_service_type);
     push.set_gate_instance_id(session->gate_instance_id);

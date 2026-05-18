@@ -5,7 +5,7 @@
 #include "../../framework/ipc/base/result.h"
 #include "../../common/protocol/protobuf_dispatcher.h"
 
-#include <ipc/gate_game/v1/player_message.pb.h>
+#include <ipc/player_message.pb.h>
 #include <message_ids.pb.h>
 #include <player.pb.h>
 
@@ -46,7 +46,7 @@ private:
     void RegisterProcessHandlers();
     ipc::DispatchResult HandleForwardPlayerMessageRequest(
         const ipc::Envelope& envelope,
-        const some_server::ipc::gate_game::v1::ForwardPlayerMessageRequest& request);
+        const pb::ipc::ForwardPlayerMessageRequest& request);
     ipc::Result HandleEcho(
         std::uint64_t player_id,
         const pb::PlayerEchoRequest& request,

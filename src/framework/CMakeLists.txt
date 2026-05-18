@@ -6,19 +6,19 @@ set(FRAMEWORK_IPC_PROTO_GEN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ipc/pb)
 set(FRAMEWORK_ETCD_PROTO_ROOT ${CMAKE_SOURCE_DIR}/third_party/etcd-proto)
 set(FRAMEWORK_THIRD_PARTY_PROTO_ROOT ${CMAKE_SOURCE_DIR}/third_party)
 set(FRAMEWORK_IPC_PROTO_FILES
-        ${FRAMEWORK_IPC_PROTO_ROOT}/ipc/common/v1/types.proto
-        ${FRAMEWORK_IPC_PROTO_ROOT}/ipc/control/v1/control.proto
-        ${FRAMEWORK_IPC_PROTO_ROOT}/ipc/data/v1/envelope.proto
+        ${FRAMEWORK_IPC_PROTO_ROOT}/ipc/types.proto
+        ${FRAMEWORK_IPC_PROTO_ROOT}/ipc/control.proto
+        ${FRAMEWORK_IPC_PROTO_ROOT}/ipc/envelope.proto
 )
 set(FRAMEWORK_IPC_PROTO_SRCS
-        ${FRAMEWORK_IPC_PROTO_GEN_DIR}/ipc/common/v1/types.pb.cc
-        ${FRAMEWORK_IPC_PROTO_GEN_DIR}/ipc/control/v1/control.pb.cc
-        ${FRAMEWORK_IPC_PROTO_GEN_DIR}/ipc/data/v1/envelope.pb.cc
+        ${FRAMEWORK_IPC_PROTO_GEN_DIR}/ipc/types.pb.cc
+        ${FRAMEWORK_IPC_PROTO_GEN_DIR}/ipc/control.pb.cc
+        ${FRAMEWORK_IPC_PROTO_GEN_DIR}/ipc/envelope.pb.cc
 )
 set(FRAMEWORK_IPC_PROTO_HDRS
-        ${FRAMEWORK_IPC_PROTO_GEN_DIR}/ipc/common/v1/types.pb.h
-        ${FRAMEWORK_IPC_PROTO_GEN_DIR}/ipc/control/v1/control.pb.h
-        ${FRAMEWORK_IPC_PROTO_GEN_DIR}/ipc/data/v1/envelope.pb.h
+        ${FRAMEWORK_IPC_PROTO_GEN_DIR}/ipc/types.pb.h
+        ${FRAMEWORK_IPC_PROTO_GEN_DIR}/ipc/control.pb.h
+        ${FRAMEWORK_IPC_PROTO_GEN_DIR}/ipc/envelope.pb.h
 )
 set(FRAMEWORK_ETCD_PROTO_FILES
         ${FRAMEWORK_THIRD_PARTY_PROTO_ROOT}/gogoproto/gogo.proto

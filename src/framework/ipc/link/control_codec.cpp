@@ -4,14 +4,14 @@ namespace ipc
 {
 namespace
 {
-void FillProcessIdentity(const ProcessRef& source, some_server::ipc::common::v1::ProcessIdentity& target)
+void FillProcessIdentity(const ProcessRef& source, pb::ipc::ProcessIdentity& target)
 {
     target.set_service_type(source.process_id.service_type);
     target.set_instance_id(source.process_id.instance_id);
     target.set_incarnation_id(source.incarnation_id);
 }
 
-ProcessRef ToProcessRef(const some_server::ipc::common::v1::ProcessIdentity& identity)
+ProcessRef ToProcessRef(const pb::ipc::ProcessIdentity& identity)
 {
     return ProcessRef{
         ProcessId{identity.service_type(), identity.instance_id()},

@@ -49,13 +49,13 @@ Result LinkManager::OnFrame(const RawFrame& frame)
         {
             return Result::Failure("link not found");
         }
-        ProtoHelloAckResult result = some_server::ipc::control::v1::HelloAck_Result_RESULT_UNSPECIFIED;
+        ProtoHelloAckResult result = pb::ipc::HelloAck_Result_RESULT_UNSPECIFIED;
         const Result extracted = ExtractHelloAckResult(message, result);
         if (!extracted.ok)
         {
             return extracted;
         }
-        if (result != some_server::ipc::control::v1::HelloAck_Result_RESULT_OK)
+        if (result != pb::ipc::HelloAck_Result_RESULT_OK)
         {
             it->second.state = LinkState::closed;
             return Result::Failure("hello_ack rejected");
@@ -146,7 +146,7 @@ Result LinkManager::HandleHello(ConnectionId connection_id, const ByteBuffer& pa
             EncodeHelloAck(
                 mSelf,
                 mProtocolVersion,
-                some_server::ipc::control::v1::HelloAck_Result_RESULT_INCOMPATIBLE_VERSION));
+                pb::ipc::HelloAck_Result_RESULT_INCOMPATIBLE_VERSION));
         return Result::Failure("incompatible protocol version");
     }
 

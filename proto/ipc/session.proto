@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package some_server.ipc.gate_game.v1;
+package pb.ipc;
 
-import "ipc/gate_game/v1/common.proto";
+import "ipc/common.proto";
 
 message KickAccountSession {
   uint64 request_id = 1;
@@ -45,4 +45,3 @@ message UnbindPlayerSession {
   uint64 gate_session_id = 4;
   DisconnectReason reason = 5;
 }
-

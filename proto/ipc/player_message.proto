@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package some_server.ipc.gate_game.v1;
+package pb.ipc;
 
-import "ipc/gate_game/v1/common.proto";
+import "ipc/common.proto";
 
 message ForwardPlayerMessageRequest {
   uint64 request_id = 1;
@@ -25,4 +25,3 @@ message ForwardPlayerMessageResponse {
   uint64 server_sequence = 6;
   string error_message = 7;
 }
-

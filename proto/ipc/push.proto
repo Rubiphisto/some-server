@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package some_server.ipc.gate_game.v1;
+package pb.ipc;
 
 message PushPlayerMessage {
   uint64 player_id = 1;

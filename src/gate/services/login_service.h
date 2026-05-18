@@ -5,8 +5,8 @@
 #include "../../framework/ipc/base/result.h"
 
 #include <common.pb.h>
-#include <ipc/gate_game/v1/login.pb.h>
-#include <ipc/gate_game/v1/session.pb.h>
+#include <ipc/login.pb.h>
+#include <ipc/session.pb.h>
 #include <login.pb.h>
 
 #include "session_service.h"
@@ -51,7 +51,7 @@ public:
     ipc::Result HandleClientLogin(std::uint64_t connection_id, const pb::LoginRequest& request);
     ipc::Result HandleSessionDisconnected(
         const GateSessionRecord& session,
-        some_server::ipc::gate_game::v1::DisconnectReason reason);
+        pb::ipc::DisconnectReason reason);
     ipc::Result RequestLogin(
         std::uint32_t game_instance_id,
         std::uint64_t connection_id,
@@ -66,14 +66,14 @@ private:
     void RegisterProcessHandlers();
     ipc::DispatchResult HandleLoginResponse(
         const ipc::Envelope& envelope,
-        const some_server::ipc::gate_game::v1::LoginPlayerResponse& response);
+        const pb::ipc::LoginPlayerResponse& response);
     ipc::Result KickExistingAccountSession(std::string_view account_id, std::uint64_t current_connection_id);
     ipc::DispatchResult HandleKickAccountSession(
         const ipc::Envelope& envelope,
-        const some_server::ipc::gate_game::v1::KickAccountSession& request);
+        const pb::ipc::KickAccountSession& request);
     ipc::DispatchResult HandleUnbindPlayerSession(
         const ipc::Envelope& envelope,
-        const some_server::ipc::gate_game::v1::UnbindPlayerSession& request);
+        const pb::ipc::UnbindPlayerSession& request);
     struct PendingLogin
     {
         std::uint64_t connection_id = 0;

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package some_server.ipc.common.v1;
+package pb.ipc;
 
 // Common identity and addressing types shared by control-plane and data-plane
 // protocols. This file belongs to the IPC base/common layer.

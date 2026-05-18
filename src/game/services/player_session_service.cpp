@@ -4,7 +4,7 @@
 #include "player_lease_service.h"
 #include "player_runtime_service.h"
 
-#include <ipc/gate_game/v1/session.pb.h>
+#include <ipc/session.pb.h>
 
 #include <chrono>
 #include <thread>
@@ -364,12 +364,12 @@ std::size_t PlayerSessionService::ReconcileLeaseLosses()
         if (action.state == PlayerSessionState::online && action.gate_service_type != 0 && action.gate_instance_id != 0 &&
             action.gate_session_id != 0)
         {
-            some_server::ipc::gate_game::v1::UnbindPlayerSession request;
+            pb::ipc::UnbindPlayerSession request;
             request.set_player_id(action.player_id);
             request.set_gate_service_type(action.gate_service_type);
             request.set_gate_instance_id(action.gate_instance_id);
             request.set_gate_session_id(action.gate_session_id);
-            request.set_reason(some_server::ipc::gate_game::v1::DISCONNECT_REASON_KICKED);
+            request.set_reason(pb::ipc::DISCONNECT_REASON_KICKED);
             (void)mIpcService->SendProcessPayload(
                 ipc::ProcessId{
                     .service_type = action.gate_service_type,

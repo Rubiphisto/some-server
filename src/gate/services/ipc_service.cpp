@@ -3,11 +3,11 @@
 #include "../../common/ipc/first_phase_topology_policy.h"
 
 #include <google/protobuf/wrappers.pb.h>
-#include <ipc/gate_game/v1/common.pb.h>
-#include <ipc/gate_game/v1/login.pb.h>
-#include <ipc/gate_game/v1/player_message.pb.h>
-#include <ipc/gate_game/v1/push.pb.h>
-#include <ipc/gate_game/v1/session.pb.h>
+#include <ipc/common.pb.h>
+#include <ipc/login.pb.h>
+#include <ipc/player_message.pb.h>
+#include <ipc/push.pb.h>
+#include <ipc/session.pb.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
@@ -179,18 +179,18 @@ ipc::Result GateIpcService::SetupRoleComponentsLocked()
     }
 
     google::protobuf::StringValue sample_message;
-    some_server::ipc::gate_game::v1::LoginPlayerRequest login_request;
-    some_server::ipc::gate_game::v1::LoginPlayerResponse login_response;
-    some_server::ipc::gate_game::v1::ReconnectPlayerRequest reconnect_request;
-    some_server::ipc::gate_game::v1::ReconnectPlayerResponse reconnect_response;
-    some_server::ipc::gate_game::v1::KickAccountSession kick_request;
-    some_server::ipc::gate_game::v1::KickAccountSessionAck kick_ack;
-    some_server::ipc::gate_game::v1::PlayerDisconnected disconnected;
-    some_server::ipc::gate_game::v1::BindPlayerSession bind_session;
-    some_server::ipc::gate_game::v1::UnbindPlayerSession unbind_session;
-    some_server::ipc::gate_game::v1::ForwardPlayerMessageRequest player_message_request;
-    some_server::ipc::gate_game::v1::ForwardPlayerMessageResponse player_message_response;
-    some_server::ipc::gate_game::v1::PushPlayerMessage push_message;
+    pb::ipc::LoginPlayerRequest login_request;
+    pb::ipc::LoginPlayerResponse login_response;
+    pb::ipc::ReconnectPlayerRequest reconnect_request;
+    pb::ipc::ReconnectPlayerResponse reconnect_response;
+    pb::ipc::KickAccountSession kick_request;
+    pb::ipc::KickAccountSessionAck kick_ack;
+    pb::ipc::PlayerDisconnected disconnected;
+    pb::ipc::BindPlayerSession bind_session;
+    pb::ipc::UnbindPlayerSession unbind_session;
+    pb::ipc::ForwardPlayerMessageRequest player_message_request;
+    pb::ipc::ForwardPlayerMessageResponse player_message_response;
+    pb::ipc::PushPlayerMessage push_message;
 
     const google::protobuf::Message* payloads[] = {
         &sample_message,

@@ -1,19 +1,19 @@
 set(IPC_PROTO_ROOT ${CMAKE_SOURCE_DIR}/proto)
 set(IPC_PROTO_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated)
 set(IPC_PROTO_FILES
-        ${IPC_PROTO_ROOT}/ipc/common/v1/types.proto
-        ${IPC_PROTO_ROOT}/ipc/control/v1/control.proto
-        ${IPC_PROTO_ROOT}/ipc/data/v1/envelope.proto
+        ${IPC_PROTO_ROOT}/ipc/types.proto
+        ${IPC_PROTO_ROOT}/ipc/control.proto
+        ${IPC_PROTO_ROOT}/ipc/envelope.proto
 )
 set(IPC_PROTO_SRCS
-        ${IPC_PROTO_GEN_DIR}/ipc/common/v1/types.pb.cc
-        ${IPC_PROTO_GEN_DIR}/ipc/control/v1/control.pb.cc
-        ${IPC_PROTO_GEN_DIR}/ipc/data/v1/envelope.pb.cc
+        ${IPC_PROTO_GEN_DIR}/ipc/types.pb.cc
+        ${IPC_PROTO_GEN_DIR}/ipc/control.pb.cc
+        ${IPC_PROTO_GEN_DIR}/ipc/envelope.pb.cc
 )
 set(IPC_PROTO_HDRS
-        ${IPC_PROTO_GEN_DIR}/ipc/common/v1/types.pb.h
-        ${IPC_PROTO_GEN_DIR}/ipc/control/v1/control.pb.h
-        ${IPC_PROTO_GEN_DIR}/ipc/data/v1/envelope.pb.h
+        ${IPC_PROTO_GEN_DIR}/ipc/types.pb.h
+        ${IPC_PROTO_GEN_DIR}/ipc/control.pb.h
+        ${IPC_PROTO_GEN_DIR}/ipc/envelope.pb.h
 )
 
 add_custom_command(

@@ -10,8 +10,8 @@
 
 #include <ctime>
 
-#include <ipc/gate_game/v1/login.pb.h>
-#include <ipc/gate_game/v1/session.pb.h>
+#include <ipc/login.pb.h>
+#include <ipc/session.pb.h>
 
 #include "../../framework/ipc/messaging/payload_registry.h"
 
@@ -62,13 +62,13 @@ void GateLoginService::RegisterProcessHandlers()
     {
         return;
     }
-    mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::LoginPlayerResponse>(
+    mIpcService->RegisterProcessHandler<pb::ipc::LoginPlayerResponse>(
         this,
         &GateLoginService::HandleLoginResponse);
-    mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::KickAccountSession>(
+    mIpcService->RegisterProcessHandler<pb::ipc::KickAccountSession>(
         this,
         &GateLoginService::HandleKickAccountSession);
-    mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::UnbindPlayerSession>(
+    mIpcService->RegisterProcessHandler<pb::ipc::UnbindPlayerSession>(
         this,
         &GateLoginService::HandleUnbindPlayerSession);
 }
@@ -127,7 +127,7 @@ ipc::Result GateLoginService::RequestLogin(
         return ipc::Result::Failure("gate ipc service is not registered");
     }
 
-    some_server::ipc::gate_game::v1::LoginPlayerRequest request;
+    pb::ipc::LoginPlayerRequest request;
     request.set_request_id(mNextRequestId++);
     request.set_gate_service_type(kGateServiceType);
     request.set_gate_instance_id(mGateInstanceId);
@@ -224,7 +224,7 @@ ipc::Result GateLoginService::KickExistingAccountSession(
         return ipc::Result::Failure("gate ipc service is not registered");
     }
 
-    some_server::ipc::gate_game::v1::KickAccountSession request;
+    pb::ipc::KickAccountSession request;
     request.set_request_id(mNextRequestId++);
     request.set_account_id(std::string{account_id});
     request.set_old_gate_service_type(owner.gate_service_type);
@@ -248,7 +248,7 @@ ipc::Result GateLoginService::KickExistingAccountSession(
 
 ipc::Result GateLoginService::HandleSessionDisconnected(
     const GateSessionRecord& session,
-    const some_server::ipc::gate_game::v1::DisconnectReason reason)
+    const pb::ipc::DisconnectReason reason)
 {
     if (mIpcService == nullptr)
     {
@@ -259,7 +259,7 @@ ipc::Result GateLoginService::HandleSessionDisconnected(
         return ipc::Result::Success();
     }
 
-    some_server::ipc::gate_game::v1::PlayerDisconnected request;
+    pb::ipc::PlayerDisconnected request;
     request.set_player_id(session.player_id);
     request.set_gate_service_type(kGateServiceType);
     request.set_gate_instance_id(mGateInstanceId);
@@ -294,7 +294,7 @@ ipc::Result GateLoginService::HandleSessionDisconnected(
 
 ipc::DispatchResult GateLoginService::HandleLoginResponse(
     const ipc::Envelope&,
-    const some_server::ipc::gate_game::v1::LoginPlayerResponse& response)
+    const pb::ipc::LoginPlayerResponse& response)
 {
     mSnapshot.last_request_id = response.request_id();
     mSnapshot.last_player_id = response.player_id();
@@ -316,7 +316,7 @@ ipc::DispatchResult GateLoginService::HandleLoginResponse(
         mPendingLogins.erase(it);
     }
 
-    if (response.result_code() == some_server::ipc::gate_game::v1::RESULT_CODE_OK)
+    if (response.result_code() == pb::ipc::RESULT_CODE_OK)
     {
         if (mSessionService != nullptr)
         {
@@ -359,7 +359,7 @@ ipc::DispatchResult GateLoginService::HandleLoginResponse(
         pending.connection_id,
         response.player_id(),
         response.is_reconnect(),
-        response.result_code() == some_server::ipc::gate_game::v1::RESULT_CODE_OK
+        response.result_code() == pb::ipc::RESULT_CODE_OK
             ? pb::ERROR_CODE_OK
             : pb::ERROR_CODE_INTERNAL,
         response.error_message());
@@ -372,7 +372,7 @@ ipc::DispatchResult GateLoginService::HandleLoginResponse(
 
 ipc::DispatchResult GateLoginService::HandleKickAccountSession(
     const ipc::Envelope&,
-    const some_server::ipc::gate_game::v1::KickAccountSession& request)
+    const pb::ipc::KickAccountSession& request)
 {
     if (mSessionService == nullptr || mConnectionService == nullptr)
     {
@@ -406,7 +406,7 @@ ipc::DispatchResult GateLoginService::HandleKickAccountSession(
 
 ipc::DispatchResult GateLoginService::HandleUnbindPlayerSession(
     const ipc::Envelope&,
-    const some_server::ipc::gate_game::v1::UnbindPlayerSession& request)
+    const pb::ipc::UnbindPlayerSession& request)
 {
     if (mSessionService == nullptr || mConnectionService == nullptr)
     {

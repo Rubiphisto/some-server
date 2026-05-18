@@ -6,8 +6,8 @@
 #include "session_service.h"
 
 #include <common.pb.h>
-#include <ipc/gate_game/v1/player_message.pb.h>
-#include <ipc/gate_game/v1/push.pb.h>
+#include <ipc/player_message.pb.h>
+#include <ipc/push.pb.h>
 
 GatePlayerMessageService::GatePlayerMessageService(
     GateConnectionService* connection_service,
@@ -42,10 +42,10 @@ void GatePlayerMessageService::RegisterProcessHandlers()
     {
         return;
     }
-    mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::ForwardPlayerMessageResponse>(
+    mIpcService->RegisterProcessHandler<pb::ipc::ForwardPlayerMessageResponse>(
         this,
         &GatePlayerMessageService::HandleForwardPlayerMessageResponse);
-    mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::PushPlayerMessage>(
+    mIpcService->RegisterProcessHandler<pb::ipc::PushPlayerMessage>(
         this,
         &GatePlayerMessageService::HandlePushPlayerMessage);
 }
@@ -65,7 +65,7 @@ ipc::Result GatePlayerMessageService::HandleClientPlayerMessage(
         return ipc::Result::Failure("gate session is not active");
     }
 
-    some_server::ipc::gate_game::v1::ForwardPlayerMessageRequest forward_request;
+    pb::ipc::ForwardPlayerMessageRequest forward_request;
     forward_request.set_request_id(mNextRequestId++);
     forward_request.set_gate_service_type(session->game_service_type == 0 ? 20 : 20);
     forward_request.set_gate_instance_id(session->game_instance_id == 0 ? 1 : 1);
@@ -97,7 +97,7 @@ ipc::Result GatePlayerMessageService::HandleClientPlayerMessage(
 
 ipc::DispatchResult GatePlayerMessageService::HandleForwardPlayerMessageResponse(
     const ipc::Envelope&,
-    const some_server::ipc::gate_game::v1::ForwardPlayerMessageResponse& response)
+    const pb::ipc::ForwardPlayerMessageResponse& response)
 {
     PendingMessage pending;
     {
@@ -115,7 +115,7 @@ ipc::DispatchResult GatePlayerMessageService::HandleForwardPlayerMessageResponse
         pending.connection_id,
         response.message_id(),
         response.response_payload_bytes(),
-        response.result_code() == some_server::ipc::gate_game::v1::RESULT_CODE_OK
+        response.result_code() == pb::ipc::RESULT_CODE_OK
             ? pb::ERROR_CODE_OK
             : pb::ERROR_CODE_INTERNAL,
         response.error_message());
@@ -124,7 +124,7 @@ ipc::DispatchResult GatePlayerMessageService::HandleForwardPlayerMessageResponse
 
 ipc::DispatchResult GatePlayerMessageService::HandlePushPlayerMessage(
     const ipc::Envelope&,
-    const some_server::ipc::gate_game::v1::PushPlayerMessage& push)
+    const pb::ipc::PushPlayerMessage& push)
 {
     const auto session = mSessionService->Snapshot(push.gate_session_id());
     if (!session.has_value() || session->connection_id == 0 || session->player_id != push.player_id())

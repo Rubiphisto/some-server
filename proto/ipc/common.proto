@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package some_server.ipc.gate_game.v1;
+package pb.ipc;
 
 enum ResultCode {
   RESULT_CODE_UNSPECIFIED = 0;
@@ -21,4 +21,3 @@ enum DisconnectReason {
   DISCONNECT_REASON_KICKED = 3;
   DISCONNECT_REASON_GATE_SHUTDOWN = 4;
 }
-

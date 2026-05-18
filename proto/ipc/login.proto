@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package some_server.ipc.gate_game.v1;
+package pb.ipc;
 
-import "ipc/gate_game/v1/common.proto";
+import "ipc/common.proto";
 
 message LoginPlayerRequest {
   uint64 request_id = 1;
@@ -47,4 +47,3 @@ message ReconnectPlayerResponse {
   bytes player_snapshot = 6;
   string error_message = 7;
 }
-
