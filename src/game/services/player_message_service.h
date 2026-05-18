@@ -34,10 +34,12 @@ public:
     ipc::Result PushProfileToPlayer(std::uint64_t player_id);
 
 private:
-    template <typename Request, typename Response, typename HandlerFn>
-    void RegisterHandler(std::uint32_t message_id, HandlerFn&& handler)
+    template <typename Request, typename Response>
+    void RegisterHandler(
+        std::uint32_t message_id,
+        ipc::Result (GamePlayerMessageService::*handler)(std::uint64_t, const Request&, Response&))
     {
-        mDispatcher.Register<Request, Response>(message_id, std::forward<HandlerFn>(handler));
+        mDispatcher.Register<Request, Response>(message_id, this, handler);
     }
 
     void RegisterBuiltinHandlers();

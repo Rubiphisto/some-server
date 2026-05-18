@@ -57,10 +57,12 @@ public:
     GateIpcStatus Snapshot() const;
     ipc::SendResult SendProcessPayload(ipc::ProcessId target, const google::protobuf::Message& message);
 
-    template <typename Message, typename HandlerFn>
-    void RegisterProcessHandler(HandlerFn&& handler)
+    template <typename Message, typename HandlerClass>
+    void RegisterProcessHandler(
+        HandlerClass* instance,
+        ipc::DispatchResult (HandlerClass::*handler)(const ipc::Envelope&, const Message&))
     {
-        mProcessDispatcher.Register<Message>(std::forward<HandlerFn>(handler));
+        mProcessDispatcher.Register<Message>(instance, handler);
     }
 
 private:

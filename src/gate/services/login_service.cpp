@@ -52,9 +52,8 @@ void GateLoginService::RegisterProtocolHandlers()
     }
     mProtocolService->RegisterClientHandler<pb::LoginRequest>(
         pb::MESSAGE_ID_LOGIN_REQUEST,
-        [this](const std::uint64_t connection_id, const pb::LoginRequest& request) {
-            return HandleClientLogin(connection_id, request);
-        });
+        this,
+        &GateLoginService::HandleClientLogin);
 }
 
 void GateLoginService::RegisterProcessHandlers()
@@ -64,26 +63,14 @@ void GateLoginService::RegisterProcessHandlers()
         return;
     }
     mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::LoginPlayerResponse>(
-        [this](
-            const ipc::ReceiverAddress&,
-            const ipc::Envelope& envelope,
-            const some_server::ipc::gate_game::v1::LoginPlayerResponse& response) {
-            return HandleLoginResponse(envelope, response);
-        });
+        this,
+        &GateLoginService::HandleLoginResponse);
     mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::KickAccountSession>(
-        [this](
-            const ipc::ReceiverAddress&,
-            const ipc::Envelope& envelope,
-            const some_server::ipc::gate_game::v1::KickAccountSession& request) {
-            return HandleKickAccountSession(envelope, request);
-        });
+        this,
+        &GateLoginService::HandleKickAccountSession);
     mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::UnbindPlayerSession>(
-        [this](
-            const ipc::ReceiverAddress&,
-            const ipc::Envelope& envelope,
-            const some_server::ipc::gate_game::v1::UnbindPlayerSession& request) {
-            return HandleUnbindPlayerSession(envelope, request);
-        });
+        this,
+        &GateLoginService::HandleUnbindPlayerSession);
 }
 
 ipc::Result GateLoginService::HandleClientLogin(

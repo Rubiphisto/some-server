@@ -35,12 +35,8 @@ void GamePlayerMessageService::RegisterProcessHandlers()
         return;
     }
     mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::ForwardPlayerMessageRequest>(
-        [this](
-            const ipc::ReceiverAddress&,
-            const ipc::Envelope& envelope,
-            const some_server::ipc::gate_game::v1::ForwardPlayerMessageRequest& request) {
-            return HandleForwardPlayerMessageRequest(envelope, request);
-        });
+        this,
+        &GamePlayerMessageService::HandleForwardPlayerMessageRequest);
 }
 
 ipc::DispatchResult GamePlayerMessageService::HandleForwardPlayerMessageRequest(
@@ -149,17 +145,11 @@ void GamePlayerMessageService::RegisterBuiltinHandlers()
 {
     RegisterHandler<pb::PlayerEchoRequest, pb::PlayerEchoResponse>(
         pb::MESSAGE_ID_PLAYER_ECHO_REQUEST,
-        [this](
-            const std::uint64_t player_id,
-            const pb::PlayerEchoRequest& request,
-            pb::PlayerEchoResponse& response) { return HandleEcho(player_id, request, response); });
+        &GamePlayerMessageService::HandleEcho);
 
     RegisterHandler<pb::RenamePlayerRequest, pb::RenamePlayerResponse>(
         pb::MESSAGE_ID_PLAYER_RENAME_REQUEST,
-        [this](
-            const std::uint64_t player_id,
-            const pb::RenamePlayerRequest& request,
-            pb::RenamePlayerResponse& response) { return HandleRename(player_id, request, response); });
+        &GamePlayerMessageService::HandleRename);
 }
 
 ipc::Result GamePlayerMessageService::HandleEcho(

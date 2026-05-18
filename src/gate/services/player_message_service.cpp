@@ -32,9 +32,8 @@ void GatePlayerMessageService::RegisterProtocolHandlers()
     }
     mProtocolService->RegisterClientHandler<pb::PlayerMessageRequest>(
         pb::MESSAGE_ID_PLAYER_MESSAGE_REQUEST,
-        [this](const std::uint64_t connection_id, const pb::PlayerMessageRequest& request) {
-            return HandleClientPlayerMessage(connection_id, request);
-        });
+        this,
+        &GatePlayerMessageService::HandleClientPlayerMessage);
 }
 
 void GatePlayerMessageService::RegisterProcessHandlers()
@@ -44,19 +43,11 @@ void GatePlayerMessageService::RegisterProcessHandlers()
         return;
     }
     mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::ForwardPlayerMessageResponse>(
-        [this](
-            const ipc::ReceiverAddress&,
-            const ipc::Envelope& envelope,
-            const some_server::ipc::gate_game::v1::ForwardPlayerMessageResponse& response) {
-            return HandleForwardPlayerMessageResponse(envelope, response);
-        });
+        this,
+        &GatePlayerMessageService::HandleForwardPlayerMessageResponse);
     mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::PushPlayerMessage>(
-        [this](
-            const ipc::ReceiverAddress&,
-            const ipc::Envelope& envelope,
-            const some_server::ipc::gate_game::v1::PushPlayerMessage& push) {
-            return HandlePushPlayerMessage(envelope, push);
-        });
+        this,
+        &GatePlayerMessageService::HandlePushPlayerMessage);
 }
 
 ipc::Result GatePlayerMessageService::HandleClientPlayerMessage(

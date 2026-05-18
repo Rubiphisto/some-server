@@ -16,18 +16,20 @@ class ProtobufMessageDispatcher
 public:
     using Handler = std::function<ipc::Result(const std::string&, ContextArgs...)>;
 
-    template <typename Message, typename HandlerFn>
-    void Register(const std::uint32_t message_id, HandlerFn&& handler)
+    template <typename Message, typename HandlerClass>
+    void Register(
+        const std::uint32_t message_id,
+        HandlerClass* instance,
+        ipc::Result (HandlerClass::*handler)(ContextArgs..., const Message&))
     {
-        auto callback = std::forward<HandlerFn>(handler);
         mHandlers[message_id] =
-            [callback = std::move(callback)](const std::string& payload, ContextArgs... context_args) -> ipc::Result {
+            [instance, handler](const std::string& payload, ContextArgs... context_args) -> ipc::Result {
             Message message;
             if (!message.ParseFromString(payload))
             {
                 return ipc::Result::Failure("failed to parse protobuf payload");
             }
-            return callback(context_args..., message);
+            return (instance->*handler)(context_args..., message);
         };
     }
 
@@ -56,11 +58,13 @@ class ProtobufRequestResponseDispatcher
 public:
     using Handler = std::function<ipc::Result(const std::string&, std::string&, ContextArgs...)>;
 
-    template <typename Request, typename Response, typename HandlerFn>
-    void Register(const std::uint32_t message_id, HandlerFn&& handler)
+    template <typename Request, typename Response, typename HandlerClass>
+    void Register(
+        const std::uint32_t message_id,
+        HandlerClass* instance,
+        ipc::Result (HandlerClass::*handler)(ContextArgs..., const Request&, Response&))
     {
-        auto callback = std::forward<HandlerFn>(handler);
-        mHandlers[message_id] = [callback = std::move(callback)](
+        mHandlers[message_id] = [instance, handler](
                                     const std::string& payload,
                                     std::string& response_payload,
                                     ContextArgs... context_args) -> ipc::Result {
@@ -71,7 +75,7 @@ public:
             }
 
             Response response;
-            const auto result = callback(context_args..., request, response);
+            const auto result = (instance->*handler)(context_args..., request, response);
             if (!result.ok)
             {
                 return result;

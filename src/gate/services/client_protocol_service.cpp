@@ -16,9 +16,15 @@ void GateClientProtocolService::RegisterBuiltinHandlers()
 {
     RegisterClientHandler<pb::HeartbeatRequest>(
         pb::MESSAGE_ID_HEARTBEAT_REQUEST,
-        [this](const std::uint64_t connection_id, const pb::HeartbeatRequest&) {
-            return SendHeartbeatResponse(connection_id, static_cast<std::uint64_t>(std::time(nullptr)) * 1000);
-        });
+        this,
+        &GateClientProtocolService::HandleHeartbeat);
+}
+
+ipc::Result GateClientProtocolService::HandleHeartbeat(
+    const std::uint64_t connection_id,
+    const pb::HeartbeatRequest&)
+{
+    return SendHeartbeatResponse(connection_id, static_cast<std::uint64_t>(std::time(nullptr)) * 1000);
 }
 
 ipc::Result GateClientProtocolService::SendLoginResponse(

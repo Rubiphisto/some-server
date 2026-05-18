@@ -17,13 +17,13 @@ class ProtobufEnvelopeDispatcher
 public:
     using Handler = std::function<ipc::DispatchResult(const ipc::Envelope&, ContextArgs...)>;
 
-    template <typename Message, typename HandlerFn>
-    void Register(HandlerFn&& handler)
+    template <typename Message, typename HandlerClass>
+    void Register(
+        HandlerClass* instance,
+        ipc::DispatchResult (HandlerClass::*handler)(const ipc::Envelope&, const Message&))
     {
-        auto callback = std::forward<HandlerFn>(handler);
         const auto type_url = ipc::PayloadRegistry::TypeUrlFor(Message{});
-        mHandlers[type_url] =
-            [callback = std::move(callback), type_url](const ipc::Envelope& envelope, ContextArgs... context_args)
+        mHandlers[type_url] = [instance, handler, type_url](const ipc::Envelope& envelope, ContextArgs...)
             -> ipc::DispatchResult {
             Message message;
             if (!message.ParseFromArray(
@@ -32,7 +32,26 @@ public:
             {
                 return ipc::DispatchResult::Failure("failed to parse protobuf envelope payload: " + type_url);
             }
-            return callback(context_args..., envelope, message);
+            return (instance->*handler)(envelope, message);
+        };
+    }
+
+    template <typename Message, typename HandlerClass>
+    void Register(
+        HandlerClass* instance,
+        ipc::DispatchResult (HandlerClass::*handler)(ContextArgs..., const ipc::Envelope&, const Message&))
+    {
+        const auto type_url = ipc::PayloadRegistry::TypeUrlFor(Message{});
+        mHandlers[type_url] = [instance, handler, type_url](const ipc::Envelope& envelope, ContextArgs... context_args)
+            -> ipc::DispatchResult {
+            Message message;
+            if (!message.ParseFromArray(
+                    envelope.payload_bytes.data(),
+                    static_cast<int>(envelope.payload_bytes.size())))
+            {
+                return ipc::DispatchResult::Failure("failed to parse protobuf envelope payload: " + type_url);
+            }
+            return (instance->*handler)(context_args..., envelope, message);
         };
     }
 

@@ -39,26 +39,14 @@ void PlayerLoginService::RegisterProcessHandlers()
         return;
     }
     mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::LoginPlayerRequest>(
-        [this](
-            const ipc::ReceiverAddress&,
-            const ipc::Envelope& envelope,
-            const some_server::ipc::gate_game::v1::LoginPlayerRequest& request) {
-            return HandleLoginRequest(envelope, request);
-        });
+        this,
+        &PlayerLoginService::HandleLoginRequest);
     mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::ReconnectPlayerRequest>(
-        [this](
-            const ipc::ReceiverAddress&,
-            const ipc::Envelope& envelope,
-            const some_server::ipc::gate_game::v1::ReconnectPlayerRequest& request) {
-            return HandleReconnectRequest(envelope, request);
-        });
+        this,
+        &PlayerLoginService::HandleReconnectRequest);
     mIpcService->RegisterProcessHandler<some_server::ipc::gate_game::v1::PlayerDisconnected>(
-        [this](
-            const ipc::ReceiverAddress&,
-            const ipc::Envelope& envelope,
-            const some_server::ipc::gate_game::v1::PlayerDisconnected& request) {
-            return HandlePlayerDisconnected(envelope, request);
-        });
+        this,
+        &PlayerLoginService::HandlePlayerDisconnected);
 }
 
 ipc::DispatchResult PlayerLoginService::HandleLoginRequest(

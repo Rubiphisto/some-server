@@ -32,10 +32,13 @@ public:
 
     GateClientProtocolService();
 
-    template <typename Message, typename HandlerFn>
-    void RegisterClientHandler(const std::uint32_t message_id, HandlerFn&& handler)
+    template <typename Message, typename HandlerClass>
+    void RegisterClientHandler(
+        const std::uint32_t message_id,
+        HandlerClass* instance,
+        ipc::Result (HandlerClass::*handler)(std::uint64_t, const Message&))
     {
-        mClientDispatcher.Register<Message>(message_id, std::forward<HandlerFn>(handler));
+        mClientDispatcher.Register<Message>(message_id, instance, handler);
     }
 
     ipc::Result DispatchClientMessage(std::uint64_t connection_id, std::uint32_t message_id, const std::string& payload) const
@@ -64,6 +67,7 @@ public:
 
 private:
     void RegisterBuiltinHandlers();
+    ipc::Result HandleHeartbeat(std::uint64_t connection_id, const pb::HeartbeatRequest& request);
 
     template <typename Message>
     ipc::Result SendMessage(

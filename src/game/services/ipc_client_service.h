@@ -87,10 +87,12 @@ public:
     ipc::SendResult SendPlayerMessage(std::uint64_t player_id, const std::string& value);
     ipc::SendResult BroadcastServiceMessage(const std::string& value, bool include_local);
 
-    template <typename Message, typename HandlerFn>
-    void RegisterProcessHandler(HandlerFn&& handler)
+    template <typename Message, typename HandlerClass>
+    void RegisterProcessHandler(
+        HandlerClass* instance,
+        ipc::DispatchResult (HandlerClass::*handler)(const ipc::Envelope&, const Message&))
     {
-        mProcessDispatcher.Register<Message>(std::forward<HandlerFn>(handler));
+        mProcessDispatcher.Register<Message>(instance, handler);
     }
 
 private:
